@@ -14,8 +14,11 @@
     "postinstall": "wxt prepare"
   },
   "devDependencies": {
+    "@eslint/js": "^9.17.0",
     "@types/chrome": "^0.0.280",
+    "eslint": "^9.17.0",
     "typescript": "^5.6.3",
+    "typescript-eslint": "^8.19.1",
     "wxt": "^0.19.13"
   }
 }
