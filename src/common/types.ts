@@ -1,4 +1,5 @@
 export interface AiProvider {
+    name: string
     enabled: boolean;
     key: string;
     url: string;
@@ -19,6 +20,7 @@ export class Model {
 export class Prompt {
     constructor(
         public enabled: boolean = false,
-        public prompt: string,
+        public prompt: string = '',
+        public defaultPrompt: string = '',
     ) {}
 }

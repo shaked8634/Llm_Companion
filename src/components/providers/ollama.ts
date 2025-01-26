@@ -1,10 +1,11 @@
-import {AiProvider, Model} from "@/common/types";
-import {performApiCall} from "@/common/api";
+import {AiProvider, Model} from "../../common/types";
+import {performApiCall} from "../../common/api";
 
 export const defaultOllamaUrl: string = 'http://localhost:11434';
 
 
 export class OllamaProvider implements AiProvider {
+    name: string = 'Ollama';
     enabled: boolean;
     key: string;
     url: string;

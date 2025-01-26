@@ -2,6 +2,8 @@ import {defineConfig} from 'wxt';
 
 export default defineConfig({
     extensionApi: 'chrome',
+    srcDir: 'src',
+
     manifest: {
         name: "LLM companion",
         action: {
@@ -13,6 +15,6 @@ export default defineConfig({
                 resources: []
             },
         ],
-        permissions: ['storage', 'tabs'],
+        permissions: ['storage', "activeTab"],
     }
 });

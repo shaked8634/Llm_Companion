@@ -3,6 +3,7 @@ import {AiProvider, Model} from "@/common/types";
 const defaultGeminiUrl: string = 'http://localhost:11434';
 
 export class GeminiProvider implements AiProvider {
+    name: string = 'Gemini';
     enabled: boolean;
     key: string;
     url: string;

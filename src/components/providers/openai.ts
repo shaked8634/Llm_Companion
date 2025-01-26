@@ -3,6 +3,7 @@ import {AiProvider, Model} from "@/common/types";
 const defaultOllamaUrl: string = 'https://api.openai.com';
 
 export class OpenaiProvider implements AiProvider {
+    name: string = "OpenAI"
     enabled: boolean;
     key: string;
     url: string;
