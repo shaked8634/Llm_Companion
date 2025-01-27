@@ -1,6 +1,7 @@
 import './style.css';
 import {Prompt} from "@/common/types";
 import {defaultSummarizePrompt} from "@/common/constants";
+import {toggleFieldAtt} from "@/common/entrypoints";
 
 export const promptsHtmlTmpl = (summarize: Prompt) => `
  <table>
@@ -24,8 +25,7 @@ export async function handlePrompts(mainContent: HTMLElement): Promise<void> {
 
   checkbox.addEventListener('change', async (event) => {
     const isChecked = (event.target as HTMLInputElement).checked;
-    input.disabled = !isChecked;
-    input.style.opacity = isChecked ? '1' : '0.5';
+    toggleFieldAtt(input, isChecked);
 
     if (!isChecked) {
         input.value = defaultSummarizePrompt;

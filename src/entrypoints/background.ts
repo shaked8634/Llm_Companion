@@ -1,8 +1,9 @@
-import {AiProvider, Prompt} from "../common/types";
+import {Prompt} from "../common/types";
 import {defaultSummarizePrompt, extensionVersion} from "../common/constants";
 import {OpenaiProvider} from "../components/providers/openai";
 import {GeminiProvider} from "../components/providers/gemini";
 import {OllamaProvider} from "../components/providers/ollama";
+import {AiProvider} from "@/components/providers/provider";
 
 export default defineBackground(() => {
     chrome.action.onClicked.addListener((tab) => {

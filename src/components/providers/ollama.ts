@@ -1,22 +1,10 @@
-import {AiProvider, Model} from "../../common/types";
-import {performApiCall} from "../../common/api";
+import {Model} from "../../common/types";
+import {performApiCall} from "@/common/api";
+import {AiProvider, BaseProvider} from "@/components/providers/provider";
 
-export const defaultOllamaUrl: string = 'http://localhost:11434';
-
-
-export class OllamaProvider implements AiProvider {
+export class OllamaProvider extends BaseProvider{
     name: string = 'Ollama';
-    enabled: boolean;
-    key: string;
-    url: string;
-    connected: boolean = false;
-
-
-    constructor(enabled: boolean = false, key: string = '', url: string = defaultOllamaUrl) {
-        this.enabled = enabled;
-        this.key = key
-        this.url = url
-    }
+    static defaultUrl: string = 'http://localhost:11434';
 
     async isConnected(): Promise<boolean> {
         const ollama = await storage.getItem<AiProvider>('local:ollama');

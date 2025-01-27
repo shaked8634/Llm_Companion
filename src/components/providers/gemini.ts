@@ -1,20 +1,9 @@
-import {AiProvider, Model} from "@/common/types";
+import {Model} from "@/common/types";
+import {AiProvider, BaseProvider} from "@/components/providers/provider";
 
-const defaultGeminiUrl: string = 'http://localhost:11434';
-
-export class GeminiProvider implements AiProvider {
+export class GeminiProvider extends BaseProvider{
     name: string = 'Gemini';
-    enabled: boolean;
-    key: string;
-    url: string;
-    connected: boolean = false;
-
-
-    constructor(enabled: boolean = false, key: string = '') {
-        this.enabled = enabled;
-        this.key = key
-        this.url = defaultGeminiUrl
-    }
+    defaultUrl: string = 'https://gemini.google.com...';
 
     async isConnected(): Promise<boolean> {
         return false

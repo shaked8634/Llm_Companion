@@ -1,26 +1,9 @@
 import './style.css';
-import {AiProvider} from "../../common/types";
-import {OpenaiProvider} from "../../components/providers/openai";
-import {GeminiProvider} from "../../components/providers/gemini";
-import {OllamaProvider} from "../../components/providers/ollama";
-
-async function checkProviderConnection(provider: AiProvider): Promise<boolean> {
-    try {
-        return await provider.isConnected();
-    } catch (error) {
-        console.error(`Error checking connection for ${provider.name}: ${error}`);
-        return false;
-    }
-}
-
-async function updateProviderConnectionStatus(provider: AiProvider): Promise<void> {
-    const isConnected = await checkProviderConnection(provider);
-    provider.connected = isConnected;
-}
-
-export async function updateProvidersConnectionStatus(providers: AiProvider[]): Promise<void> {
-    await Promise.all(providers.map(updateProviderConnectionStatus));
-}
+import {OpenaiProvider} from "@/components/providers/openai";
+import {GeminiProvider} from "@/components/providers/gemini";
+import {OllamaProvider} from "@/components/providers/ollama";
+import {toggleFieldAtt} from "@/common/entrypoints";
+import {AiProvider} from "@/components/providers/provider";
 
 export const providersHtmlTmpl = async (
     openai: AiProvider,
@@ -49,74 +32,75 @@ export const providersHtmlTmpl = async (
   </table>
 `;
 
-export const handleProviders = async (mainContent: HTMLElement): Promise<string> => {
-    const openai = await storage.getItem<AiProvider>('local:openai') || new OpenaiProvider();
-    const gemini = await storage.getItem<AiProvider>('local:gemini') || new GeminiProvider();
-    const ollama = await storage.getItem<AiProvider>('local:ollama') || new OllamaProvider();
+export const handleProviders = async (mainContent: HTMLElement): Promise<void> => {
+    const openaiData = await storage.getItem<Partial<OpenaiProvider>>('local:openai');
+    const openai: OpenaiProvider = openaiData ? OpenaiProvider.hydrate(openaiData) : new OpenaiProvider();
 
-    // try {
-    //     openai.connected = await openai.isConnected();
-    //     gemini.connected = await gemini.isConnected();
-    //     ollama.connected = await ollama.isConnected();
-    // } catch (error) {
-    //     console.error("Error checking Ollama connection:", error);
-    // }
+    const geminiData = await storage.getItem<Partial<GeminiProvider>>('local:gemini');
+    const gemini: GeminiProvider = geminiData ? GeminiProvider.hydrate(geminiData) : new GeminiProvider();
+
+
+    const ollamaData = await storage.getItem<Partial<OllamaProvider>>('local:ollama');
+    const ollama: OllamaProvider = ollamaData ? OllamaProvider.hydrate(ollamaData) : new OllamaProvider();
+
+    openai.connected = await openai.isConnected();
+    gemini.connected = await gemini.isConnected();
+    ollama.connected = await ollama.isConnected();
 
     const providers = {openai, gemini, ollama};
-    // await updateProvidersConnectionStatus(providers);
 
-    // Object.keys(providers).forEach((providerName) => {
-    //     const aiProvider = providers[providerName as keyof typeof providers];
-    //     // const checkbox = mainContent.querySelector<HTMLInputElement>(`#${providerName}`)!;
-    //     const row = checkbox.closest('tr')!;
-    //     const keyInputField = row.querySelector<HTMLInputElement>('input[placeholder="API key (optional)"]')!;
-    //     const urlInputField = row.querySelector<HTMLInputElement>('input[placeholder="URL (optional)"]')!;
-    //
-    //     const toggleField = (field: HTMLInputElement, enabled: boolean) => {
-    //         field.disabled = !enabled;
-    //         field.style.opacity = enabled ? '1' : '0.5';
-    //     };
-    //
-    //     if (aiProvider.enabled) {
-    //         aiProvider.isConnected().then((connected) => aiProvider.connected = connected);
-    //     }
-    //
-    //     toggleField(keyInputField, aiProvider.enabled);
-    //     if (urlInputField) {
-    //         toggleField(urlInputField, aiProvider.enabled);
-    //     }
+    mainContent.innerHTML = await providersHtmlTmpl(openai, gemini, ollama);
 
-        // checkbox.addEventListener('change', async (event) => {
-        //     const isChecked = (event.target as HTMLInputElement).checked;
-        //     aiProvider.enabled = isChecked;
-        //
-        //     toggleField(keyInputField, isChecked);
-        //     if (urlInputField) {
-        //         toggleField(urlInputField, isChecked);
-        //     }
-        //
-        //     if (!isChecked) {
-        //         keyInputField.value = '';
-        //         aiProvider.key = '';
-        //         if (providerName === 'ollama') {
-        //             urlInputField.value = defaultOllamaUrl;
-        //             aiProvider.url = defaultOllamaUrl;
-        //         }
-        //     }
-        //     await storage.setItem<AiProvider>(`local:${providerName}`, aiProvider);
-        // });
+    Object.keys(providers).forEach((providerName) => {
+        const aiProvider = providers[providerName as keyof typeof providers];
 
-    //     keyInputField.addEventListener('input', async () => {
-    //         aiProvider.key = keyInputField.value;
-    //         await storage.setItem<AiProvider>(`local:${providerName}`, aiProvider);
-    //     });
-    //
-    //     if (urlInputField) {
-    //         urlInputField.addEventListener('input', async () => {
-    //             aiProvider.url = urlInputField.value;
-    //             await storage.setItem<AiProvider>(`local:${providerName}`, aiProvider);
-    //         });
-    //     }
-    // });
-    return await providersHtmlTmpl(openai, gemini, ollama);
+        const checkbox = mainContent.querySelector<HTMLInputElement>(`#${providerName}`)!;
+
+        const row = checkbox.closest('tr')!;
+        const keyInput = row.querySelector<HTMLInputElement>('input[placeholder="API key (optional)"]')!;
+        const urlInput = row.querySelector<HTMLInputElement>('input[placeholder="URL (optional)"]')!;
+
+        // Run connect test if provider is enabled
+        if (aiProvider.enabled) {
+            // aiProvider.isConnected().then((connected) => aiProvider.connected = connected);
+        }
+
+        checkbox.addEventListener('change', async (event) => {
+            const isChecked = (event.target as HTMLInputElement).checked;
+            aiProvider.enabled = isChecked;
+
+            // Enable/disable key and url fields if checkbox is checked
+            toggleFieldAtt(keyInput, isChecked);
+            if (urlInput) {
+                toggleFieldAtt(urlInput, isChecked);
+            }
+            // Reset key and url if checkbox is unchecked
+            if (isChecked) {
+                // aiProvider.isConnected().then((connected) => aiProvider.connected = connected);
+
+            } else {
+                keyInput.value = '';
+                aiProvider.key = '';
+
+                // For ollama restore default URL
+                if (providerName === 'ollama') {
+                    urlInput.value = OllamaProvider.defaultUrl;
+                    aiProvider.url = OllamaProvider.defaultUrl;
+                }
+            }
+            await storage.setItem<AiProvider>(`local:${providerName}`, aiProvider);
+        });
+
+        keyInput.addEventListener('input', async () => {
+            aiProvider.key = keyInput.value;
+            await storage.setItem<AiProvider>(`local:${providerName}`, aiProvider);
+        });
+
+        if (urlInput) {
+            urlInput.addEventListener('input', async () => {
+                aiProvider.url = urlInput.value;
+                await storage.setItem<AiProvider>(`local:${providerName}`, aiProvider);
+            });
+        }
+    });
 }

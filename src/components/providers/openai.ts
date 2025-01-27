@@ -1,19 +1,9 @@
-import {AiProvider, Model} from "@/common/types";
+import {Model} from "@/common/types";
+import {AiProvider, BaseProvider} from "@/components/providers/provider";
 
-const defaultOllamaUrl: string = 'https://api.openai.com';
-
-export class OpenaiProvider implements AiProvider {
+export class OpenaiProvider extends BaseProvider{
     name: string = "OpenAI"
-    enabled: boolean;
-    key: string;
-    url: string;
-    connected: boolean = false;
-
-    constructor(enabled: boolean = false, key: string = '') {
-        this.enabled = enabled;
-        this.key = key
-        this.url = defaultOllamaUrl
-    }
+    static defaultUrl: string ='https://api.openai.com';
 
     async isConnected(): Promise<boolean> {
         return true

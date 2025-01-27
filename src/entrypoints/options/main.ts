@@ -20,11 +20,11 @@ const updateMainContent = async (section: string) => {
     const mainContent = document.querySelector<HTMLDivElement>('#main-content')!;
     switch (section) {
         case 'providers': {
-            mainContent.innerHTML = await handleProviders(mainContent)
+            await handleProviders(mainContent)
             break;
         }
         case 'prompts': {
-            handlePrompts(mainContent);
+            await handlePrompts(mainContent);
             break;
         }
         case 'about':
