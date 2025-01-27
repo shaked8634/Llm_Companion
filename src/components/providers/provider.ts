@@ -5,7 +5,6 @@ export interface AiProvider {
     enabled: boolean;
     key: string;
     url: string;
-    connected: boolean;
 
     isConnected(): Promise<boolean>;
     getModels(): Promise<Model[]>;
@@ -15,7 +14,6 @@ export interface AiProvider {
 export abstract class BaseProvider implements AiProvider {
     abstract name: string;
     static defaultUrl: string;
-    connected: boolean = false;
 
     constructor(
         public enabled: boolean = false,
@@ -41,15 +39,4 @@ export abstract class BaseProvider implements AiProvider {
             data.url ?? this.prototype.defaultUrl
         );
     }
-    //
-    // abstract isConnected(): Promise<boolean>;
-    // abstract getModels(): Promise<Model[]>;
-    // abstract stream(): Promise<string>;
 }
-
-// export function hydrateProvider<T extends BaseProvider>(
-//     ProviderClass: new (...args: any[]) => T,
-//     storedData: Partial<T> | null
-// ): T {
-//     return ProviderClass.hydrate(storedData || {});
-// }

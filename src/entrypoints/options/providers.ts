@@ -17,21 +17,21 @@ export const providersHtmlTmpl = async (
         <td>OpenAI</td>
         <td><input type="text" placeholder="API key (optional)" value="${openai.key}" ${openai.enabled ? '' : 'disabled'}></td>
         <td/>
-        <td>${openai.enabled ? (openai.connected ? '<span style="color: green;">V</span>' : '<span style="color: red;">X</span>') : ''}</td>
+        <td>${openai.enabled ? (await openai.isConnected() ? '<span style="color: green;">V</span>' : '<span style="color: red;">X</span>') : ''}</td>
       </tr>
       <tr>
         <td><input type="checkbox" class="model-checkbox" id="gemini" ${gemini.enabled ? 'checked' : ''}></td>
         <td>Google Gemini</td>
         <td><input type="text" placeholder="API key (optional)" value="${gemini.key}" ${gemini.enabled ? '' : 'disabled'}></td>
         <td/>
-        <td>${gemini.enabled ? (gemini.connected ? '<span style="color: green;">V</span>' : '<span style="color: red;">X</span>') : ''}</td>
+        <td>${gemini.enabled ? (await gemini.isConnected() ? '<span style="color: green;">V</span>' : '<span style="color: red;">X</span>') : ''}</td>
       </tr>
       <tr>
         <td><input type="checkbox" class="model-checkbox" id="ollama" ${ollama.enabled ? 'checked' : ''}></td>
         <td>Ollama</td>
         <td><input type="text" placeholder="API key (optional)" value="${ollama.key}" ${ollama.enabled ? '' : 'disabled'}></td>
         <td><input type="text" placeholder="URL (optional)" value="${ollama.url}" ${ollama.enabled ? '' : 'disabled'}></td>
-        <td>${ollama.enabled ? (ollama.connected ? '<span style="color: green;">V</span>' : '<span style="color: red;">X</span>') : ''}</td>
+        <td>${ollama.enabled ? (await ollama.isConnected() ? '<span style="color: green;">V</span>' : '<span style="color: red;">X</span>') : ''}</td>
       </tr>
     </tbody>
   </table>
@@ -48,19 +48,15 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
     const ollamaData = await storage.getItem<Partial<OllamaProvider>>('local:ollama');
     const ollama: OllamaProvider = ollamaData ? OllamaProvider.hydrate(ollamaData) : new OllamaProvider();
 
-    if (openai.enabled) {
-        openai.connected = await openai.isConnected();
-    }
-    if (gemini.enabled) {
-        gemini.connected = await gemini.isConnected();
-    }
-    if (ollama.enabled) {
-        ollama.connected = await ollama.isConnected();
-    }
+    // Nested function def
+    const renderTable = async () => {
+        mainContent.innerHTML = await providersHtmlTmpl(openai, gemini, ollama);
+    };
+    await renderTable();
+    // mainContent.innerHTML = await providersHtmlTmpl(openai, gemini, ollama);
 
     const providers = {openai, gemini, ollama};
 
-    mainContent.innerHTML = await providersHtmlTmpl(openai, gemini, ollama);
 
     Object.keys(providers).forEach((providerName) => {
         const aiProvider = providers[providerName as keyof typeof providers];
@@ -70,11 +66,6 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
         const row = checkbox.closest('tr')!;
         const keyInput = row.querySelector<HTMLInputElement>('input[placeholder="API key (optional)"]')!;
         const urlInput = row.querySelector<HTMLInputElement>('input[placeholder="URL (optional)"]')!;
-
-        // Run connect test if provider is enabled
-        if (aiProvider.enabled) {
-            // aiProvider.isConnected().then((connected) => aiProvider.connected = connected);
-        }
 
         checkbox.addEventListener('change', async (event) => {
             const isChecked = (event.target as HTMLInputElement).checked;
@@ -86,11 +77,7 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
                 toggleFieldAtt(urlInput, isChecked);
             }
             // Reset key and url if checkbox is unchecked
-            if (isChecked) {
-                // aiProvider.isConnected().then((connected) => aiProvider.connected = connected);
-                aiProvider.connected = await aiProvider.isConnected();
-
-            } else {
+            if (!isChecked) {
                 keyInput.value = '';
                 aiProvider.key = '';
 
@@ -101,17 +88,22 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
                 }
             }
             await storage.setItem<AiProvider>(`local:${providerName}`, aiProvider);
+            await renderTable();
         });
 
         keyInput.addEventListener('input', async () => {
             aiProvider.key = keyInput.value;
             await storage.setItem<AiProvider>(`local:${providerName}`, aiProvider);
+            await renderTable();
+
         });
 
         if (urlInput) {
             urlInput.addEventListener('input', async () => {
                 aiProvider.url = urlInput.value;
                 await storage.setItem<AiProvider>(`local:${providerName}`, aiProvider);
+                await renderTable();
+
             });
         }
     });
