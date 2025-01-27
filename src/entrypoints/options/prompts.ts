@@ -16,7 +16,8 @@ export const promptsHtmlTmpl = (summarize: Prompt) => `
 `;
 
 export async function handlePrompts(mainContent: HTMLElement): Promise<void> {
-  const summarizePrompt: Prompt = await storage.getItem<Prompt>('local:summarizePrompt') || new Prompt(false, '', defaultSummarizePrompt);
+  const summarizeDate = await storage.getItem<Partial<Prompt>>('local:summarizePrompt');
+  const summarizePrompt = summarizeDate ? Prompt.hydrate(summarizeDate) : new Prompt();
 
   mainContent.innerHTML = promptsHtmlTmpl(summarizePrompt);
 
