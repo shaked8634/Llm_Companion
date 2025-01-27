@@ -6,7 +6,7 @@ export class OpenaiProvider extends BaseProvider{
     static defaultUrl: string ='https://api.openai.com';
 
     async isConnected(): Promise<boolean> {
-        return true
+        return false
     }
 
      async getModels(): Promise<Model[]> {

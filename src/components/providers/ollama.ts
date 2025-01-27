@@ -2,37 +2,36 @@ import {Model} from "../../common/types";
 import {performApiCall} from "@/common/api";
 import {AiProvider, BaseProvider} from "@/components/providers/provider";
 
-export class OllamaProvider extends BaseProvider{
+export class OllamaProvider extends BaseProvider {
     name: string = 'Ollama';
     static defaultUrl: string = 'http://localhost:11434';
 
     async isConnected(): Promise<boolean> {
-        const ollama = await storage.getItem<AiProvider>('local:ollama');
-        if (ollama != null) {
-            try {
-                let resp = performApiCall('GET', `${ollama.url}/api/version'`, ollama.key)
-            } catch (error) {
-                return false;
+        try {
+            const resp: object = await performApiCall('GET', `${this.url}/api/version`, this.key)
+
+            if (resp && resp?.version) {
+                return true
             }
+        } catch (error) {
+            return false;
         }
+
         return false
     }
 
     async getModels(): Promise<Model[]> {
-        const ollama = await storage.getItem<AiProvider>('local:ollama');
-        if (ollama) {
-            try {
-                // Await the API call response
-                const resp = await performApiCall('GET', `${ollama.url}/api/tags`, ollama.key);
+        try {
+            // Await the API call response
+            const resp = await performApiCall('GET', `${this.url}/api/tags`, this.key);
 
-                // Ensure the response contains the expected "models" property
-                if (resp && Array.isArray(resp.models)) {
-                    return resp.models.map((model: { name: string }) => new Model(model.name));
-                }
-            } catch (error) {
-                console.error('Error fetching models:', error);
-                return [];
+            // Ensure the response contains the expected "models" property
+            if (resp && resp?.models) {
+                return resp.models.map((model: { name: string }) => new Model(model.name));
             }
+        } catch (error) {
+            console.error('Error fetching models:', error);
+            return [];
         }
         return [];
     }

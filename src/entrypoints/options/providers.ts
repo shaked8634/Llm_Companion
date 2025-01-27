@@ -16,17 +16,22 @@ export const providersHtmlTmpl = async (
         <td><input type="checkbox" class="model-checkbox" id="openai" ${openai.enabled ? 'checked' : ''}></td>
         <td>OpenAI</td>
         <td><input type="text" placeholder="API key (optional)" value="${openai.key}" ${openai.enabled ? '' : 'disabled'}></td>
+        <td/>
+        <td>${openai.enabled ? (openai.connected ? '<span style="color: green;">V</span>' : '<span style="color: red;">X</span>') : ''}</td>
       </tr>
       <tr>
         <td><input type="checkbox" class="model-checkbox" id="gemini" ${gemini.enabled ? 'checked' : ''}></td>
         <td>Google Gemini</td>
         <td><input type="text" placeholder="API key (optional)" value="${gemini.key}" ${gemini.enabled ? '' : 'disabled'}></td>
+        <td/>
+        <td>${gemini.enabled ? (gemini.connected ? '<span style="color: green;">V</span>' : '<span style="color: red;">X</span>') : ''}</td>
       </tr>
       <tr>
         <td><input type="checkbox" class="model-checkbox" id="ollama" ${ollama.enabled ? 'checked' : ''}></td>
         <td>Ollama</td>
         <td><input type="text" placeholder="API key (optional)" value="${ollama.key}" ${ollama.enabled ? '' : 'disabled'}></td>
         <td><input type="text" placeholder="URL (optional)" value="${ollama.url}" ${ollama.enabled ? '' : 'disabled'}></td>
+        <td>${ollama.enabled ? (ollama.connected ? '<span style="color: green;">V</span>' : '<span style="color: red;">X</span>') : ''}</td>
       </tr>
     </tbody>
   </table>
@@ -43,9 +48,15 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
     const ollamaData = await storage.getItem<Partial<OllamaProvider>>('local:ollama');
     const ollama: OllamaProvider = ollamaData ? OllamaProvider.hydrate(ollamaData) : new OllamaProvider();
 
-    openai.connected = await openai.isConnected();
-    gemini.connected = await gemini.isConnected();
-    ollama.connected = await ollama.isConnected();
+    if (openai.enabled) {
+        openai.connected = await openai.isConnected();
+    }
+    if (gemini.enabled) {
+        gemini.connected = await gemini.isConnected();
+    }
+    if (ollama.enabled) {
+        ollama.connected = await ollama.isConnected();
+    }
 
     const providers = {openai, gemini, ollama};
 
@@ -77,6 +88,7 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
             // Reset key and url if checkbox is unchecked
             if (isChecked) {
                 // aiProvider.isConnected().then((connected) => aiProvider.connected = connected);
+                aiProvider.connected = await aiProvider.isConnected();
 
             } else {
                 keyInput.value = '';

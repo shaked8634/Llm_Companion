@@ -19,10 +19,6 @@ document.body.innerHTML = `
 const updateMainContent = async (section: string) => {
     const mainContent = document.querySelector<HTMLDivElement>('#main-content')!;
     switch (section) {
-        case 'providers': {
-            await handleProviders(mainContent)
-            break;
-        }
         case 'prompts': {
             await handlePrompts(mainContent);
             break;
@@ -30,10 +26,14 @@ const updateMainContent = async (section: string) => {
         case 'about':
             mainContent.innerHTML = aboutHtmlTmpl;
             break;
+        default: // providers
+            await handleProviders(mainContent)
+            break;
+
     }
 };
 
-updateMainContent('providers');
+await updateMainContent('providers');
 
 const links = document.querySelectorAll<HTMLAnchorElement>('.nav-link');
 links.forEach((link) => {
