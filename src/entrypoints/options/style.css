@@ -136,3 +136,18 @@ tbody tr:hover {
 #refresh-models-button:hover {
   background-color: #0056b3;
 }
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: black;
+  }
+  .sidebar {
+      background-color: dimgray;
+  }
+  body, .nav-link, .nav-link.active, .status, #refresh-models-button {
+    color: #ffffff;
+  }
+ tbody tr:hover {
+    background-color: grey;
+  }
+}
