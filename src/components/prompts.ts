@@ -1,9 +1,4 @@
-export class Model {
-    constructor(
-        public name: string
-    ) {
-    }
-}
+export const defaultSummarizePrompt: string = "Summarize this page in less than 300 words";
 
 export class Prompt {
     constructor(

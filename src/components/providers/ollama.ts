@@ -1,6 +1,14 @@
-import {Model} from "../../common/types";
 import {performApiCall} from "@/common/api";
-import {AiProvider, BaseProvider} from "@/components/providers/provider";
+import {BaseProvider} from "@/components/providers/provider";
+import {Model} from "@/components/models";
+
+interface ApiVersionResponse {
+    version: string;
+}
+
+interface ApiModelsResponse {
+    models: [];
+}
 
 export class OllamaProvider extends BaseProvider {
     name: string = 'Ollama';
@@ -8,7 +16,7 @@ export class OllamaProvider extends BaseProvider {
 
     async isConnected(): Promise<boolean> {
         try {
-            const resp: object = await performApiCall('GET', `${this.url}/api/version`, this.key)
+            const resp = await performApiCall('GET', `${this.url}/api/version`, this.key) as ApiVersionResponse;
 
             if (resp && resp?.version) {
                 return true
@@ -22,12 +30,10 @@ export class OllamaProvider extends BaseProvider {
 
     async getModels(): Promise<Model[]> {
         try {
-            // Await the API call response
-            const resp = await performApiCall('GET', `${this.url}/api/tags`, this.key);
+            const resp = await performApiCall('GET', `${this.url}/api/tags`, this.key) as ApiModelsResponse;
 
-            // Ensure the response contains the expected "models" property
             if (resp && resp?.models) {
-                return resp.models.map((model: { name: string }) => new Model(model.name));
+                return resp.models.map((model: { name: string, provider: string }) => new Model(model.name,this.name));
             }
         } catch (error) {
             console.error('Error fetching models:', error);

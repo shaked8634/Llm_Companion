@@ -5,36 +5,43 @@ import {OllamaProvider} from "@/components/providers/ollama";
 import {toggleFieldAtt} from "@/common/entrypoints";
 import {AiProvider} from "@/components/providers/provider";
 
-export const providersHtmlTmpl = async (
+import {updateModels} from "@/components/models";
+
+const providersHtmlTmpl = async (
     openai: AiProvider,
     gemini: AiProvider,
     ollama: AiProvider,
 ) => `
-  <table>
-    <tbody>
-      <tr>
-        <td><input type="checkbox" class="model-checkbox" id="openai" ${openai.enabled ? 'checked' : ''}></td>
-        <td>OpenAI</td>
-        <td><input type="text" placeholder="API key (optional)" value="${openai.key}" ${openai.enabled ? '' : 'disabled'}></td>
-        <td/>
-        <td>${openai.enabled ? (await openai.isConnected() ? '<span style="color: green;">V</span>' : '<span style="color: red;">X</span>') : ''}</td>
-      </tr>
-      <tr>
-        <td><input type="checkbox" class="model-checkbox" id="gemini" ${gemini.enabled ? 'checked' : ''}></td>
-        <td>Google Gemini</td>
-        <td><input type="text" placeholder="API key (optional)" value="${gemini.key}" ${gemini.enabled ? '' : 'disabled'}></td>
-        <td/>
-        <td>${gemini.enabled ? (await gemini.isConnected() ? '<span style="color: green;">V</span>' : '<span style="color: red;">X</span>') : ''}</td>
-      </tr>
-      <tr>
-        <td><input type="checkbox" class="model-checkbox" id="ollama" ${ollama.enabled ? 'checked' : ''}></td>
-        <td>Ollama</td>
-        <td><input type="text" placeholder="API key (optional)" value="${ollama.key}" ${ollama.enabled ? '' : 'disabled'}></td>
-        <td><input type="text" placeholder="URL (optional)" value="${ollama.url}" ${ollama.enabled ? '' : 'disabled'}></td>
-        <td>${ollama.enabled ? (await ollama.isConnected() ? '<span style="color: green;">V</span>' : '<span style="color: red;">X</span>') : ''}</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="section-container">
+    <table class="sections-table">
+      <tbody>
+        <tr>
+          <td><input type="checkbox" class="provider-checkbox" id="openai" ${openai.enabled ? 'checked' : ''}></td>
+          <td>OpenAI</td>
+          <td><input type="text" placeholder="API key (optional)" value="${openai.key}" ${openai.enabled ? '' : 'disabled'}></td>
+          <td></td>
+          <td>${openai.enabled ? (await openai.isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" class="provider-checkbox" id="gemini" ${gemini.enabled ? 'checked' : ''}></td>
+          <td>Google Gemini</td>
+          <td><input type="text" placeholder="API key (optional)" value="${gemini.key}" ${gemini.enabled ? '' : 'disabled'}></td>
+          <td></td>
+          <td>${gemini.enabled ? (await gemini.isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" class="provider-checkbox" id="ollama" ${ollama.enabled ? 'checked' : ''}></td>
+          <td>Ollama</td>
+          <td><input type="text" placeholder="API key (optional)" value="${ollama.key}" ${ollama.enabled ? '' : 'disabled'}></td>
+          <td><input type="text" placeholder="URL (optional)" value="${ollama.url}" ${ollama.enabled ? '' : 'disabled'}></td>
+          <td>${ollama.enabled ? (await ollama.isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="refresh-button-container">
+      <button id="refresh-models-button">Refresh models</button>
+    </div>
+  </div>
 `;
 
 export const handleProviders = async (mainContent: HTMLElement): Promise<void> => {
@@ -107,4 +114,37 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
             });
         }
     });
+    // Add event listener for the "Refresh models" button
+    const refreshButton = mainContent.querySelector<HTMLButtonElement>('#refresh-models-button')!;
+    refreshButton.addEventListener('click', async () => {
+        await updateModels(Object.values(providers))
+
+        console.debug('Models refreshed');
+    });
+
+    // refreshButton.addEventListener('click', async () => {
+    // try {
+    //     // Disable the button and show loading state
+    //     refreshButton.disabled = true;
+    //     refreshButton.textContent = 'Refreshing...';
+    //
+    //     // Update models from all providers
+    //     await updateModels(Object.values(providers));
+    //     console.debug('Models refreshed');
+    //
+    //     // Optionally, re-render the table to show updated statuses
+    //     await renderTable();
+    //
+    //     // Inform the user of success
+    //     alert('Models have been refreshed successfully.');
+    // } catch (error) {
+    //     console.error('Error refreshing models:', error);
+    //     alert('Failed to refresh models. Please try again.');
+    // } finally {
+    //     // Re-enable the button and reset text
+    //     refreshButton.disabled = false;
+    //     refreshButton.textContent = 'Refresh models';
+    // }
+// });
 }
+

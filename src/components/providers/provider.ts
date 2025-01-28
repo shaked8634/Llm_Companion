@@ -1,4 +1,4 @@
-import {Model} from "@/common/types";
+import {Model} from "@/components/models";
 
 export interface AiProvider {
     name: string

@@ -1,3 +1,4 @@
 # TODO
-- [ ] Finish 
-- [ ] Fix options -> connectivity check of models
+- [ ] Implement getModels()
+- [ ] Implement popup UI
+- [ ] Implement stream()

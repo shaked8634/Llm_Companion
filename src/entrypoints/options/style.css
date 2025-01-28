@@ -11,32 +11,36 @@ html, body {
 #app {
 flex-direction: column;
   justify-content: center;
-  align-items: center;
-  width: 720px;
-  height: 640px;
-  text-align: center;
+  align-items: start;
+  width: 1024px;
+  height: min-content;
+  min-height: 30vh;
+  max-height: 90vh;
 }
 
 .content {
-  margin-top: 40px;
+  /*margin-top: 20px;*/
   display: flex;
-  height: calc(100% - 60px); /* Adjust for header height */
+  height: auto;
 }
 
 .sidebar {
-  width: 17%; /* 1/4 of the total width */
+  width: 17%;
   background-color: #f5f5f5;
-  padding: 1rem;
   box-shadow: inset -1px 0 0 #ccc;
   font-size: 1.5rem;
   text-align: left;
-  padding-left: 1.5rem;
+  padding: 1rem 1rem 1rem 1.5rem;
+  height: auto;
 }
 
 .main-content {
   width: 83%;
   padding: 1rem;
-  overflow-y: auto;
+  display: flex;        /* Add Flex display */
+  flex-direction: column; /* Stack children vertically */
+  overflow: hidden;    /* Prevent vertical scrolling */
+  height: auto;
 }
 
 .nav-link {
@@ -71,9 +75,64 @@ input[type="text"] {
 }
 
 input[type="checkbox"] {
-  transform: scale(1.5); /* Increase checkbox size */
+  transform: scale(1.5);
 }
 
 tbody tr:hover {
-  background-color: #f1f1f1; /* Highlight row on hover */
+  background-color: #f1f1f1;
+}
+
+.section-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sections-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sections-table td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.refresh-button-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.status {
+  font-weight: bold;
+}
+
+.status.connected {
+  color: green;
+}
+
+.status.disconnected {
+  color: red;
+}
+
+.refresh-button-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+#refresh-models-button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#refresh-models-button:hover {
+  background-color: #0056b3;
 }

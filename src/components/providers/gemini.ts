@@ -1,5 +1,5 @@
-import {Model} from "@/common/types";
 import {AiProvider, BaseProvider} from "@/components/providers/provider";
+import {Model} from "@/components/models";
 
 export class GeminiProvider extends BaseProvider{
     name: string = 'Gemini';

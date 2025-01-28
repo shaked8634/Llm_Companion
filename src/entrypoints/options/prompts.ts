@@ -1,10 +1,10 @@
 import './style.css';
-import {Prompt} from "@/common/types";
-import {defaultSummarizePrompt} from "@/common/constants";
 import {toggleFieldAtt} from "@/common/entrypoints";
+import {defaultSummarizePrompt, Prompt} from "@/components/prompts";
 
 export const promptsHtmlTmpl = (summarize: Prompt) => `
- <table>
+ <div class="section-container">
+ <table class="sections-table">
     <tbody>
       <tr>
         <td><input type="checkbox" class="prompt-checkbox" id="summarize" ${summarize.enabled ? 'checked' : ''}></td>
@@ -13,6 +13,7 @@ export const promptsHtmlTmpl = (summarize: Prompt) => `
       </tr>
     </tbody>
   </table>
+  </div>
 `;
 
 export async function handlePrompts(mainContent: HTMLElement): Promise<void> {
