@@ -13,13 +13,4 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     //     console.log('Extension updated.');
     //     // Optional: Handle actions for an update
     // }
-    const isDarkModeEnabled = isDarkMode();
-    console.log(`Dark mode is ${isDarkModeEnabled ? 'enabled' : 'disabled'}`);
-
-
 });
-
-
-function isDarkMode() {
-    return window && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-}

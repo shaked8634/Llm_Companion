@@ -18,22 +18,22 @@ const providersHtmlTmpl = async (
         <tr>
           <td><input type="checkbox" class="provider-checkbox" id="openai" ${openai.enabled ? 'checked' : ''}></td>
           <td>OpenAI</td>
-          <td><input type="text" placeholder="API key (optional)" value="${openai.key}" ${openai.enabled ? '' : 'disabled'}></td>
+          <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${openai.key}" ${openai.enabled ? '' : 'disabled'}></td>
           <td></td>
           <td>${openai.enabled ? (await openai.isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
         </tr>
         <tr>
           <td><input type="checkbox" class="provider-checkbox" id="gemini" ${gemini.enabled ? 'checked' : ''}></td>
           <td>Google Gemini</td>
-          <td><input type="text" placeholder="API key (optional)" value="${gemini.key}" ${gemini.enabled ? '' : 'disabled'}></td>
+          <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${gemini.key}" ${gemini.enabled ? '' : 'disabled'}></td>
           <td></td>
           <td>${gemini.enabled ? (await gemini.isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
         </tr>
         <tr>
           <td><input type="checkbox" class="provider-checkbox" id="ollama" ${ollama.enabled ? 'checked' : ''}></td>
           <td>Ollama</td>
-          <td><input type="text" placeholder="API key (optional)" value="${ollama.key}" ${ollama.enabled ? '' : 'disabled'}></td>
-          <td><input type="text" placeholder="URL (optional)" value="${ollama.url}" ${ollama.enabled ? '' : 'disabled'}></td>
+          <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${ollama.key}" ${ollama.enabled ? '' : 'disabled'}></td>
+          <td><input type="text" class="url" placeholder="URL" value="${ollama.url}" required ${ollama.enabled ? '' : 'disabled'}></td>
           <td>${ollama.enabled ? (await ollama.isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
         </tr>
       </tbody>
@@ -51,28 +51,24 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
     const geminiData = await storage.getItem<Partial<GeminiProvider>>('local:gemini');
     const gemini: GeminiProvider = geminiData ? GeminiProvider.hydrate(geminiData) : new GeminiProvider();
 
-
     const ollamaData = await storage.getItem<Partial<OllamaProvider>>('local:ollama');
     const ollama: OllamaProvider = ollamaData ? OllamaProvider.hydrate(ollamaData) : new OllamaProvider();
 
-    // Nested function def
+    // Nested function def to render table after events
     const renderTable = async () => {
         mainContent.innerHTML = await providersHtmlTmpl(openai, gemini, ollama);
     };
     await renderTable();
-    // mainContent.innerHTML = await providersHtmlTmpl(openai, gemini, ollama);
 
     const providers = {openai, gemini, ollama};
-
-
     Object.keys(providers).forEach((providerName) => {
-        const aiProvider = providers[providerName as keyof typeof providers];
+        const aiProvider: AiProvider = providers[providerName as keyof typeof providers];
 
         const checkbox = mainContent.querySelector<HTMLInputElement>(`#${providerName}`)!;
 
         const row = checkbox.closest('tr')!;
-        const keyInput = row.querySelector<HTMLInputElement>('input[placeholder="API key (optional)"]')!;
-        const urlInput = row.querySelector<HTMLInputElement>('input[placeholder="URL (optional)"]')!;
+        const keyInput = row.querySelector<HTMLInputElement>('.apiKey')!;
+        const urlInput = row.querySelector<HTMLInputElement>('.url')!;
 
         checkbox.addEventListener('change', async (event) => {
             const isChecked = (event.target as HTMLInputElement).checked;
@@ -102,7 +98,6 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
             aiProvider.key = keyInput.value;
             await storage.setItem<AiProvider>(`local:${providerName}`, aiProvider);
             await renderTable();
-
         });
 
         if (urlInput) {
@@ -110,7 +105,6 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
                 aiProvider.url = urlInput.value;
                 await storage.setItem<AiProvider>(`local:${providerName}`, aiProvider);
                 await renderTable();
-
             });
         }
     });
