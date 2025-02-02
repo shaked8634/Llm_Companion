@@ -108,37 +108,30 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
             });
         }
     });
-    // Add event listener for the "Refresh models" button
-    const refreshButton = mainContent.querySelector<HTMLButtonElement>('#refresh-models-button')!;
-    refreshButton.addEventListener('click', async () => {
-        await updateModels(Object.values(providers))
 
-        console.debug('Models refreshed');
+// Event Delegation for "Refresh Models" Button
+    mainContent.addEventListener('click', async (event) => {
+        const target = event.target as HTMLElement;
+        if (target.id === 'refresh-models-button') {
+            try {
+                // Disable the button and show loading state
+                const refreshButton = target as HTMLButtonElement;
+                refreshButton.disabled = true;
+                refreshButton.textContent = 'Refreshing...';
+
+                await updateModels(Object.values(providers));
+                console.debug('Models refreshed');
+
+                // Re-enable the button and reset text
+                refreshButton.disabled = false;
+                refreshButton.textContent = 'Refresh models';
+
+                alert('Models have been refreshed successfully.');
+            } catch (error) {
+                console.error('Error refreshing models:', error);
+                alert('Failed to refresh models. Please try again.');
+            }
+        }
     });
-
-    // refreshButton.addEventListener('click', async () => {
-    // try {
-    //     // Disable the button and show loading state
-    //     refreshButton.disabled = true;
-    //     refreshButton.textContent = 'Refreshing...';
-    //
-    //     // Update models from all providers
-    //     await updateModels(Object.values(providers));
-    //     console.debug('Models refreshed');
-    //
-    //     // Optionally, re-render the table to show updated statuses
-    //     await renderTable();
-    //
-    //     // Inform the user of success
-    //     alert('Models have been refreshed successfully.');
-    // } catch (error) {
-    //     console.error('Error refreshing models:', error);
-    //     alert('Failed to refresh models. Please try again.');
-    // } finally {
-    //     // Re-enable the button and reset text
-    //     refreshButton.disabled = false;
-    //     refreshButton.textContent = 'Refresh models';
-    // }
-// });
 }
 

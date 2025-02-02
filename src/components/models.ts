@@ -28,6 +28,10 @@ export async function updateModels(providers: AiProvider[]) {
         promises.push(promise)
     })
     await Promise.all(promises)
-
     await storage.setItem<Model[]>('local:models', allModels);
+}
+
+export async function getAllModels(): Promise<Model[]> {
+    const allModels = await storage.getItem<Model[]>('local:allModels');
+    return allModels || []
 }
