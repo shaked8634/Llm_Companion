@@ -2,7 +2,7 @@ import './style.css';
 import logo from '@/assets/logo.svg';
 import optionsGear from '@/assets/options_gear.svg';
 import {getAllModels} from "@/components/models";
-import {extensionUrl} from "@/common/constants";
+import {aboutUrl} from "@/common/constants";
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="header">
@@ -15,8 +15,12 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     </button>
   </div>
    <div class="dropdown-container">
-    <label for="models-dropdown">Choose an Option:</label>
     <select id="models-dropdown" class="dropdown">
+      <option value="" disabled selected>Loading options...</option>
+    </select>
+  </div>
+     <div class="dropdown-container">
+    <select id="prompt-dropdown" class="dropdown">
       <option value="" disabled selected>Loading options...</option>
     </select>
   </div>
@@ -33,16 +37,24 @@ const populateModelsDropdown = async () => {
     if (dropdown) {
       dropdown.innerHTML = '';       // Clear existing options
       const models = await getAllModels();
+      const savedModel = await storage.getItem<string>('local:currModel');
 
+      console.log(`found ${models.length}`)
       models.forEach(model => {
         const option = document.createElement('option');
         option.value = option.textContent = `${model.provider}:${model.name}`;
         dropdown.appendChild(option);
+
+        if (savedModel == option.value) {
+          option.selected = true;
+        }
+
       });
     }
   } catch (error) {
     console.error('Error fetching model options:', error);
     const dropdown = document.querySelector<HTMLSelectElement>('#models-dropdown');
+
     if (dropdown) {
       dropdown.innerHTML = '<option value="" disabled selected>Failed to load options</option>';
     }
@@ -58,12 +70,21 @@ document.querySelector<HTMLButtonElement>('#open-options')!.addEventListener('cl
 });
 
 document.querySelector<HTMLButtonElement>('#open-about')!.addEventListener('click', () => {
-  chrome.tabs.create({url: extensionUrl}).catch((err) => {
+  chrome.tabs.create({url: aboutUrl}).catch((err) => {
     console.error('Failed to open options page:', err);
   });
 });
 
-document.querySelector<HTMLSelectElement>('#dynamic-dropdown')?.addEventListener('change', (event) => {
-  const selectedValue = (event.target as HTMLSelectElement).value;
-  console.debug(`Dropdown selected: ${selectedValue}`);
+document.querySelector<HTMLSelectElement>('#models-dropdown')?.addEventListener('change', (event) => {
+  const selectedModel = (event.target as HTMLSelectElement).value;
+  console.debug(`Model selected: ${selectedModel}`);
+
+  storage.setItem<string>('local:currModel', selectedModel);
+});
+
+document.querySelector<HTMLSelectElement>('#prompts-dropdown')?.addEventListener('change', (event) => {
+  const selectedPrompt = (event.target as HTMLSelectElement).value;
+  console.debug(`Prompt selected: ${selectedPrompt}`);
+
+  storage.setItem<string>('local:currPrompt', selectedPrompt);
 });
