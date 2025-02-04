@@ -18,7 +18,7 @@ export class Model {
  * @returns A flattened array of all models from all providers.
  */
 export async function updateModels(providers: AiProvider[]) {
-    const allModelMappings: Map<string, Model> = new Map<string, Model>();
+    const allModelMappings: {[key: string]: Model} = {};
     const promises: Promise<void>[] = [];
 
     providers.forEach(provider => {
@@ -26,7 +26,7 @@ export async function updateModels(providers: AiProvider[]) {
             .then(models => {
                 models.forEach(model => {
                     const key = `${model.provider}:${model.name}`
-                    allModelMappings.set(key, model);
+                    allModelMappings[key] = model;
                 })
             })
             .catch(error => {
@@ -35,10 +35,18 @@ export async function updateModels(providers: AiProvider[]) {
         promises.push(promise)
     })
     await Promise.all(promises)
-    await storage.setItem<Map<string, Model>>('local:models', allModelMappings);
+    await storage.setItem('local:models', JSON.stringify(allModelMappings));
+
+    console.debug(`Saved: ${allModelMappings} models`)
 }
 
-export async function getAllModels(): Promise<Map<string, Model>> {
-    const allModels = await storage.getItem<Map<string, Model>>('local:models');
-    return allModels || new Map<string, Model>()
+export async function getAllModels(): Promise<{ [key: string]: Model }> {
+    const allModelsString: string | null = await storage.getItem('local:models');
+
+    if (allModelsString === null) {
+        console.warn("No models found in local storage or invalid data format.");
+        return {};
+    }
+
+    return allModelsString ? JSON.parse(allModelsString) : {};
 }

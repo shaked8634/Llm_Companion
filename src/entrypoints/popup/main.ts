@@ -39,16 +39,18 @@ const populateModelsDropdown = async () => {
         if (dropdown) {
             dropdown.innerHTML = '';       // Clear existing options
             const modelMappings = await getAllModels();
-            const savedModel = await storage.getItem<string>('local:savedModel');
+            console.debug(`Found ${Object.keys(modelMappings).length}`)
+            const currModel = await storage.getItem<string>('local:currModel');
 
             Object.keys(modelMappings).forEach(modelName => {
-                const model = modelMappings.get(modelName);
+                const model = modelMappings[modelName];
 
                 if (model && model.enabled) {
+                    console.log(`Handling: ${modelName}`)
                     const option = document.createElement('option');
                     option.value = option.textContent = `${model.provider}:${model.name}`;
                     // Set saved model as selected
-                    if (savedModel == option.value) {
+                    if (currModel == option.value) {
                         option.selected = true;
                     }
                     dropdown.appendChild(option);
@@ -70,7 +72,7 @@ const populatePromptsDropdown = async () => {
         const dropdown = document.querySelector<HTMLSelectElement>('#prompts-dropdown');
         if (dropdown) {
             const promptMappings = await getAllPrompts();
-            const savedPrompt = await storage.getItem<string>('local:savedPrompt');
+            const currPrompt = await storage.getItem<string>('local:currPrompt');
 
             Object.keys(promptMappings).forEach(promptName => {
                 const prompt = promptMappings.get(promptName);
@@ -79,7 +81,7 @@ const populatePromptsDropdown = async () => {
                     const option = document.createElement('option');
                     option.value = option.textContent = promptName;
 
-                    if (promptName === savedPrompt) {
+                    if (promptName === currPrompt) {
                         option.defaultSelected = true
                     }
                     dropdown.appendChild(option);
