@@ -3,19 +3,29 @@ export const defaultSummarizePrompt: string = "Summarize this page in less than 
 export class Prompt {
     constructor(
         public enabled: boolean = false,
+        public name: string,
         public prompt: string = '',
-        public defaultPrompt: string = '',
     ) {
         this.enabled = enabled;
         this.prompt = prompt;
-        this.defaultPrompt = defaultPrompt;
     }
 
     static hydrate(data: Partial<Prompt>): Prompt {
         return new this(
             data.enabled ?? false,
             data.prompt ?? '',
-            data.defaultPrompt ?? ''
         );
     }
+}
+
+export function newSummaryPrompt() {
+    return new Prompt(
+        true,
+        "Summarize this page",
+        defaultSummarizePrompt);
+}
+
+export async function getAllPrompts(): Promise<Map<string, Prompt>> {
+    const allPrompts = await storage.getItem<Map<string, Prompt>>('local:prompts');
+    return allPrompts || new Map<string, Prompt>
 }

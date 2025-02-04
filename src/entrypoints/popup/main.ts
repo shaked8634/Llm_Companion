@@ -3,6 +3,7 @@ import logo from '@/assets/logo.svg';
 import optionsGear from '@/assets/options_gear.svg';
 import {getAllModels} from "@/components/models";
 import {aboutUrl} from "@/common/constants";
+import {getAllPrompts} from "@/components/prompts";
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="header">
@@ -16,75 +17,109 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   </div>
    <div class="dropdown-container">
     <select id="models-dropdown" class="dropdown">
-      <option value="" disabled selected>Loading options...</option>
+      <option value="" disabled selected>Loading models...</option>
     </select>
   </div>
      <div class="dropdown-container">
     <select id="prompt-dropdown" class="dropdown">
-      <option value="" disabled selected>Loading options...</option>
+      <option value="" disabled selected>Loading prompts...</option>
     </select>
   </div>
 `;
 
 const updateMainContent = async () => {
-   await populateModelsDropdown();
+    await populateModelsDropdown();
+    await populatePromptsDropdown();
 };
 
 const populateModelsDropdown = async () => {
-  try {
-    const dropdown = document.querySelector<HTMLSelectElement>('#models-dropdown');
+    try {
+        const dropdown = document.querySelector<HTMLSelectElement>('#models-dropdown');
 
-    if (dropdown) {
-      dropdown.innerHTML = '';       // Clear existing options
-      const models = await getAllModels();
-      const savedModel = await storage.getItem<string>('local:currModel');
+        if (dropdown) {
+            dropdown.innerHTML = '';       // Clear existing options
+            const modelMappings = await getAllModels();
+            const savedModel = await storage.getItem<string>('local:savedModel');
 
-      console.log(`found ${models.length}`)
-      models.forEach(model => {
-        const option = document.createElement('option');
-        option.value = option.textContent = `${model.provider}:${model.name}`;
-        dropdown.appendChild(option);
+            Object.keys(modelMappings).forEach(modelName => {
+                const model = modelMappings.get(modelName);
 
-        if (savedModel == option.value) {
-          option.selected = true;
+                if (model && model.enabled) {
+                    const option = document.createElement('option');
+                    option.value = option.textContent = `${model.provider}:${model.name}`;
+                    // Set saved model as selected
+                    if (savedModel == option.value) {
+                        option.selected = true;
+                    }
+                    dropdown.appendChild(option);
+                }
+            });
         }
+    } catch (error) {
+        console.error('Error fetching model options:', error);
+        const dropdown = document.querySelector<HTMLSelectElement>('#models-dropdown');
 
-      });
+        if (dropdown) {
+            dropdown.innerHTML = '<option value="" disabled selected>Failed to load models</option>';
+        }
     }
-  } catch (error) {
-    console.error('Error fetching model options:', error);
-    const dropdown = document.querySelector<HTMLSelectElement>('#models-dropdown');
+};
 
-    if (dropdown) {
-      dropdown.innerHTML = '<option value="" disabled selected>Failed to load options</option>';
+const populatePromptsDropdown = async () => {
+    try {
+        const dropdown = document.querySelector<HTMLSelectElement>('#prompts-dropdown');
+        if (dropdown) {
+            const promptMappings = await getAllPrompts();
+            const savedPrompt = await storage.getItem<string>('local:savedPrompt');
+
+            Object.keys(promptMappings).forEach(promptName => {
+                const prompt = promptMappings.get(promptName);
+
+                if (prompt && prompt.enabled) {
+                    const option = document.createElement('option');
+                    option.value = option.textContent = promptName;
+
+                    if (promptName === savedPrompt) {
+                        option.defaultSelected = true
+                    }
+                    dropdown.appendChild(option);
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching prompt options:', error);
+        const dropdown = document.querySelector<HTMLSelectElement>('#prompts-dropdown');
+
+        if (dropdown) {
+            dropdown.innerHTML = '<option value="" disabled selected>Failed to load prompts</option>';
+        }
     }
-  }
 };
 
 await updateMainContent()
 
 document.querySelector<HTMLButtonElement>('#open-options')!.addEventListener('click', () => {
-  chrome.runtime.openOptionsPage().catch((err) => {
-    console.error('Failed to open options page:', err);
-  });
+    chrome.runtime.openOptionsPage().catch((err) => {
+        console.error('Failed to open options page:', err);
+    });
 });
 
 document.querySelector<HTMLButtonElement>('#open-about')!.addEventListener('click', () => {
-  chrome.tabs.create({url: aboutUrl}).catch((err) => {
-    console.error('Failed to open options page:', err);
-  });
+    chrome.tabs.create({url: aboutUrl}).catch((err) => {
+        console.error('Failed to open about page:', err);
+    });
 });
 
 document.querySelector<HTMLSelectElement>('#models-dropdown')?.addEventListener('change', (event) => {
-  const selectedModel = (event.target as HTMLSelectElement).value;
-  console.debug(`Model selected: ${selectedModel}`);
+    const selectedModel = (event.target as HTMLSelectElement).value;
+    console.debug(`Model selected: ${selectedModel}`);
 
-  storage.setItem<string>('local:currModel', selectedModel);
+    storage.setItem<string>('local:currModel', selectedModel);
 });
 
 document.querySelector<HTMLSelectElement>('#prompts-dropdown')?.addEventListener('change', (event) => {
-  const selectedPrompt = (event.target as HTMLSelectElement).value;
-  console.debug(`Prompt selected: ${selectedPrompt}`);
+    const selectedPrompt = (event.target as HTMLSelectElement).value;
+    console.debug(`Prompt selected: ${selectedPrompt}`);
 
-  storage.setItem<string>('local:currPrompt', selectedPrompt);
+    storage.setItem<string>('local:currPrompt', selectedPrompt);
 });

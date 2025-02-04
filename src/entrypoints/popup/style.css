@@ -77,3 +77,41 @@ html, body {
   border-radius: 4px;
   border: 1px solid #ccc;
 }
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: black;
+  }
+
+    #app {
+    background-color: #333;
+    color: greenyellow;
+  }
+
+  .header, .headline, .options-button, .dropdown-container label, .dropdown {
+    color: greenyellow;
+
+  }
+
+  .dropdown {
+    background-color: #444;
+    border-color: #555;
+  }
+
+  .options-button:hover .logo-icon,
+  .options-button:hover .gear-icon {
+    filter: invert(1); /* Invert the color of icons on hover */
+  }
+
+  .dropdown-container label {
+    color: greenyellow;
+  }
+
+  .dropdown {
+    color: greenyellow;
+  }
+
+  .logo-icon, .gear-icon {
+    filter: invert(1) ;
+  }
+}

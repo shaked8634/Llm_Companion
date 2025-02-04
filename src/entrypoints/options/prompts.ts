@@ -1,6 +1,6 @@
 import './style.css';
 import {toggleFieldAtt} from "@/common/entrypoints";
-import {defaultSummarizePrompt, Prompt} from "@/components/prompts";
+import {defaultSummarizePrompt, newSummaryPrompt, Prompt} from "@/components/prompts";
 
 export const promptsHtmlTmpl = (summarize: Prompt) => `
  <div class="section-container">
@@ -17,8 +17,19 @@ export const promptsHtmlTmpl = (summarize: Prompt) => `
 `;
 
 export async function handlePrompts(mainContent: HTMLElement): Promise<void> {
-  const summarizeDate = await storage.getItem<Partial<Prompt>>('local:summarizePrompt');
-  const summarizePrompt = summarizeDate ? Prompt.hydrate(summarizeDate) : new Prompt();
+  const prompts = await storage.getItem<Prompt[]>('local:prompts') || [];
+
+  // Add summarize prompt on 1st run when no saved prompts
+  if (!prompts.length) {
+    prompts.push(newSummaryPrompt());
+  }
+
+  prompts.forEach(prompt => {
+    
+  });
+
+  const summarizeData = await storage.getItem<Partial<Prompt>>('local:summarizePrompt');
+  const summarizePrompt = summarizeData ? Prompt.hydrate(summarizeData) : newSummaryPrompt();
 
   mainContent.innerHTML = promptsHtmlTmpl(summarizePrompt);
 
