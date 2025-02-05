@@ -40,13 +40,8 @@ export async function updateModels(providers: AiProvider[]) {
     console.debug(`Saved: ${allModelMappings} models`)
 }
 
-export async function getAllModels(): Promise<{ [key: string]: Model }> {
+export async function getAllModels(): Promise<{ [key: string]: Model}> {
     const allModelsString: string | null = await storage.getItem('local:models');
-
-    if (allModelsString === null) {
-        console.warn("No models found in local storage or invalid data format.");
-        return {};
-    }
 
     return allModelsString ? JSON.parse(allModelsString) : {};
 }

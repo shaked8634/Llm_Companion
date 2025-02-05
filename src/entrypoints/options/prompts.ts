@@ -1,6 +1,6 @@
 import './style.css';
 import {toggleFieldAtt} from "@/common/entrypoints";
-import {defaultSummarizePrompt, newSummaryPrompt, Prompt} from "@/components/prompts";
+import {DefaultSummarizePrompt, getAllPrompts, Prompt} from "@/components/prompts";
 
 export const promptsHtmlTmpl = (summarize: Prompt) => `
  <div class="section-container">
@@ -17,21 +17,9 @@ export const promptsHtmlTmpl = (summarize: Prompt) => `
 `;
 
 export async function handlePrompts(mainContent: HTMLElement): Promise<void> {
-  const prompts = await storage.getItem<Prompt[]>('local:prompts') || [];
+  const promptMappings = await getAllPrompts()
 
-  // Add summarize prompt on 1st run when no saved prompts
-  if (!prompts.length) {
-    prompts.push(newSummaryPrompt());
-  }
-
-  prompts.forEach(prompt => {
-    
-  });
-
-  const summarizeData = await storage.getItem<Partial<Prompt>>('local:summarizePrompt');
-  const summarizePrompt = summarizeData ? Prompt.hydrate(summarizeData) : newSummaryPrompt();
-
-  mainContent.innerHTML = promptsHtmlTmpl(summarizePrompt);
+  mainContent.innerHTML = promptsHtmlTmpl(promptMappings[DefaultSummarizePrompt.Name]);
 
   const checkbox = mainContent.querySelector('#summarize')! as HTMLInputElement;
   const input = mainContent.querySelector('input[type="text"]')! as HTMLInputElement;
@@ -41,16 +29,16 @@ export async function handlePrompts(mainContent: HTMLElement): Promise<void> {
     toggleFieldAtt(input, isChecked);
 
     if (!isChecked) {
-        input.value = defaultSummarizePrompt;
-        summarizePrompt.prompt = defaultSummarizePrompt;
+        input.value = DefaultSummarizePrompt.Prompt;
+        promptMappings[DefaultSummarizePrompt.Name].prompt = DefaultSummarizePrompt.Prompt;
     }
 
-    summarizePrompt.enabled = isChecked;
-    await storage.setItem<Prompt>('local:summarizePrompt', summarizePrompt);
+    promptMappings[DefaultSummarizePrompt.Name].enabled = isChecked;
+    await storage.setItem('local:prompts', JSON.stringify(promptMappings));
   });
 
   input.addEventListener('input', async () => {
-    summarizePrompt.prompt = input.value;
-    await storage.setItem<Prompt>('local:summarizePrompt', summarizePrompt);
+    promptMappings[DefaultSummarizePrompt.Name].prompt = input.value;
+    await storage.setItem('local:prompts', JSON.stringify(promptMappings));
   });
 }

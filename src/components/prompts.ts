@@ -1,9 +1,11 @@
-export const defaultSummarizePrompt: string = "Summarize this page in less than 300 words";
+export enum DefaultSummarizePrompt {
+     Name = 'Summarize this page',
+     Prompt = "Summarize this page in less than 300 words",
+}
 
 export class Prompt {
     constructor(
         public enabled: boolean = false,
-        public name: string,
         public prompt: string = '',
     ) {
         this.enabled = enabled;
@@ -18,14 +20,15 @@ export class Prompt {
     }
 }
 
-export function newSummaryPrompt() {
-    return new Prompt(
-        true,
-        "Summarize this page",
-        defaultSummarizePrompt);
-}
+export async function getAllPrompts(): Promise<{ [key: string]: Prompt }> {
+    const allPromptsString: string | null = await storage.getItem('local:prompts');
 
-export async function getAllPrompts(): Promise<Map<string, Prompt>> {
-    const allPrompts = await storage.getItem<Map<string, Prompt>>('local:prompts');
-    return allPrompts || new Map<string, Prompt>
+    // return allPromptsString ? JSON.parse(allPromptsString) : {defaultSummariseName: newSummaryPrompt()};
+    let allPrompts: { [key: string]: Prompt} = {}
+    if (allPromptsString) {
+        allPrompts = JSON.parse(allPromptsString)
+    } else {
+        allPrompts = {[DefaultSummarizePrompt.Name]: new Prompt(true, DefaultSummarizePrompt.Prompt)}
+    }
+    return allPrompts
 }
