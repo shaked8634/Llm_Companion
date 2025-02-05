@@ -1,8 +1,8 @@
-import {AiProvider, BaseProvider} from "@/components/providers/provider";
+import {AiProvider, BaseProvider, ProviderType} from "@/components/providers/provider";
 import {Model} from "@/components/models";
 
 export class GeminiProvider extends BaseProvider{
-    name: string = 'Gemini';
+    name: string = ProviderType.Gemini;
     defaultUrl: string = 'https://gemini.google.com...';
 
     async isConnected(): Promise<boolean> {

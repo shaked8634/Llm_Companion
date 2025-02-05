@@ -59,7 +59,7 @@ const populateModelsDropdown = async () => {
     } catch (error) {
         console.error('Error fetching model options:', error);
         const dropdown = document.querySelector<HTMLSelectElement>('#models-dropdown');
-;
+
         if (dropdown) {
             dropdown.innerHTML = '<option value="" disabled selected>Failed to load models</option>';
         }

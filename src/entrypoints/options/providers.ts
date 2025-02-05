@@ -3,7 +3,7 @@ import {OpenaiProvider} from "@/components/providers/openai";
 import {GeminiProvider} from "@/components/providers/gemini";
 import {OllamaProvider} from "@/components/providers/ollama";
 import {toggleFieldAtt} from "@/common/entrypoints";
-import {AiProvider} from "@/components/providers/provider";
+import {AiProvider, ProviderType} from "@/components/providers/provider";
 
 import {updateModels, updateModelsState} from "@/components/models";
 
@@ -16,21 +16,21 @@ const providersHtmlTmpl = async (
     <table class="sections-table">
       <tbody>
         <tr>
-          <td><input type="checkbox" class="provider-checkbox" id="Openai" ${openai.enabled ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="provider-checkbox" id=${openai.name} ${openai.enabled ? 'checked' : ''}></td>
           <td>OpenAI</td>
           <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${openai.key}" ${openai.enabled ? '' : 'disabled'}></td>
           <td></td>
           <td>${openai.enabled ? (await openai.isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
         </tr>
         <tr>
-          <td><input type="checkbox" class="provider-checkbox" id="Gemini" ${gemini.enabled ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="provider-checkbox" id=${gemini.name} ${gemini.enabled ? 'checked' : ''}></td>
           <td>Google Gemini</td>
           <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${gemini.key}" ${gemini.enabled ? '' : 'disabled'}></td>
           <td></td>
           <td>${gemini.enabled ? (await gemini.isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
         </tr>
         <tr>
-          <td><input type="checkbox" class="provider-checkbox" id="Ollama" ${ollama.enabled ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="provider-checkbox" id=${ollama.name} ${ollama.enabled ? 'checked' : ''}></td>
           <td>Ollama</td>
           <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${ollama.key}" ${ollama.enabled ? '' : 'disabled'}></td>
           <td><input type="text" class="url" placeholder="URL" value="${ollama.url}" required ${ollama.enabled ? '' : 'disabled'}></td>
@@ -45,13 +45,13 @@ const providersHtmlTmpl = async (
 `;
 
 export const handleProviders = async (mainContent: HTMLElement): Promise<void> => {
-    const openaiData = await storage.getItem<Partial<OpenaiProvider>>('local:openai');
+    const openaiData = await storage.getItem<Partial<OpenaiProvider>>(`local:${ProviderType.Openai}`);
     const openai: OpenaiProvider = openaiData ? OpenaiProvider.hydrate(openaiData) : new OpenaiProvider();
 
-    const geminiData = await storage.getItem<Partial<GeminiProvider>>('local:gemini');
+    const geminiData = await storage.getItem<Partial<GeminiProvider>>(`local:${ProviderType.Gemini}`);
     const gemini: GeminiProvider = geminiData ? GeminiProvider.hydrate(geminiData) : new GeminiProvider();
 
-    const ollamaData = await storage.getItem<Partial<OllamaProvider>>('local:ollama');
+    const ollamaData = await storage.getItem<Partial<OllamaProvider>>(`local:${[ProviderType.Ollama]}`);
     const ollama: OllamaProvider = ollamaData ? OllamaProvider.hydrate(ollamaData) : new OllamaProvider();
 
     // Nested function def to render table after events
@@ -88,12 +88,12 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
                 aiProvider.key = '';
                 await updateModelsState(providerName, false)
                 // Restore default URL for Ollama
-                if (providerName === 'ollama') {
+                if (providerName === OllamaProvider.name) {
                     urlInput.value = OllamaProvider.defaultUrl;
                     aiProvider.url = OllamaProvider.defaultUrl;
                 }
             }
-            await storage.setItem(`local:${providerName}`, aiProvider);
+            await storage.setItem(`local:${providerName}`, JSON.stringify(aiProvider));
             await renderTable();
         });
 

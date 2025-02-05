@@ -1,5 +1,11 @@
 import {Model} from "@/components/models";
 
+export enum ProviderType {
+    Openai = 'Openai',
+    Gemini = 'Gemini',
+    Ollama = 'Ollama'
+}
+
 export interface AiProvider {
     name: string
     enabled: boolean;
@@ -16,13 +22,13 @@ export abstract class BaseProvider implements AiProvider {
     static defaultUrl: string;
 
     constructor(
-        public enabled: boolean = false,
+        public url: string = '',
         public key: string = '',
-        public url: string = ''
+        public enabled: boolean = false
     ) {
         this.enabled = enabled;
         this.key = key;
-        this.url = url;
+        this.url = url ? url : BaseProvider.defaultUrl;
     }
 
     abstract isConnected(): Promise<boolean>;

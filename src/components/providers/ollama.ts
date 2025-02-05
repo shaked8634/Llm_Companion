@@ -1,5 +1,5 @@
 import {performApiCall} from "@/common/api";
-import {BaseProvider} from "@/components/providers/provider";
+import {BaseProvider, ProviderType} from "@/components/providers/provider";
 import {Model} from "@/components/models";
 
 interface ApiVersionResponse {
@@ -11,8 +11,12 @@ interface ApiModelsResponse {
 }
 
 export class OllamaProvider extends BaseProvider {
-    name: string = 'Ollama';
+    name: string = ProviderType.Ollama;
     static defaultUrl: string = 'http://localhost:11434';
+
+    constructor() {
+        super(OllamaProvider.defaultUrl);
+    }
 
     async isConnected(): Promise<boolean> {
         try {

@@ -1,8 +1,8 @@
-import {AiProvider, BaseProvider} from "@/components/providers/provider";
+import {AiProvider, BaseProvider, ProviderType} from "@/components/providers/provider";
 import {Model} from "@/components/models";
 
 export class OpenaiProvider extends BaseProvider{
-    name: string = "OpenAI"
+    name: string = ProviderType.Openai
     static defaultUrl: string ='https://api.openai.com';
 
     async isConnected(): Promise<boolean> {
