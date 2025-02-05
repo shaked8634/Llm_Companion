@@ -19,17 +19,15 @@ document.body.innerHTML = `
 const updateMainContent = async (section: string) => {
     const mainContent = document.querySelector<HTMLDivElement>('#main-content')!;
     switch (section) {
-        case 'prompts': {
+        case 'prompts':
             await handlePrompts(mainContent);
             break;
-        }
         case 'about':
             mainContent.innerHTML = aboutHtmlTmpl;
             break;
         default: // providers
             await handleProviders(mainContent)
             break;
-
     }
 };
 

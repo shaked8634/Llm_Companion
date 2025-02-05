@@ -45,3 +45,15 @@ export async function getAllModels(): Promise<{ [key: string]: Model}> {
 
     return allModelsString ? JSON.parse(allModelsString) : {};
 }
+
+export async function updateModelsState(providerName: string, state: boolean): Promise<void> {
+    const modelMapping = await getAllModels()
+    Object.keys(modelMapping).forEach(modelName => {
+       if (modelName.startsWith(providerName)) {
+           modelMapping[modelName].enabled = state
+       }
+    });
+    await storage.setItem('local:models', JSON.stringify(modelMapping));
+
+    console.debug(`The status of provider '${providerName}' models were ${state ? 'enabled' : 'disabled'}`)
+}

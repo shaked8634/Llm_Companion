@@ -5,7 +5,7 @@ import {OllamaProvider} from "@/components/providers/ollama";
 import {toggleFieldAtt} from "@/common/entrypoints";
 import {AiProvider} from "@/components/providers/provider";
 
-import {updateModels} from "@/components/models";
+import {updateModels, updateModelsState} from "@/components/models";
 
 const providersHtmlTmpl = async (
     openai: AiProvider,
@@ -16,21 +16,21 @@ const providersHtmlTmpl = async (
     <table class="sections-table">
       <tbody>
         <tr>
-          <td><input type="checkbox" class="provider-checkbox" id="openai" ${openai.enabled ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="provider-checkbox" id="Openai" ${openai.enabled ? 'checked' : ''}></td>
           <td>OpenAI</td>
           <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${openai.key}" ${openai.enabled ? '' : 'disabled'}></td>
           <td></td>
           <td>${openai.enabled ? (await openai.isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
         </tr>
         <tr>
-          <td><input type="checkbox" class="provider-checkbox" id="gemini" ${gemini.enabled ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="provider-checkbox" id="Gemini" ${gemini.enabled ? 'checked' : ''}></td>
           <td>Google Gemini</td>
           <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${gemini.key}" ${gemini.enabled ? '' : 'disabled'}></td>
           <td></td>
           <td>${gemini.enabled ? (await gemini.isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
         </tr>
         <tr>
-          <td><input type="checkbox" class="provider-checkbox" id="ollama" ${ollama.enabled ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="provider-checkbox" id="Ollama" ${ollama.enabled ? 'checked' : ''}></td>
           <td>Ollama</td>
           <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${ollama.key}" ${ollama.enabled ? '' : 'disabled'}></td>
           <td><input type="text" class="url" placeholder="URL" value="${ollama.url}" required ${ollama.enabled ? '' : 'disabled'}></td>
@@ -60,9 +60,9 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
     };
     await renderTable();
 
-    const providers = {openai, gemini, ollama};
-    Object.keys(providers).forEach((providerName) => {
-        const aiProvider: AiProvider = providers[providerName as keyof typeof providers];
+    const providerMappings = {Openai: openai, Gemini: gemini, Ollama: ollama};
+    Object.keys(providerMappings).forEach((providerName) => {
+        const aiProvider: AiProvider = providerMappings[providerName as keyof typeof providerMappings];
 
         const checkbox = mainContent.querySelector<HTMLInputElement>(`#${providerName}`)!;
 
@@ -79,31 +79,34 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
             if (urlInput) {
                 toggleFieldAtt(urlInput, isChecked);
             }
-            // Reset key and url if checkbox is unchecked
-            if (!isChecked) {
+
+            if (isChecked) {
+                await updateModelsState(providerName, true)
+            } else {
+                // Reset key and url if checkbox is unchecked
                 keyInput.value = '';
                 aiProvider.key = '';
-
-                // For ollama restore default URL
+                await updateModelsState(providerName, false)
+                // Restore default URL for Ollama
                 if (providerName === 'ollama') {
                     urlInput.value = OllamaProvider.defaultUrl;
                     aiProvider.url = OllamaProvider.defaultUrl;
                 }
             }
-            await storage.setItem<AiProvider>(`local:${providerName}`, aiProvider);
+            await storage.setItem(`local:${providerName}`, aiProvider);
             await renderTable();
         });
 
         keyInput.addEventListener('input', async () => {
             aiProvider.key = keyInput.value;
-            await storage.setItem<AiProvider>(`local:${providerName}`, aiProvider);
+            await storage.setItem(`local:${providerName}`, aiProvider);
             await renderTable();
         });
 
         if (urlInput) {
             urlInput.addEventListener('input', async () => {
                 aiProvider.url = urlInput.value;
-                await storage.setItem<AiProvider>(`local:${providerName}`, aiProvider);
+                await storage.setItem(`local:${providerName}`, aiProvider);
                 await renderTable();
             });
         }
@@ -119,7 +122,7 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
                 refreshButton.disabled = true;
                 refreshButton.textContent = 'Refreshing...';
 
-                await updateModels(Object.values(providers));
+                await updateModels(Object.values(providerMappings));
                 console.debug('Models refreshed');
 
                 // Re-enable the button and reset text
@@ -134,4 +137,3 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
         }
     });
 }
-

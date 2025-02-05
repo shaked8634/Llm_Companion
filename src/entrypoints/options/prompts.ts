@@ -1,6 +1,6 @@
 import './style.css';
 import {toggleFieldAtt} from "@/common/entrypoints";
-import {DefaultSummarizePrompt, getAllPrompts, Prompt} from "@/components/prompts";
+import {SummarizePrompt, getAllPrompts, Prompt} from "@/components/prompts";
 
 export const promptsHtmlTmpl = (summarize: Prompt) => `
  <div class="section-container">
@@ -19,7 +19,7 @@ export const promptsHtmlTmpl = (summarize: Prompt) => `
 export async function handlePrompts(mainContent: HTMLElement): Promise<void> {
   const promptMappings = await getAllPrompts()
 
-  mainContent.innerHTML = promptsHtmlTmpl(promptMappings[DefaultSummarizePrompt.Name]);
+  mainContent.innerHTML = promptsHtmlTmpl(promptMappings[SummarizePrompt.Name]);
 
   const checkbox = mainContent.querySelector('#summarize')! as HTMLInputElement;
   const input = mainContent.querySelector('input[type="text"]')! as HTMLInputElement;
@@ -29,16 +29,16 @@ export async function handlePrompts(mainContent: HTMLElement): Promise<void> {
     toggleFieldAtt(input, isChecked);
 
     if (!isChecked) {
-        input.value = DefaultSummarizePrompt.Prompt;
-        promptMappings[DefaultSummarizePrompt.Name].prompt = DefaultSummarizePrompt.Prompt;
+        input.value = SummarizePrompt.Prompt;
+        promptMappings[SummarizePrompt.Name].prompt = SummarizePrompt.Prompt;
     }
 
-    promptMappings[DefaultSummarizePrompt.Name].enabled = isChecked;
+    promptMappings[SummarizePrompt.Name].enabled = isChecked;
     await storage.setItem('local:prompts', JSON.stringify(promptMappings));
   });
 
   input.addEventListener('input', async () => {
-    promptMappings[DefaultSummarizePrompt.Name].prompt = input.value;
+    promptMappings[SummarizePrompt.Name].prompt = input.value;
     await storage.setItem('local:prompts', JSON.stringify(promptMappings));
   });
 }

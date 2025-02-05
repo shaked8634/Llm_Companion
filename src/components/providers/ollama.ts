@@ -33,7 +33,7 @@ export class OllamaProvider extends BaseProvider {
             const resp = await performApiCall('GET', `${this.url}/api/tags`, this.key) as ApiModelsResponse;
 
             if (resp && resp?.models) {
-                return resp.models.map((model: { name: string, provider: string }) => new Model(model.name,this.name));
+                return resp.models.map((model: { name: string, provider: string }) => new Model(model.name, this.name));
             }
         } catch (error) {
             console.error('Error fetching models:', error);

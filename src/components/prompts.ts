@@ -1,4 +1,4 @@
-export enum DefaultSummarizePrompt {
+export enum SummarizePrompt {
      Name = 'Summarize this page',
      Prompt = "Summarize this page in less than 300 words",
 }
@@ -21,14 +21,7 @@ export class Prompt {
 }
 
 export async function getAllPrompts(): Promise<{ [key: string]: Prompt }> {
-    const allPromptsString: string | null = await storage.getItem('local:prompts');
+    const allPromptsStr: string | null = await storage.getItem('local:prompts');
 
-    // return allPromptsString ? JSON.parse(allPromptsString) : {defaultSummariseName: newSummaryPrompt()};
-    let allPrompts: { [key: string]: Prompt} = {}
-    if (allPromptsString) {
-        allPrompts = JSON.parse(allPromptsString)
-    } else {
-        allPrompts = {[DefaultSummarizePrompt.Name]: new Prompt(true, DefaultSummarizePrompt.Prompt)}
-    }
-    return allPrompts
+    return allPromptsStr ? JSON.parse(allPromptsStr) : {[SummarizePrompt.Name]: new Prompt(true, SummarizePrompt.Prompt)};
 }

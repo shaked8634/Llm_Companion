@@ -3,7 +3,7 @@ import logo from '@/assets/logo.svg';
 import optionsGear from '@/assets/options_gear.svg';
 import {getAllModels} from "@/components/models";
 import {aboutUrl} from "@/common/constants";
-import {DefaultSummarizePrompt, getAllPrompts} from "@/components/prompts";
+import {SummarizePrompt, getAllPrompts} from "@/components/prompts";
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="header">
@@ -21,7 +21,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     </select>
   </div>
      <div class="dropdown-container">
-    <select id="prompt-dropdown" class="dropdown">
+    <select id="prompts-dropdown" class="dropdown">
       <option value="" disabled selected>Loading prompts...</option>
     </select>
   </div>
@@ -59,25 +59,28 @@ const populateModelsDropdown = async () => {
     } catch (error) {
         console.error('Error fetching model options:', error);
         const dropdown = document.querySelector<HTMLSelectElement>('#models-dropdown');
-
+;
         if (dropdown) {
             dropdown.innerHTML = '<option value="" disabled selected>Failed to load models</option>';
         }
     }
 };
 
-    const populatePromptsDropdown = async () => {
+const populatePromptsDropdown = async () => {
     try {
         const dropdown = document.querySelector<HTMLSelectElement>('#prompts-dropdown');
+
         if (dropdown) {
+            dropdown.innerHTML = '';       // Clear existing options
+
             const promptMappings = await getAllPrompts();
             console.debug(`Found ${Object.keys(promptMappings).length} prompts`)
-            const currPrompt = await storage.getItem<string>('local:currPrompt');
+            const currPrompt = await storage.getItem<string>('local:currPrompt') || SummarizePrompt.Name;
 
             Object.keys(promptMappings).forEach(promptName => {
                 const prompt = promptMappings[promptName];
 
-                if (prompt && (prompt.enabled || promptName == DefaultSummarizePrompt.Name)) {
+                if (prompt && (prompt.enabled || promptName == SummarizePrompt.Name)) {
                     const option = document.createElement('option');
                     option.value = option.textContent = promptName;
 
