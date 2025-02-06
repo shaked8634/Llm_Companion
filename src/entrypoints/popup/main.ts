@@ -3,7 +3,9 @@ import logo from '@/assets/logo.svg';
 import optionsGear from '@/assets/options_gear.svg';
 import {getAllModels} from "@/components/models";
 import {aboutUrl} from "@/common/constants";
-import {SummarizePrompt, getAllPrompts} from "@/components/prompts";
+import {getAllPrompts, SummarizePrompt} from "@/components/prompts";
+import playIcon from '@/assets/play_icon.svg';
+import stopIcon from '@/assets/stop_icon.svg';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="header">
@@ -20,11 +22,16 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <option value="" disabled selected>Loading models...</option>
     </select>
   </div>
-     <div class="dropdown-container">
-    <select id="prompts-dropdown" class="dropdown">
-      <option value="" disabled selected>Loading prompts...</option>
-    </select>
-  </div>
+  <div class="dropdown-container">
+    <div class="prompt-wrapper">
+      <select id="prompts-dropdown" class="dropdown">
+        <option value="" disabled selected>Loading prompts...</option>
+      </select>
+      <button id="execute-prompt" class="execute-button">
+        <img src="${playIcon}" alt="Execute" class="execute-icon" />
+      </button>
+    </div>
+</div>
 `;
 
 const updateMainContent = async () => {
@@ -103,28 +110,54 @@ const populatePromptsDropdown = async () => {
 
 await updateMainContent()
 
-document.querySelector<HTMLButtonElement>('#open-options')!.addEventListener('click', () => {
+document.querySelector<HTMLButtonElement>('#open-options')!.addEventListener('click', async () => {
     chrome.runtime.openOptionsPage().catch((err) => {
         console.error('Failed to open options page:', err);
     });
 });
 
-document.querySelector<HTMLButtonElement>('#open-about')!.addEventListener('click', () => {
+document.querySelector<HTMLButtonElement>('#open-about')!.addEventListener('click', async () => {
     chrome.tabs.create({url: aboutUrl}).catch((err) => {
         console.error('Failed to open about page:', err);
     });
 });
 
-document.querySelector<HTMLSelectElement>('#models-dropdown')?.addEventListener('change', (event) => {
+document.querySelector<HTMLSelectElement>('#models-dropdown')?.addEventListener('change', async (event) => {
     const selectedModel = (event.target as HTMLSelectElement).value;
     console.debug(`Model selected: ${selectedModel}`);
 
     storage.setItem<string>('local:currModel', selectedModel);
 });
 
-document.querySelector<HTMLSelectElement>('#prompts-dropdown')?.addEventListener('change', (event) => {
+document.querySelector<HTMLSelectElement>('#prompts-dropdown')?.addEventListener('change', async (event) => {
     const selectedPrompt = (event.target as HTMLSelectElement).value;
     console.debug(`Prompt selected: ${selectedPrompt}`);
 
     storage.setItem<string>('local:currPrompt', selectedPrompt);
 });
+
+document.querySelector<HTMLButtonElement>('#execute-prompt')!.addEventListener('click', handleExecutePrompt);
+
+async function handleExecutePrompt(this: HTMLButtonElement, event: Event) {
+    try {
+        this.disabled = true;
+
+        const icon = this.querySelector<HTMLImageElement>('img');
+        if (icon) {
+            icon.src = stopIcon;
+            icon.classList.add('animate');
+        }
+
+        // await executeYourPromptFunction();
+         await new Promise(resolve => setTimeout(resolve, 2000));
+    } catch (error) {
+        console.error('Error executing prompt:', error);
+    } finally {
+        this.disabled = false;
+        const icon = this.querySelector<HTMLImageElement>('img');
+        if (icon) {
+            icon.src = playIcon;
+            icon.classList.remove('animate');
+        }
+    }
+}
