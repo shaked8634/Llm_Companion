@@ -148,8 +148,16 @@ async function handleExecutePrompt(this: HTMLButtonElement, event: Event) {
             icon.classList.add('animate');
         }
 
-        // await executeYourPromptFunction();
-         await new Promise(resolve => setTimeout(resolve, 2000));
+        const currModel = document.querySelector<HTMLSelectElement>('#models-dropdown');
+        const currPrompt = document.querySelector<HTMLSelectElement>('#prompts-dropdown');
+        if (currModel?.value && currPrompt?.value) {
+            console.debug(`Executing prompt: '${currPrompt.value}' on model: '${currModel.value}'`)
+
+            const output = await executePrompt(currModel.value, currPrompt.value);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        } else {
+            console.debug("No models available to execute prompt")
+        }
     } catch (error) {
         console.error('Error executing prompt:', error);
     } finally {
@@ -160,4 +168,8 @@ async function handleExecutePrompt(this: HTMLButtonElement, event: Event) {
             icon.classList.remove('animate');
         }
     }
+}
+
+async function executePrompt(model: string, prompt: string) {
+
 }
