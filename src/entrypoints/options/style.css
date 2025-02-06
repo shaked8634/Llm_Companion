@@ -139,13 +139,13 @@ tbody tr:hover {
 
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: black;
+    background-color: #333333;
   }
   .sidebar {
       background-color: dimgray;
   }
   body, .nav-link, .nav-link.active, .status, #refresh-models-button {
-    color: #ffffff;
+    color: yellowgreen;
   }
  tbody tr:hover {
     background-color: grey;

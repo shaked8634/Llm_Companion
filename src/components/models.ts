@@ -5,11 +5,7 @@ export class Model {
         public name: string,
         public provider: string,
         public enabled: boolean = true
-    ) {
-        this.name = name
-        this.provider = provider
-        this.enabled = enabled
-    }
+    ) {}
 }
 
 /**

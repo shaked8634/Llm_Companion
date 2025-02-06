@@ -14,10 +14,6 @@ export class OllamaProvider extends BaseProvider {
     name: string = ProviderType.Ollama;
     static defaultUrl: string = 'http://localhost:11434';
 
-    constructor() {
-        super(OllamaProvider.defaultUrl);
-    }
-
     async isConnected(): Promise<boolean> {
         try {
             const resp = await performApiCall('GET', `${this.url}/api/version`, this.key) as ApiVersionResponse;

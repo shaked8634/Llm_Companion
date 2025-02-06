@@ -8,9 +8,9 @@ export enum ProviderType {
 
 export interface AiProvider {
     name: string
+    url: string;
     enabled: boolean;
     key: string;
-    url: string;
 
     isConnected(): Promise<boolean>;
     getModels(): Promise<Model[]>;
@@ -19,17 +19,13 @@ export interface AiProvider {
 
 export abstract class BaseProvider implements AiProvider {
     abstract name: string;
-    static defaultUrl: string;
+    static defaultUrl: string = '';
 
     constructor(
-        public url: string = '',
+        public url: string = ((this.constructor as typeof BaseProvider).defaultUrl || ''),
+        public enabled: boolean = false,
         public key: string = '',
-        public enabled: boolean = false
-    ) {
-        this.enabled = enabled;
-        this.key = key;
-        this.url = url ? url : BaseProvider.defaultUrl;
-    }
+    ) {}
 
     abstract isConnected(): Promise<boolean>;
     abstract getModels(): Promise<Model[]>;
@@ -40,9 +36,9 @@ export abstract class BaseProvider implements AiProvider {
         data: Partial<T>
     ): T {
         return new this(
+            data.url ?? '',
             data.enabled ?? false,
             data.key ?? '',
-            data.url ?? this.prototype.defaultUrl
         );
     }
 }
