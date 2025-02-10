@@ -9,8 +9,9 @@ export enum ProviderType {
     Ollama = 'Ollama'
 }
 
-export const providerClassMap: Record<ProviderType, typeof BaseProvider> = {
-    [ProviderType.Openai]: OpenaiProvider,
-    [ProviderType.Gemini]: GeminiProvider,
-    [ProviderType.Ollama]: OllamaProvider
+// Using Factory functions to store anon funcs that return class
+export const providerClassMap: Record<ProviderType, () => typeof BaseProvider> = {
+    [ProviderType.Openai]: () => OpenaiProvider,
+    [ProviderType.Gemini]: () => GeminiProvider,
+    [ProviderType.Ollama]: () => OllamaProvider
 };

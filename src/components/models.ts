@@ -7,6 +7,10 @@ export class Model {
         public provider: string,
         public enabled: boolean = true
     ) {}
+
+    key(): string {
+        return `${this.provider}:${this.name}`
+    }
 }
 
 /**
@@ -36,6 +40,26 @@ export async function updateModels(providers: AiProvider[]) {
 
     console.debug(`Saved: ${allModelMappings} models`)
 }
+
+export async function addModels(models: Model[]) {
+    const modelMapping = await getAllModels();
+
+    models.forEach(model => {
+        modelMapping[model.key()] = model
+    })
+    await setItem('models', modelMapping);
+}
+
+export async function deleteModels(models: Model[]) {
+    const modelMapping = await getAllModels();
+
+    models.forEach(model => {
+        delete modelMapping[model.key()]
+    })
+    await setItem('models', modelMapping);
+
+}
+
 
 export async function getAllModels(): Promise<{ [key: string]: Model}> {
     const allModelsString: string = await getItem('models');

@@ -176,7 +176,7 @@ async function executePrompt(model: string, prompt: string) {
     const splitedModel = model.split(':', 2)
     const providerName = splitedModel[0]
     try {
-        const providerClass = providerClassMap[providerName as keyof typeof providerClassMap]
+        const providerClass = providerClassMap[providerName as keyof typeof providerClassMap]()
         const providerData = await getItem(providerName)
         console.log(`provider class def url: ${providerClass.defaultUrl}`)
         // const provider = providerClass.hydrate(JSON.parse(providerData))

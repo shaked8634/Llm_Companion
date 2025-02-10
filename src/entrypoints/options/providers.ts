@@ -5,7 +5,7 @@ import {OllamaProvider} from "@/components/providers/ollama";
 import {toggleFieldAtt} from "@/common/entrypoints";
 import {AiProvider} from "@/components/providers/base";
 
-import {updateModels, updateModelsState} from "@/components/models";
+import {addModels, deleteModels, updateModels, updateModelsState} from "@/components/models";
 import {getItem, setItem} from "@/common/storage";
 import {ProviderType} from "@/components/providers/provider";
 
@@ -83,12 +83,14 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
             }
 
             if (isChecked) {
-                await updateModelsState(providerName, true)
+                const providerModels = await aiProvider.getModels()
+                await addModels(providerModels)
             } else {
                 // Reset key and url if checkbox is unchecked
                 keyInput.value = '';
                 aiProvider.key = '';
-                await updateModelsState(providerName, false)
+                const providerModels = await aiProvider.getModels();
+                await deleteModels(providerModels);
                 // Restore default URL for Ollama
                 if (providerName === OllamaProvider.name) {
                     urlInput.value = OllamaProvider.defaultUrl;
