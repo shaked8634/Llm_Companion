@@ -1,3 +1,5 @@
+import {getItem} from "@/common/storage";
+
 export enum SummarizePrompt {
      Name = 'Summarize this page',
      Prompt = "Summarize this page in less than 300 words",
@@ -21,7 +23,7 @@ export class Prompt {
 }
 
 export async function getAllPrompts(): Promise<{ [key: string]: Prompt }> {
-    const allPromptsStr: string | null = await storage.getItem('local:prompts');
+    const allPromptsStr: string = await getItem('prompts');
 
     return allPromptsStr ? JSON.parse(allPromptsStr) : {[SummarizePrompt.Name]: new Prompt(true, SummarizePrompt.Prompt)};
 }

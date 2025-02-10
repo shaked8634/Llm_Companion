@@ -1,4 +1,5 @@
-import {AiProvider} from "@/components/providers/provider";
+import {AiProvider} from "@/components/providers/base";
+import {getItem, setItem} from "@/common/storage";
 
 export class Model {
     constructor(
@@ -31,13 +32,13 @@ export async function updateModels(providers: AiProvider[]) {
         promises.push(promise)
     })
     await Promise.all(promises)
-    await storage.setItem('local:models', JSON.stringify(allModelMappings));
+    await setItem('models', allModelMappings);
 
     console.debug(`Saved: ${allModelMappings} models`)
 }
 
 export async function getAllModels(): Promise<{ [key: string]: Model}> {
-    const allModelsString: string | null = await storage.getItem('local:models');
+    const allModelsString: string = await getItem('models');
 
     return allModelsString ? JSON.parse(allModelsString) : {};
 }
@@ -49,7 +50,7 @@ export async function updateModelsState(providerName: string, state: boolean): P
            modelMapping[modelName].enabled = state
        }
     });
-    await storage.setItem('local:models', JSON.stringify(modelMapping));
+    await setItem('models', modelMapping);
 
     console.debug(`The status of provider '${providerName}' models were ${state ? 'enabled' : 'disabled'}`)
 }

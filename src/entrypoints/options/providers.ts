@@ -3,9 +3,11 @@ import {OpenaiProvider} from "@/components/providers/openai";
 import {GeminiProvider} from "@/components/providers/gemini";
 import {OllamaProvider} from "@/components/providers/ollama";
 import {toggleFieldAtt} from "@/common/entrypoints";
-import {AiProvider, ProviderType} from "@/components/providers/provider";
+import {AiProvider} from "@/components/providers/base";
 
 import {updateModels, updateModelsState} from "@/components/models";
+import {getItem, setItem} from "@/common/storage";
+import {ProviderType} from "@/components/providers/provider";
 
 const providersHtmlTmpl = async (
     openai: AiProvider,
@@ -45,13 +47,13 @@ const providersHtmlTmpl = async (
 `;
 
 export const handleProviders = async (mainContent: HTMLElement): Promise<void> => {
-    const openaiData = await storage.getItem<string>(`local:${[ProviderType.Openai]}`);
+    const openaiData = await getItem(ProviderType.Openai);
     const openai: OpenaiProvider = openaiData ? OpenaiProvider.hydrate(JSON.parse(openaiData)) : new OpenaiProvider();
 
-    const geminiData = await storage.getItem<string>(`local:${[ProviderType.Gemini]}`);
+    const geminiData = await getItem(ProviderType.Gemini);
     const gemini: GeminiProvider = geminiData ? GeminiProvider.hydrate(JSON.parse(geminiData)) : new GeminiProvider();
 
-    const ollamaDataStr = await storage.getItem<string>(`local:${[ProviderType.Ollama]}`);
+    const ollamaDataStr = await getItem(ProviderType.Ollama);
     const ollama: OllamaProvider = ollamaDataStr ? OllamaProvider.hydrate(JSON.parse(ollamaDataStr)) : new OllamaProvider();
 
     // Nested function def to render table after events
@@ -93,20 +95,20 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
                     aiProvider.url = OllamaProvider.defaultUrl;
                 }
             }
-            await storage.setItem(`local:${providerName}`, JSON.stringify(aiProvider));
+            await setItem(providerName, aiProvider);
             await renderTable();
         });
 
         keyInput.addEventListener('input', async () => {
             aiProvider.key = keyInput.value;
-            await storage.setItem(`local:${providerName}`, aiProvider);
+            await setItem(providerName, aiProvider);
             await renderTable();
         });
 
         if (urlInput) {
             urlInput.addEventListener('input', async () => {
                 aiProvider.url = urlInput.value;
-                await storage.setItem(`local:${providerName}`, aiProvider);
+                await setItem(providerName, aiProvider);
                 await renderTable();
             });
         }

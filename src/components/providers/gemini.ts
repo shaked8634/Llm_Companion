@@ -1,5 +1,6 @@
-import {AiProvider, BaseProvider, ProviderType} from "@/components/providers/provider";
+import {BaseProvider} from "@/components/providers/base";
 import {Model} from "@/components/models";
+import {ProviderType} from "@/components/providers/provider";
 
 export class GeminiProvider extends BaseProvider{
     name: string = ProviderType.Gemini;

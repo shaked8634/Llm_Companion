@@ -6,6 +6,8 @@ import {aboutUrl} from "@/common/constants";
 import {getAllPrompts, SummarizePrompt} from "@/components/prompts";
 import playIcon from '@/assets/play_icon.svg';
 import stopIcon from '@/assets/stop_icon.svg';
+import {getItem, setItem} from "@/common/storage";
+import {providerClassMap} from "@/components/providers/provider";
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="header">
@@ -47,7 +49,7 @@ const populateModelsDropdown = async () => {
             dropdown.innerHTML = '';       // Clear existing options
             const modelMappings = await getAllModels();
             console.debug(`Found ${Object.keys(modelMappings).length} models`)
-            const currModel = await storage.getItem<string>('local:currModel');
+            const currModel = await getItem('currModel');
 
             Object.keys(modelMappings).forEach(modelName => {
                 const model = modelMappings[modelName];
@@ -82,7 +84,7 @@ const populatePromptsDropdown = async () => {
 
             const promptMappings = await getAllPrompts();
             console.debug(`Found ${Object.keys(promptMappings).length} prompts`)
-            const currPrompt = await storage.getItem<string>('local:currPrompt') || SummarizePrompt.Name;
+            const currPrompt = await getItem('currPrompt') || SummarizePrompt.Name;
 
             Object.keys(promptMappings).forEach(promptName => {
                 const prompt = promptMappings[promptName];
@@ -126,14 +128,14 @@ document.querySelector<HTMLSelectElement>('#models-dropdown')?.addEventListener(
     const selectedModel = (event.target as HTMLSelectElement).value;
     console.debug(`Model selected: ${selectedModel}`);
 
-    storage.setItem<string>('local:currModel', selectedModel);
+    setItem('currModel', selectedModel);
 });
 
 document.querySelector<HTMLSelectElement>('#prompts-dropdown')?.addEventListener('change', async (event) => {
     const selectedPrompt = (event.target as HTMLSelectElement).value;
     console.debug(`Prompt selected: ${selectedPrompt}`);
 
-    storage.setItem<string>('local:currPrompt', selectedPrompt);
+    setItem('currPrompt', selectedPrompt);
 });
 
 document.querySelector<HTMLButtonElement>('#execute-prompt')!.addEventListener('click', handleExecutePrompt);
@@ -171,5 +173,16 @@ async function handleExecutePrompt(this: HTMLButtonElement, event: Event) {
 }
 
 async function executePrompt(model: string, prompt: string) {
+    const splitedModel = model.split(':', 2)
+    const providerName = splitedModel[0]
+    try {
+        const providerClass = providerClassMap[providerName as keyof typeof providerClassMap]
+        const providerData = await getItem(providerName)
+        console.log(`provider class def url: ${providerClass.defaultUrl}`)
+        // const provider = providerClass.hydrate(JSON.parse(providerData))
+        // provider.stream()
+    } catch (error) {
+        console.error("Error executing prompt:", error)
+    }
 
 }

@@ -1,4 +1,3 @@
 # TODO
-- [ ] Implement getModels()
-- [ ] Implement popup UI
 - [ ] Implement stream()
+- [ ] Implement popup box for text
