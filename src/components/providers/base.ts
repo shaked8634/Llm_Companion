@@ -5,6 +5,7 @@ export interface AiProvider {
     url: string;
     enabled: boolean;
     key: string;
+    defaultUrl: string;
 
     isConnected(): Promise<boolean>;
     getModels(): Promise<Model[]>;
@@ -13,10 +14,10 @@ export interface AiProvider {
 
 export abstract class BaseProvider implements AiProvider {
     abstract name: string;
-    static defaultUrl: string = '';
+    abstract defaultUrl: string;
 
     constructor(
-        public url: string = ((this.constructor as typeof BaseProvider).defaultUrl || ''),
+        public url: string = this.getDefaultUrl(),
         public enabled: boolean = false,
         public key: string = '',
     ) {}
@@ -27,18 +28,12 @@ export abstract class BaseProvider implements AiProvider {
         if (data.key !== undefined) this.key = data.key;
     }
 
+    private getDefaultUrl(): string {
+        return this.defaultUrl;
+    }
+
     abstract isConnected(): Promise<boolean>;
     abstract getModels(): Promise<Model[]>;
     abstract stream(): Promise<string>;
 
 }
-
-// export async function loadProvider(providerName: string) {
-//     try {
-//         const providerData = await storage.getItem<string>(`local:${[ProviderType.Openai]}`);
-//
-//         return BaseProvider.hydrate(providerData)
-//     } catch (error) {
-//         console.error('Error loading Provider:', error);
-//     }
-// }

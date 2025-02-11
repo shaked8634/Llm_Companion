@@ -7,7 +7,7 @@ import {getAllPrompts, SummarizePrompt} from "@/components/prompts";
 import playIcon from '@/assets/play_icon.svg';
 import stopIcon from '@/assets/stop_icon.svg';
 import {getItem, setItem} from "@/common/storage";
-import {providerClassMap} from "@/components/providers/provider";
+import {loadProvider} from "@/components/providers/provider";
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="header">
@@ -176,16 +176,8 @@ async function executePrompt(model: string, prompt: string) {
     const splitedModel = model.split(':', 2)
     const providerName = splitedModel[0]
     try {
-        const providerData = await getItem(providerName);
-        // console.log(`provider class def url: ${ProviderClass.defaultUrl}`);
-        const ProviderClass = providerClassMap[providerName as keyof typeof providerClassMap];
-
-        const providerInstance = new ProviderClass();
-        
-        const provider = providerInstance.populate(JSON.parse(providerData)); // Call hydrate on instance
-
-        // const provider = ProviderClass.hydrate(JSON.parse(providerData));
-        // const provider = ProviderClass.hydrate(JSON.parse(providerData));
+        const provider = await loadProvider(providerName)
+        console.log(`provider class def url: ${provider.defaultUrl}`);
 
         // await provider.stream()
     } catch (error) {

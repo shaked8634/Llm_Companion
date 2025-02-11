@@ -13,7 +13,7 @@ interface ApiModelsResponse {
 
 export class OllamaProvider extends BaseProvider {
     name: string = ProviderType.Ollama;
-    static defaultUrl: string = 'http://localhost:11434';
+    defaultUrl: string = 'http://localhost:11434';
 
     async isConnected(): Promise<boolean> {
         try {

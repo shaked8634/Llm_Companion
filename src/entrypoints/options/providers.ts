@@ -1,11 +1,10 @@
 import './style.css';
-import {OllamaProvider} from "@/components/providers/ollama";
 import {toggleFieldAtt} from "@/common/entrypoints";
-import {AiProvider} from "@/components/providers/base";
+import {AiProvider, BaseProvider} from "@/components/providers/base";
 
-import {addModels, deleteModels, updateModels, updateModelsState} from "@/components/models";
-import {getItem, setItem} from "@/common/storage";
-import {providerClassMap} from "@/components/providers/provider";
+import {addModels, deleteModels, updateModels} from "@/components/models";
+import {setItem} from "@/common/storage";
+import {loadProvider} from "@/components/providers/provider";
 import {ProviderType} from "@/components/providers/types";
 
 const providersHtmlTmpl = async (
@@ -44,16 +43,10 @@ const providersHtmlTmpl = async (
 
 export const handleProviders = async (mainContent: HTMLElement): Promise<void> => {
     // Loading Provider classes to present Options -> Provider view
-    const providerMapping: Record<ProviderType, AiProvider> = {} as Record<ProviderType, AiProvider>;
+    const providerMapping: Record<ProviderType, BaseProvider> = {} as Record<ProviderType, BaseProvider>;
 
     for (const providerType of Object.values(ProviderType)) {
-        const ProviderClass = providerClassMap[providerType];
-        const providerInstance = new ProviderClass();
-        const providerData = await getItem(providerType);
-        if (providerData) {
-            providerInstance.populate(JSON.parse(providerData));
-        }
-        providerMapping[providerType] = providerInstance;
+        providerMapping[providerType] = await loadProvider(providerType);
     }
 
     // Nested function def to render table after events
@@ -93,8 +86,7 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
                 await deleteModels(providerModels);
                 // Restore default URL for Ollama
                 if (providerName === ProviderType.Ollama) {
-                    urlInput.value = OllamaProvider.defaultUrl;
-                    aiProvider.url = OllamaProvider.defaultUrl;
+                    urlInput.value = aiProvider.url = aiProvider.defaultUrl;
                 }
             }
             await setItem(providerName, aiProvider);
