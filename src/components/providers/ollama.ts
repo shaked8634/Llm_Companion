@@ -1,7 +1,7 @@
 import {performApiCall} from "@/common/api";
 import {BaseProvider} from "@/components/providers/base";
 import {Model} from "@/components/models";
-import {ProviderType} from "@/components/providers/provider";
+import {ProviderType} from "@/components/providers/types";
 
 interface ApiVersionResponse {
     version: string;

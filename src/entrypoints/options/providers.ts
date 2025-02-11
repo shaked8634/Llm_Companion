@@ -1,42 +1,38 @@
 import './style.css';
-import {OpenaiProvider} from "@/components/providers/openai";
-import {GeminiProvider} from "@/components/providers/gemini";
 import {OllamaProvider} from "@/components/providers/ollama";
 import {toggleFieldAtt} from "@/common/entrypoints";
 import {AiProvider} from "@/components/providers/base";
 
 import {addModels, deleteModels, updateModels, updateModelsState} from "@/components/models";
 import {getItem, setItem} from "@/common/storage";
-import {ProviderType} from "@/components/providers/provider";
+import {providerClassMap} from "@/components/providers/provider";
+import {ProviderType} from "@/components/providers/types";
 
 const providersHtmlTmpl = async (
-    openai: AiProvider,
-    gemini: AiProvider,
-    ollama: AiProvider,
-) => `
+    providerMapping: Record<ProviderType, AiProvider>) => `
   <div class="section-container">
     <table class="sections-table">
       <tbody>
         <tr>
-          <td><input type="checkbox" class="provider-checkbox" id="${[openai.name]}" ${openai.enabled ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="provider-checkbox" id="${providerMapping[ProviderType.Openai].name}" ${providerMapping[ProviderType.Openai].enabled ? 'checked' : ''}></td>
           <td>OpenAI</td>
-          <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${openai.key}" ${openai.enabled ? '' : 'disabled'}></td>
+          <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${providerMapping[ProviderType.Openai].key}" ${providerMapping[ProviderType.Openai].enabled ? '' : 'disabled'}></td>
           <td></td>
-          <td>${openai.enabled ? (await openai.isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
+          <td>${providerMapping[ProviderType.Openai].enabled ? (await providerMapping[ProviderType.Openai].isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
         </tr>
         <tr>
-          <td><input type="checkbox" class="provider-checkbox" id="${[gemini.name]}" ${gemini.enabled ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="provider-checkbox" id="${providerMapping[ProviderType.Gemini].name}" ${providerMapping[ProviderType.Gemini].enabled ? 'checked' : ''}></td>
           <td>Google Gemini</td>
-          <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${gemini.key}" ${gemini.enabled ? '' : 'disabled'}></td>
+          <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${providerMapping[ProviderType.Gemini].key}" ${providerMapping[ProviderType.Gemini].enabled ? '' : 'disabled'}></td>
           <td></td>
-          <td>${gemini.enabled ? (await gemini.isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
+          <td>${providerMapping[ProviderType.Gemini].enabled ? (await providerMapping[ProviderType.Gemini].isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
         </tr>
         <tr>
-          <td><input type="checkbox" class="provider-checkbox" id="${[ollama.name]}" ${ollama.enabled ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="provider-checkbox" id="${providerMapping[ProviderType.Ollama].name}" ${providerMapping[ProviderType.Ollama].enabled ? 'checked' : ''}></td>
           <td>Ollama</td>
-          <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${ollama.key}" ${ollama.enabled ? '' : 'disabled'}></td>
-          <td><input type="text" class="url" placeholder="URL" value="${ollama.url}" required ${ollama.enabled ? '' : 'disabled'}></td>
-          <td>${ollama.enabled ? (await ollama.isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
+          <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${providerMapping[ProviderType.Ollama].key}" ${providerMapping[ProviderType.Ollama].enabled ? '' : 'disabled'}></td>
+          <td><input type="text" class="url" placeholder="URL" value="${providerMapping[ProviderType.Ollama].url}" required ${providerMapping[ProviderType.Ollama].enabled ? '' : 'disabled'}></td>
+          <td>${providerMapping[ProviderType.Ollama].enabled ? (await providerMapping[ProviderType.Ollama].isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
         </tr>
       </tbody>
     </table>
@@ -47,24 +43,28 @@ const providersHtmlTmpl = async (
 `;
 
 export const handleProviders = async (mainContent: HTMLElement): Promise<void> => {
-    const openaiData = await getItem(ProviderType.Openai);
-    const openai: OpenaiProvider = openaiData ? OpenaiProvider.hydrate(JSON.parse(openaiData)) : new OpenaiProvider();
+    // Loading Provider classes to present Options -> Provider view
+    const providerMapping: Record<ProviderType, AiProvider> = {} as Record<ProviderType, AiProvider>;
 
-    const geminiData = await getItem(ProviderType.Gemini);
-    const gemini: GeminiProvider = geminiData ? GeminiProvider.hydrate(JSON.parse(geminiData)) : new GeminiProvider();
-
-    const ollamaDataStr = await getItem(ProviderType.Ollama);
-    const ollama: OllamaProvider = ollamaDataStr ? OllamaProvider.hydrate(JSON.parse(ollamaDataStr)) : new OllamaProvider();
+    for (const providerType of Object.values(ProviderType)) {
+        const ProviderClass = providerClassMap[providerType];
+        const providerInstance = new ProviderClass();
+        const providerData = await getItem(providerType);
+        if (providerData) {
+            providerInstance.populate(JSON.parse(providerData));
+        }
+        providerMapping[providerType] = providerInstance;
+    }
 
     // Nested function def to render table after events
     const renderTable = async () => {
-        mainContent.innerHTML = await providersHtmlTmpl(openai, gemini, ollama);
+        mainContent.innerHTML = await providersHtmlTmpl(providerMapping);
     };
     await renderTable();
 
-    const providerMappings = {Openai: openai, Gemini: gemini, Ollama: ollama};
-    Object.keys(providerMappings).forEach((providerName) => {
-        const aiProvider: AiProvider = providerMappings[providerName as keyof typeof providerMappings];
+    // Add event listener for each provider
+    Object.keys(providerMapping).forEach((providerName) => {
+        const aiProvider: AiProvider = providerMapping[providerName as keyof typeof providerMapping];
 
         const checkbox = mainContent.querySelector<HTMLInputElement>(`#${providerName}`)!;
 
@@ -92,7 +92,7 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
                 const providerModels = await aiProvider.getModels();
                 await deleteModels(providerModels);
                 // Restore default URL for Ollama
-                if (providerName === OllamaProvider.name) {
+                if (providerName === ProviderType.Ollama) {
                     urlInput.value = OllamaProvider.defaultUrl;
                     aiProvider.url = OllamaProvider.defaultUrl;
                 }
@@ -126,7 +126,7 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
                 refreshButton.disabled = true;
                 refreshButton.textContent = 'Refreshing...';
 
-                await updateModels(Object.values(providerMappings));
+                await updateModels(Object.values(providerMapping));
                 console.debug('Models refreshed');
 
                 // Re-enable the button and reset text

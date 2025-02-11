@@ -176,13 +176,19 @@ async function executePrompt(model: string, prompt: string) {
     const splitedModel = model.split(':', 2)
     const providerName = splitedModel[0]
     try {
-        const providerClass = providerClassMap[providerName as keyof typeof providerClassMap]()
-        const providerData = await getItem(providerName)
-        console.log(`provider class def url: ${providerClass.defaultUrl}`)
-        // const provider = providerClass.hydrate(JSON.parse(providerData))
-        // provider.stream()
+        const providerData = await getItem(providerName);
+        // console.log(`provider class def url: ${ProviderClass.defaultUrl}`);
+        const ProviderClass = providerClassMap[providerName as keyof typeof providerClassMap];
+
+        const providerInstance = new ProviderClass();
+        
+        const provider = providerInstance.populate(JSON.parse(providerData)); // Call hydrate on instance
+
+        // const provider = ProviderClass.hydrate(JSON.parse(providerData));
+        // const provider = ProviderClass.hydrate(JSON.parse(providerData));
+
+        // await provider.stream()
     } catch (error) {
         console.error("Error executing prompt:", error)
     }
-
 }

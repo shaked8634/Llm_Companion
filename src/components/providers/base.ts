@@ -21,20 +21,16 @@ export abstract class BaseProvider implements AiProvider {
         public key: string = '',
     ) {}
 
+    populate(data: Partial<BaseProvider>) {
+        if (data.url !== undefined) this.url = data.url;
+        if (data.enabled !== undefined) this.enabled = data.enabled;
+        if (data.key !== undefined) this.key = data.key;
+    }
+
     abstract isConnected(): Promise<boolean>;
     abstract getModels(): Promise<Model[]>;
     abstract stream(): Promise<string>;
 
-    static hydrate<T extends BaseProvider>(
-        this: new (...args: any[]) => T,
-        data: Partial<T>
-    ): T {
-        return new this(
-            data.url ?? '',
-            data.enabled ?? false,
-            data.key ?? '',
-        );
-    }
 }
 
 // export async function loadProvider(providerName: string) {
