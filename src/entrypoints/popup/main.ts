@@ -48,17 +48,18 @@ const populateModelsDropdown = async () => {
         if (dropdown) {
             dropdown.innerHTML = '';       // Clear existing options
             const modelMappings = await getAllModels();
-            console.debug(`Found ${Object.keys(modelMappings).length} models`)
             const currModel = await getItem('currModel');
+            console.debug(`Found ${Object.keys(modelMappings).length} models (default: ${currModel})`)
 
             Object.keys(modelMappings).forEach(modelName => {
                 const model = modelMappings[modelName];
 
                 if (model && model.enabled) {
                     const option = document.createElement('option');
-                    option.value = option.textContent = `${model.provider}:${model.name}`;
+                    option.value = option.textContent = model.key();
                     // Set saved model as selected
-                    if (currModel == option.value) {
+                    if (currModel == modelName) {
+                        console.debug(`set chosen model: ${modelName}`)
                         option.selected = true;
                     }
                     dropdown.appendChild(option);
@@ -177,7 +178,7 @@ async function executePrompt(model: string, prompt: string) {
     const providerName = splitedModel[0]
     try {
         const provider = await loadProvider(providerName)
-        console.log(`provider class def url: ${provider.defaultUrl}`);
+        console.debug(`provider class def url: ${provider.defaultUrl}`);
 
         // await provider.stream()
     } catch (error) {

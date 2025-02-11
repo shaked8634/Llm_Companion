@@ -5,7 +5,7 @@ export async function getItem(objectName: string): Promise<string> {
 
 export async function setItem(objectName: string, obj: any) {
     let val;
-    if (typeof obj in ['boolean', 'str', 'integer']) {
+    if (['boolean', 'string', 'number'].includes(typeof obj)) {
         val = obj;
     } else {
         val = JSON.stringify(obj);

@@ -3,13 +3,20 @@ import {getItem, setItem} from "@/common/storage";
 
 export class Model {
     constructor(
-        public name: string,
-        public provider: string,
+        public name: string = '',
+        public provider: string = '',
         public enabled: boolean = true
-    ) {}
+    ) {
+    }
 
     key(): string {
         return `${this.provider}:${this.name}`
+    }
+
+    populate(data: Partial<Model>) {
+        if (data.name !== undefined) this.name = data.name;
+        if (data.provider !== undefined) this.provider = data.provider;
+        if (data.enabled !== undefined) this.enabled = data.enabled;
     }
 }
 
@@ -19,7 +26,7 @@ export class Model {
  * @returns A flattened array of all models from all providers.
  */
 export async function updateModels(providers: AiProvider[]) {
-    const allModelMappings: {[key: string]: Model} = {};
+    const allModelMappings: { [key: string]: Model } = {};
     const promises: Promise<void>[] = [];
 
     providers.forEach(provider => {
@@ -61,18 +68,27 @@ export async function deleteModels(models: Model[]) {
 }
 
 
-export async function getAllModels(): Promise<{ [key: string]: Model}> {
-    const allModelsString: string = await getItem('models');
+export async function getAllModels(): Promise<{ [key: string]: Model }> {
+    const allModelsString = await getItem('models');
+    const allModelsObject: {[key: string]: object} = JSON.parse(allModelsString || '{}');
+    const allModels: { [key: string]: Model } = {};
 
-    return allModelsString ? JSON.parse(allModelsString) : {};
+    Object.keys(allModelsObject).forEach(modelName => {
+        const currModel = new Model();
+        currModel.populate(allModelsObject[modelName]);
+        allModels[modelName] = currModel
+    });
+
+    return allModelsString ? allModels : {};
 }
 
+// Update state of model of a given provider
 export async function updateModelsState(providerName: string, state: boolean): Promise<void> {
     const modelMapping = await getAllModels()
     Object.keys(modelMapping).forEach(modelName => {
-       if (modelName.startsWith(providerName)) {
-           modelMapping[modelName].enabled = state
-       }
+        if (modelName.startsWith(providerName)) {
+            modelMapping[modelName].enabled = state
+        }
     });
     await setItem('models', modelMapping);
 
