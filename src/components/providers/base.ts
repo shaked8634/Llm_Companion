@@ -9,7 +9,7 @@ export interface AiProvider {
 
     isConnected(): Promise<boolean>;
     getModels(): Promise<Model[]>;
-    stream(): Promise<string>;
+    stream(model: string, prompt: string): Promise<string>;
 }
 
 export abstract class BaseProvider implements AiProvider {
@@ -34,6 +34,6 @@ export abstract class BaseProvider implements AiProvider {
 
     abstract isConnected(): Promise<boolean>;
     abstract getModels(): Promise<Model[]>;
-    abstract stream(): Promise<string>;
+    abstract stream(model: string, prompt: string): Promise<string>;
 
 }

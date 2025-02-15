@@ -14,7 +14,7 @@ export class OpenaiProvider extends BaseProvider{
         return []
      }
 
-     async stream(): Promise<string> {
+     async stream(model: string, prompt: string): Promise<string> {
         return "STREAM" //TBD
     }
 }

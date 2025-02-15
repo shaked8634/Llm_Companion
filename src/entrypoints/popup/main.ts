@@ -1,13 +1,13 @@
 import './style.css';
 import logo from '@/assets/logo.svg';
 import optionsGear from '@/assets/options_gear.svg';
-import {getAllModels} from "@/components/models";
 import {aboutUrl} from "@/common/constants";
-import {getAllPrompts, SummarizePrompt} from "@/components/prompts";
+import clearIcon from "@/assets/clear_icon.svg";
 import playIcon from '@/assets/play_icon.svg';
-import stopIcon from '@/assets/stop_icon.svg';
-import {getItem, setItem} from "@/common/storage";
-import {loadProvider} from "@/components/providers/provider";
+import {setItem} from "@/common/storage";
+import {handleExecutePrompt, populatePromptsDropdown} from "@/entrypoints/popup/handlePrompt";
+import {populateOutputBox} from "@/entrypoints/popup/handleOutput";
+import {populateModelsDropdown} from "@/entrypoints/popup/HandleModels";
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="header">
@@ -29,86 +29,21 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <select id="prompts-dropdown" class="dropdown">
         <option value="" disabled selected>Loading prompts...</option>
       </select>
+      <button id="clear-output" class="execute-button">
+        <img src="${clearIcon}" alt="Clear" class="execute-icon" />
+      </button>
       <button id="execute-prompt" class="execute-button">
         <img src="${playIcon}" alt="Execute" class="execute-icon" />
       </button>
     </div>
+    <div class="output-container"></div>
 </div>
 `;
 
 const updateMainContent = async () => {
     await populateModelsDropdown();
     await populatePromptsDropdown();
-};
-
-const populateModelsDropdown = async () => {
-    try {
-        const dropdown = document.querySelector<HTMLSelectElement>('#models-dropdown');
-
-        if (dropdown) {
-            dropdown.innerHTML = '';       // Clear existing options
-            const modelMappings = await getAllModels();
-            const currModel = await getItem('currModel');
-            console.debug(`Found ${Object.keys(modelMappings).length} models (default: ${currModel})`)
-
-            Object.keys(modelMappings).forEach(modelName => {
-                const model = modelMappings[modelName];
-
-                if (model && model.enabled) {
-                    const option = document.createElement('option');
-                    option.value = option.textContent = model.key();
-                    // Set saved model as selected
-                    if (currModel == modelName) {
-                        console.debug(`set chosen model: ${modelName}`)
-                        option.selected = true;
-                    }
-                    dropdown.appendChild(option);
-                }
-            });
-        }
-    } catch (error) {
-        console.error('Error fetching model options:', error);
-        const dropdown = document.querySelector<HTMLSelectElement>('#models-dropdown');
-
-        if (dropdown) {
-            dropdown.innerHTML = '<option value="" disabled selected>Failed to load models</option>';
-        }
-    }
-};
-
-const populatePromptsDropdown = async () => {
-    try {
-        const dropdown = document.querySelector<HTMLSelectElement>('#prompts-dropdown');
-
-        if (dropdown) {
-            dropdown.innerHTML = '';       // Clear existing options
-
-            const promptMappings = await getAllPrompts();
-            console.debug(`Found ${Object.keys(promptMappings).length} prompts`)
-            const currPrompt = await getItem('currPrompt') || SummarizePrompt.Name;
-
-            Object.keys(promptMappings).forEach(promptName => {
-                const prompt = promptMappings[promptName];
-
-                if (prompt && (prompt.enabled || promptName == SummarizePrompt.Name)) {
-                    const option = document.createElement('option');
-                    option.value = option.textContent = promptName;
-
-                    if (promptName === currPrompt) {
-                        option.defaultSelected = true
-                    }
-                    dropdown.appendChild(option);
-                }
-            });
-        }
-    } catch (error) {
-        console.error('Error fetching prompt options:', error);
-        const dropdown = document.querySelector<HTMLSelectElement>('#prompts-dropdown');
-
-        if (dropdown) {
-            dropdown.innerHTML = '<option value="" disabled selected>Failed to load prompts</option>';
-        }
-    }
+    await populateOutputBox();
 };
 
 await updateMainContent()
@@ -129,59 +64,35 @@ document.querySelector<HTMLSelectElement>('#models-dropdown')?.addEventListener(
     const selectedModel = (event.target as HTMLSelectElement).value;
     console.debug(`Model selected: ${selectedModel}`);
 
-    setItem('currModel', selectedModel);
+    await setItem('currModel', selectedModel);
 });
 
 document.querySelector<HTMLSelectElement>('#prompts-dropdown')?.addEventListener('change', async (event) => {
     const selectedPrompt = (event.target as HTMLSelectElement).value;
     console.debug(`Prompt selected: ${selectedPrompt}`);
 
-    setItem('currPrompt', selectedPrompt);
+    await setItem('currPrompt', selectedPrompt);
+});
+
+document.querySelector<HTMLSelectElement>('#clear-output')?.addEventListener('click', async () => {
+    const outputContainer = document.querySelector<HTMLDivElement>('.output-container')!;
+    outputContainer.textContent = ''
+    await setItem('lastOutput', '')
+    console.debug("Cleared output")
 });
 
 document.querySelector<HTMLButtonElement>('#execute-prompt')!.addEventListener('click', handleExecutePrompt);
 
-async function handleExecutePrompt(this: HTMLButtonElement, event: Event) {
-    try {
-        this.disabled = true;
 
-        const icon = this.querySelector<HTMLImageElement>('img');
-        if (icon) {
-            icon.src = stopIcon;
-            icon.classList.add('animate');
-        }
-
-        const currModel = document.querySelector<HTMLSelectElement>('#models-dropdown');
-        const currPrompt = document.querySelector<HTMLSelectElement>('#prompts-dropdown');
-        if (currModel?.value && currPrompt?.value) {
-            console.debug(`Executing prompt: '${currPrompt.value}' on model: '${currModel.value}'`)
-
-            const output = await executePrompt(currModel.value, currPrompt.value);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-        } else {
-            console.debug("No models available to execute prompt")
-        }
-    } catch (error) {
-        console.error('Error executing prompt:', error);
-    } finally {
-        this.disabled = false;
-        const icon = this.querySelector<HTMLImageElement>('img');
-        if (icon) {
-            icon.src = playIcon;
-            icon.classList.remove('animate');
-        }
-    }
-}
-
-async function executePrompt(model: string, prompt: string) {
-    const splitedModel = model.split(':', 2)
-    const providerName = splitedModel[0]
-    try {
-        const provider = await loadProvider(providerName)
-        console.debug(`provider class def url: ${provider.defaultUrl}`);
-
-        // await provider.stream()
-    } catch (error) {
-        console.error("Error executing prompt:", error)
-    }
-}
+// async function executePrompt(model: string, prompt: string) {
+//     const splitedModel = model.split(':')
+//     const providerName = splitedModel[0]
+//     const modelName = splitedModel.slice(1).join(':');
+//     try {
+//         const provider = await loadProvider(providerName)
+//         console.debug(`Executing prompt: '${prompt}' on '${model}'`);
+//         return await provider.stream(modelName, prompt)
+//     } catch (error) {
+//         console.error("Error executing prompt:", error)
+//     }
+// }

@@ -7,8 +7,23 @@ interface ApiVersionResponse {
     version: string;
 }
 
-interface ApiModelsResponse {
+interface ApiModelsResp {
     models: [];
+}
+
+interface ApiChatResp {
+    model: string
+    created_at: string
+    response: string
+    done: boolean
+    done_reason: string
+    context: number[]  // the encoded conversation to be used as memory
+    total_duration: number
+    load_duration: number
+    prompt_eval_count: number
+    prompt_eval_duration: number
+    eval_count: number
+    eval_duration: number
 }
 
 export class OllamaProvider extends BaseProvider {
@@ -31,7 +46,7 @@ export class OllamaProvider extends BaseProvider {
 
     async getModels(): Promise<Model[]> {
         try {
-            const resp = await performApiCall('GET', `${this.url}/api/tags`, this.key) as ApiModelsResponse;
+            const resp = await performApiCall('GET', `${this.url}/api/tags`, this.key) as ApiModelsResp;
 
             if (resp && resp?.models) {
                 return resp.models.map((model: { name: string, provider: string }) => new Model(model.name, this.name));
@@ -43,8 +58,26 @@ export class OllamaProvider extends BaseProvider {
         return [];
     }
 
-    async stream(): Promise<string> {
-        return "STREAM" //TBD
+    async stream(model: string, prompt: string): Promise<string> {
+        const body = {model: model, prompt: prompt, stream: false}
+        try {
+            const resp = await performApiCall('POST', `${this.url}/api/generate`, this.key, body) as ApiChatResp;
+            // let result = '';
+            //
+            // for (const chunk of resp.response) {
+            //     const parsedChunk = JSON.parse(chunk); // Parse each chunk as JSON
+            //     result += parsedChunk.response; // Append the response to the result
+            //     console.log('Received chunk:', parsedChunk); // Log each chunk for debugging
+            //     if (parsedChunk.done) {
+            //         console.log('Stream completed.'); // Log when the stream is done
+            //         break; // Exit the loop if the stream is done
+            //     }
+            // }
+            return resp.response;
+        } catch (error) {
+            console.error('Error getting response:', error);
+        }
+        return '';
     }
 }
 

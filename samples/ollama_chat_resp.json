@@ -1,0 +1,33 @@
+{
+  "model": "llama3.1:8b",
+  "created_at": "2025-02-12T14:16:15.724882776Z",
+  "response": "Cloud Space Helmet Computer",
+  "done": true,
+  "done_reason": "stop",
+  "context": [
+    128006,
+    882,
+    128007,
+    271,
+    8144,
+    220,
+    19,
+    4288,
+    4339,
+    128009,
+    128006,
+    78191,
+    128007,
+    271,
+    16440,
+    11746,
+    67629,
+    17863
+  ],
+  "total_duration": 665074874,
+  "load_duration": 14207974,
+  "prompt_eval_count": 15,
+  "prompt_eval_duration": 291000000,
+  "eval_count": 5,
+  "eval_duration": 358000000
+}

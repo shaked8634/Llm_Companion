@@ -21,11 +21,10 @@ export async function performApiCall(
         if (!response.ok) {
             throw new Error(`Error: ${url} status: ${response.status}. Error: ${response.statusText}`);
         }
-        console.debug(response)
+        console.debug(`Request to: '${url}' response: ${response}`)
         return await response.json();
     } catch (error) {
         console.error('Error performing API call:', error);
-        // throw error;
     }
     return {}
 }
