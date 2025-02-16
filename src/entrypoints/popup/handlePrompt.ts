@@ -51,7 +51,7 @@ export async function handleExecutePrompt(this: HTMLButtonElement) {
         const outputContainer = document.querySelector<HTMLDivElement>('.output-container')!;
 
         // Disabling clear during prompt execution
-        const clearButton = document.querySelector<HTMLSelectElement>('#clear-output')!;
+        const clearButton = document.querySelector<HTMLButtonElement>('#clear-output')!;
         clearButton.disabled = true
 
         chrome.runtime.sendMessage(
@@ -61,23 +61,12 @@ export async function handleExecutePrompt(this: HTMLButtonElement) {
                 prompt: currPrompt.value,
             },
             (response) => {
-                if (response.success) {
+                if (response && response.success) {
                     outputContainer.textContent = response.output || '';
                     console.debug(`Generated output: ${response.output}`);
                 } else {
                     console.error('Error executing prompt:', response.error);
                 }
-
-                // Re-enable the button and reset the icon
-                this.disabled = false;
-                const icon = this.querySelector<HTMLImageElement>('img');
-                if (icon) {
-                    icon.src = playIcon;
-                    icon.classList.remove('animate');
-                }
-                // Re-enabling clear during prompt execution
-                const clearButton = document.querySelector<HTMLSelectElement>('#clear-output')!;
-                clearButton.disabled = true
             }
         );
     } catch (error) {

@@ -31,8 +31,11 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse): Prom
                 sendResponse({ success: false, error: error.message });
             });
         return true;
+    }  else {
+        console.warn("Received unknown message:", request.action);
+        return false;
     }
-    return false;
+
 });
 
 async function executePrompt(providerModelName: string, prompt: string) {
@@ -46,7 +49,7 @@ async function executePrompt(providerModelName: string, prompt: string) {
         await setItem('lastOutput', output);
         console.debug("Sending output to popup:", output);
         await chrome.runtime.sendMessage({ action: 'updateOutput', output});
-
+        return output;
     } catch (error) {
         console.error("Error executing prompt:", error);
         return { success: false, error: (error as Error).message};

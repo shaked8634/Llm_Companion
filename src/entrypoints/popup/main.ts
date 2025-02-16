@@ -74,10 +74,14 @@ document.querySelector<HTMLSelectElement>('#prompts-dropdown')?.addEventListener
     await setItem('currPrompt', selectedPrompt);
 });
 
-document.querySelector<HTMLSelectElement>('#clear-output')?.addEventListener('click', async () => {
+// Add event listener to the clear button
+document.querySelector<HTMLButtonElement>('#clear-output')?.addEventListener('click', async () => {
     const outputContainer = document.querySelector<HTMLDivElement>('.output-container')!;
     outputContainer.textContent = ''
+
     await setItem('lastOutput', '')
+    // Optionally, remove any styles that might affect the height
+    outputContainer.style.height = 'auto';
     console.debug("Cleared output")
 });
 
@@ -89,6 +93,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'updateOutput') {
         const outputContainer = document.querySelector<HTMLDivElement>('.output-container')!;
         outputContainer.textContent = request.output;
-        console.debug("Output updated:", request.output);
+
+        // Re-enable the button and reset the icon
+        const executeButton = document.querySelector<HTMLButtonElement>('#execute-prompt')!;
+        executeButton.disabled = false;
+        const icon = executeButton.querySelector<HTMLImageElement>('img');
+        if (icon) {
+            icon.src = playIcon;
+            icon.classList.remove('animate');
+        }
+        // Re-enable clear button
+        const clearButton = document.querySelector<HTMLButtonElement>('#clear-output')!;
+        clearButton.disabled = false
+    } else {
+        console.warn("Received unknown message:", request.action);
     }
 });
