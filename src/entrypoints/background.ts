@@ -25,14 +25,14 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse): Prom
 
         await executePrompt(model, "Write 4 random words")
             .then((output) => {
-                setItem('lastOutput', output)
                 sendResponse({ success: true, output });
             })
             .catch((error) => {
                 sendResponse({ success: false, error: error.message });
             });
+        return true;
     }
-    return true;
+    return false;
 });
 
 async function executePrompt(providerModelName: string, prompt: string) {
@@ -42,7 +42,11 @@ async function executePrompt(providerModelName: string, prompt: string) {
     try {
         const provider = await loadProvider(providerName)
         console.debug(`Executing prompt: '${prompt}' on '${providerModelName}'`);
-        return await provider.stream(modelName, prompt)
+        const output = await provider.stream(modelName, prompt)
+        await setItem('lastOutput', output);
+        console.debug("Sending output to popup:", output);
+        await chrome.runtime.sendMessage({ action: 'updateOutput', output});
+
     } catch (error) {
         console.error("Error executing prompt:", error);
         return { success: false, error: (error as Error).message};

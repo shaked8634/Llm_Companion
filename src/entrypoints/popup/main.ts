@@ -81,18 +81,14 @@ document.querySelector<HTMLSelectElement>('#clear-output')?.addEventListener('cl
     console.debug("Cleared output")
 });
 
+// Handle clicking on execute prompt button
 document.querySelector<HTMLButtonElement>('#execute-prompt')!.addEventListener('click', handleExecutePrompt);
 
-
-// async function executePrompt(model: string, prompt: string) {
-//     const splitedModel = model.split(':')
-//     const providerName = splitedModel[0]
-//     const modelName = splitedModel.slice(1).join(':');
-//     try {
-//         const provider = await loadProvider(providerName)
-//         console.debug(`Executing prompt: '${prompt}' on '${model}'`);
-//         return await provider.stream(modelName, prompt)
-//     } catch (error) {
-//         console.error("Error executing prompt:", error)
-//     }
-// }
+// Add listener to receive message to update UI with output returned from background task
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'updateOutput') {
+        const outputContainer = document.querySelector<HTMLDivElement>('.output-container')!;
+        outputContainer.textContent = request.output;
+        console.debug("Output updated:", request.output);
+    }
+});
