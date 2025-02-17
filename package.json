@@ -1,5 +1,5 @@
 {
-  "description": "DESCRIPTION",
+  "description": "A browsing companion",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,6 +12,9 @@
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
     "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "turndown": "^7.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

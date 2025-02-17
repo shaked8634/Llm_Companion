@@ -26,6 +26,8 @@ interface ApiChatResp {
     eval_duration: number
 }
 
+const ctxSize = 4096;
+
 export class OllamaProvider extends BaseProvider {
     name: string = ProviderType.Ollama;
     defaultUrl: string = 'http://localhost:11434';
@@ -59,7 +61,12 @@ export class OllamaProvider extends BaseProvider {
     }
 
     async stream(model: string, prompt: string): Promise<string> {
-        const body = {model: model, prompt: prompt, stream: false}
+        const body = {
+            model: model,
+            prompt: prompt,
+            stream: false,
+            options: {"num_ctx": ctxSize}
+        }
         try {
             const resp = await performApiCall('POST', `${this.url}/api/generate`, this.key, body) as ApiChatResp;
             // let result = '';
