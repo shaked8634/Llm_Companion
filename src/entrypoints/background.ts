@@ -1,5 +1,6 @@
 import {loadProvider} from "@/components/providers/provider";
 import {setItem} from "@/common/storage";
+import {ActionResponse} from "@/common/types";
 
 export default defineBackground(() => {
     chrome.action.onClicked.addListener((tab) => {
@@ -9,6 +10,7 @@ export default defineBackground(() => {
 
 
 chrome.runtime.onInstalled.addListener(async (details) => {
+    await setItem('lastOutput', '')
     // if (details.reason === 'install') {
     //     console.log('Extension installed for the first time.');
     //
@@ -19,23 +21,24 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 });
 
 // Background jobs
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse): Promise<boolean> => {
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse): Promise<ActionResponse> => {
     if (request.action === 'executePrompt') {
         const { model, prompt } = request;
 
-        await executePrompt(model, "Write 4 random words")
+        await executePrompt(model, prompt)
             .then((output) => {
                 sendResponse({ success: true, output });
+                return { success: true, output: output };
             })
             .catch((error) => {
                 sendResponse({ success: false, error: error.message });
+                return { success: false, error: error.message };
             });
-        return true;
     }  else {
         console.warn("Received unknown message:", request.action);
-        return false;
+        return {output: null, success: false, error: `Unknown message: ${request.action}`};
     }
-
+    return {output: null, success: false, error: `Unknown error: ${request}` };
 });
 
 async function executePrompt(providerModelName: string, prompt: string) {

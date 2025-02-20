@@ -1,5 +1,5 @@
 # TODO
-- [ ] Implement web page to text preprocessing.
+- [x] Implement web page to text preprocessing.
 - [ ] Send web page text with prompt.
 - [ ] Implement ollama stream() to stream output.
 - [x] Implement popup box for text.

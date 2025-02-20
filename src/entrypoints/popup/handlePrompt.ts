@@ -1,7 +1,8 @@
 import {getAllPrompts, SummarizePrompt} from "@/components/prompts";
 import {getItem} from "@/common/storage";
 import stopIcon from "@/assets/stop_icon.svg";
-import playIcon from "@/assets/play_icon.svg";
+import {convertHtmlToMd} from "@/components/preprocessing";
+import {ActionResponse} from "@/common/types";
 
 export const populatePromptsDropdown = async () => {
     try {
@@ -37,6 +38,12 @@ export const populatePromptsDropdown = async () => {
 };
 
 export async function handleExecutePrompt(this: HTMLButtonElement) {
+    function generatePromptWithContext(prompt: string, context: string) {
+        const fullPrompt = `# Instruction\n${prompt}\n# Context\n${context}`;
+        console.debug("Full prompt:\n", fullPrompt)
+        return fullPrompt;
+    }
+
     try {
         this.disabled = true;
 
@@ -52,17 +59,19 @@ export async function handleExecutePrompt(this: HTMLButtonElement) {
 
         // Disabling clear during prompt execution
         const clearButton = document.querySelector<HTMLButtonElement>('#clear-output')!;
-        clearButton.disabled = true
+        clearButton.disabled = true;
+
+        const context: string = await convertHtmlToMd(""); // TODO
+        const prompt: string = generatePromptWithContext(currPrompt.value, context);
 
         chrome.runtime.sendMessage(
             {
                 action: 'executePrompt',
                 model: currModel.value,
-                prompt: currPrompt.value,
+                prompt: prompt,
             },
-            (response) => {
-                if (response && response.success) {
-                    outputContainer.textContent = response.output || '';
+            (response: ActionResponse) => {
+                if (response.success) {
                     console.debug(`Generated output: ${response.output}`);
                 } else {
                     console.error('Error executing prompt:', response.error);
