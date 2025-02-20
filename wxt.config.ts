@@ -1,7 +1,7 @@
 import {defineConfig} from 'wxt';
 
 export default defineConfig({
-    extensionApi: 'chrome',
+    extensionApi: 'chrome', // Disable polyfill
     srcDir: 'src',
 
     manifest: {
