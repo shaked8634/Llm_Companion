@@ -4,7 +4,7 @@ import {ProviderType} from "@/components/providers/types";
 
 export class GeminiProvider extends BaseProvider{
     name: string = ProviderType.Gemini;
-    defaultUrl: string = 'https://gemini.google.com...';
+    static defaultUrl: string = 'https://gemini.google.com...';
 
     async isConnected(): Promise<boolean> {
         return false

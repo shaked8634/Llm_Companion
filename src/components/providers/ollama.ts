@@ -30,7 +30,7 @@ const ctxSize = 4096;
 
 export class OllamaProvider extends BaseProvider {
     name: string = ProviderType.Ollama;
-    defaultUrl: string = 'http://localhost:11434';
+    static defaultUrl: string = 'http://localhost:11434';
 
     async isConnected(): Promise<boolean> {
         try {

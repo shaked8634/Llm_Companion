@@ -4,7 +4,7 @@ import {ProviderType} from "@/components/providers/types";
 
 export class OpenaiProvider extends BaseProvider{
     name: string = ProviderType.Openai
-    defaultUrl: string ='https://api.openai.com';
+    static defaultUrl: string ='https://api.openai.com';
 
     async isConnected(): Promise<boolean> {
         return false

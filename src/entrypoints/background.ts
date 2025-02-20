@@ -1,11 +1,18 @@
 import {loadProvider} from "@/components/providers/provider";
 import {setItem} from "@/common/storage";
 import {ActionResponse} from "@/common/types";
+import {extensionVersion} from "@/common/constants";
 
 export default defineBackground(() => {
     chrome.action.onClicked.addListener((tab) => {
         chrome.runtime.openOptionsPage();
     });
+});
+
+chrome.runtime.onStartup.addListener(async () => {
+    await setItem('version', extensionVersion)
+    await setItem('lastOutput', '')
+    console.debug("Clean last output")
 });
 
 

@@ -6,6 +6,7 @@ import {addModels, deleteModels, updateModels} from "@/components/models";
 import {setItem} from "@/common/storage";
 import {loadProvider} from "@/components/providers/provider";
 import {ProviderType} from "@/components/providers/types";
+import {OllamaProvider} from "@/components/providers/ollama";
 
 const providersHtmlTmpl = async (
     providerMapping: Record<ProviderType, AiProvider>) => `
@@ -57,7 +58,7 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
 
     // Add event listener for each provider
     Object.keys(providerMapping).forEach((providerName) => {
-        const aiProvider: AiProvider = providerMapping[providerName as keyof typeof providerMapping];
+        const baseProvider: BaseProvider = providerMapping[providerName as keyof typeof providerMapping];
 
         const checkbox = mainContent.querySelector<HTMLInputElement>(`#${providerName}`)!;
 
@@ -67,7 +68,7 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
 
         checkbox.addEventListener('change', async (event) => {
             const isChecked = (event.target as HTMLInputElement).checked;
-            aiProvider.enabled = isChecked;
+            baseProvider.enabled = isChecked;
 
             // Enable/disable key and url fields if checkbox is checked
             toggleFieldAtt(keyInput, isChecked);
@@ -76,33 +77,33 @@ export const handleProviders = async (mainContent: HTMLElement): Promise<void> =
             }
 
             if (isChecked) {
-                const providerModels = await aiProvider.getModels()
+                const providerModels = await baseProvider.getModels()
                 await addModels(providerModels)
             } else {
                 // Reset key and url if checkbox is unchecked
                 keyInput.value = '';
-                aiProvider.key = '';
-                const providerModels = await aiProvider.getModels();
+                baseProvider.key = '';
+                const providerModels = await baseProvider.getModels();
                 await deleteModels(providerModels);
                 // Restore default URL for Ollama
                 if (providerName === ProviderType.Ollama) {
-                    urlInput.value = aiProvider.url = aiProvider.defaultUrl;
+                    urlInput.value = baseProvider.url = OllamaProvider.defaultUrl;
                 }
             }
-            await setItem(providerName, aiProvider);
+            await setItem(providerName, baseProvider);
             await renderTable();
         });
 
         keyInput.addEventListener('input', async () => {
-            aiProvider.key = keyInput.value;
-            await setItem(providerName, aiProvider);
+            baseProvider.key = keyInput.value;
+            await setItem(providerName, baseProvider);
             await renderTable();
         });
 
         if (urlInput) {
             urlInput.addEventListener('input', async () => {
-                aiProvider.url = urlInput.value;
-                await setItem(providerName, aiProvider);
+                baseProvider.url = urlInput.value;
+                await setItem(providerName, baseProvider);
                 await renderTable();
             });
         }

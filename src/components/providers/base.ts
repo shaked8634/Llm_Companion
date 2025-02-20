@@ -5,7 +5,6 @@ export interface AiProvider {
     url: string;
     enabled: boolean;
     key: string;
-    defaultUrl: string;
 
     isConnected(): Promise<boolean>;
     getModels(): Promise<Model[]>;
@@ -14,13 +13,18 @@ export interface AiProvider {
 
 export abstract class BaseProvider implements AiProvider {
     abstract name: string;
-    abstract defaultUrl: string;
+    static defaultUrl: string;
 
     constructor(
-        public url: string = this.getDefaultUrl(),
+        public url: string = '',
         public enabled: boolean = false,
         public key: string = '',
-    ) {}
+    ) {
+        if (!this.url) {
+            const constructorAsAny = (this.constructor as any);
+            this.url = constructorAsAny.defaultUrl ?? '';
+        }
+    }
 
     populate(data: Partial<BaseProvider>) {
         if (data.url !== undefined) this.url = data.url;
@@ -28,12 +32,7 @@ export abstract class BaseProvider implements AiProvider {
         if (data.key !== undefined) this.key = data.key;
     }
 
-    private getDefaultUrl(): string {
-        return this.defaultUrl;
-    }
-
     abstract isConnected(): Promise<boolean>;
     abstract getModels(): Promise<Model[]>;
     abstract stream(model: string, prompt: string): Promise<string>;
-
 }
