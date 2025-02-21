@@ -27,6 +27,12 @@ export const populatePromptsDropdown = async () => {
             }
         });
 
+        // Add "Other" option for free text input
+        const otherOption = document.createElement('option');
+        otherOption.value = 'Other';
+        otherOption.textContent = 'Other (Enter custom prompt)';
+        dropdown.appendChild(otherOption);
+
     } catch (error) {
         console.error('Error fetching prompt options:', error);
         const dropdown = document.querySelector<HTMLSelectElement>('#prompts-dropdown');
@@ -55,20 +61,26 @@ export async function handleExecutePrompt(this: HTMLButtonElement) {
 
         const currModel = document.querySelector<HTMLSelectElement>('#models-dropdown')!;
         const currPrompt = document.querySelector<HTMLSelectElement>('#prompts-dropdown')!;
-        const outputContainer = document.querySelector<HTMLDivElement>('.output-container')!;
 
         // Disabling clear during prompt execution
         const clearButton = document.querySelector<HTMLButtonElement>('#clear-output')!;
         clearButton.disabled = true;
 
+        let prompt= currPrompt.value;
+        if (currPrompt.value == 'Other') {
+           const customPrompt = document.querySelector<HTMLSelectElement>('#custom-prompt-input')!;
+           prompt = customPrompt.value;
+           console.debug("using custom prompt:", prompt)
+        }
+
         const context: string = await convertHtmlToMd(""); // TODO
-        const prompt: string = generatePromptWithContext(currPrompt.value, context);
+        const fullPrompt: string = generatePromptWithContext(prompt, context);
 
         chrome.runtime.sendMessage(
             {
                 action: 'executePrompt',
                 model: currModel.value,
-                prompt: prompt,
+                prompt: fullPrompt,
             },
             (response: ActionResponse) => {
                 if (response.success) {

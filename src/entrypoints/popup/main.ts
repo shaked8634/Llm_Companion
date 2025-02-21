@@ -36,6 +36,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <img src="${playIcon}" alt="Execute" class="execute-icon" />
       </button>
     </div>
+    <input type="text" id="custom-prompt-input" class="custom-prompt" placeholder="Enter your custom prompt here..." />
     <div class="output-container"></div>
 </div>
 `;
@@ -69,9 +70,17 @@ document.querySelector<HTMLSelectElement>('#models-dropdown')?.addEventListener(
 
 document.querySelector<HTMLSelectElement>('#prompts-dropdown')?.addEventListener('change', async (event) => {
     const selectedPrompt = (event.target as HTMLSelectElement).value;
-    console.debug(`Prompt selected: ${selectedPrompt}`);
+    console.debug(`Prompt selected: '${selectedPrompt}'`);
 
-    await setItem('currPrompt', selectedPrompt);
+    const customPromptInput = document.querySelector<HTMLInputElement>('#custom-prompt-input');
+    if (selectedPrompt === 'Other') {
+        console.debug("Showing custom prompt input");
+        customPromptInput?.classList.remove('hidden');
+        customPromptInput?.focus();
+    } else {
+        customPromptInput?.classList.add('hidden');
+        await setItem('currPrompt', selectedPrompt);
+    }
 });
 
 // Add event listener to the clear button
@@ -80,7 +89,7 @@ document.querySelector<HTMLButtonElement>('#clear-output')?.addEventListener('cl
     outputContainer.textContent = ''
 
     await setItem('lastOutput', '')
-    // Optionally, remove any styles that might affect the height
+    // Remove any styles that might affect the height
     outputContainer.style.height = 'auto';
     console.debug("Cleared output")
 });
