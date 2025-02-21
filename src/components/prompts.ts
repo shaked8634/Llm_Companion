@@ -25,5 +25,5 @@ export class Prompt {
 export async function getAllPrompts(): Promise<{ [key: string]: Prompt }> {
     const allPromptsStr: string = await getItem('prompts');
 
-    return allPromptsStr ? JSON.parse(allPromptsStr) : {[SummarizePrompt.Name]: new Prompt(true, SummarizePrompt.Prompt)};
+    return allPromptsStr ? JSON.parse(allPromptsStr) : {};
 }

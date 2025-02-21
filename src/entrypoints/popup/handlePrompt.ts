@@ -2,7 +2,6 @@ import {getAllPrompts, SummarizePrompt} from "@/components/prompts";
 import {getItem} from "@/common/storage";
 import stopIcon from "@/assets/stop_icon.svg";
 import {convertHtmlToMd} from "@/components/preprocessing";
-import {ActionResponse} from "@/common/types";
 
 export const populatePromptsDropdown = async () => {
     try {
@@ -35,11 +34,9 @@ export const populatePromptsDropdown = async () => {
 
     } catch (error) {
         console.error('Error fetching prompt options:', error);
-        const dropdown = document.querySelector<HTMLSelectElement>('#prompts-dropdown');
+        const dropdown = document.querySelector<HTMLSelectElement>('#prompts-dropdown')!;
+        dropdown.innerHTML = '<option value="" disabled selected>Failed to load prompts</option>';
 
-        if (dropdown) {
-            dropdown.innerHTML = '<option value="" disabled selected>Failed to load prompts</option>';
-        }
     }
 };
 
@@ -53,11 +50,9 @@ export async function handleExecutePrompt(this: HTMLButtonElement) {
     try {
         this.disabled = true;
 
-        const icon = this.querySelector<HTMLImageElement>('img');
-        if (icon) {
-            icon.src = stopIcon;
-            icon.classList.add('animate');
-        }
+        const icon = this.querySelector<HTMLImageElement>('img')!;
+        icon.src = stopIcon;
+        icon.classList.add('animate');
 
         const currModel = document.querySelector<HTMLSelectElement>('#models-dropdown')!;
         const currPrompt = document.querySelector<HTMLSelectElement>('#prompts-dropdown')!;
@@ -66,29 +61,32 @@ export async function handleExecutePrompt(this: HTMLButtonElement) {
         const clearButton = document.querySelector<HTMLButtonElement>('#clear-output')!;
         clearButton.disabled = true;
 
-        let prompt= currPrompt.value;
+        const promptsObj: { [key: string]: Prompt } = JSON.parse(await getItem('prompts'))
+
+        let prompt = promptsObj[currPrompt.value].prompt;
         if (currPrompt.value == 'Other') {
-           const customPrompt = document.querySelector<HTMLSelectElement>('#custom-prompt-input')!;
-           prompt = customPrompt.value;
-           console.debug("using custom prompt:", prompt)
+            const customPrompt = document.querySelector<HTMLSelectElement>('#custom-prompt-input')!;
+            prompt = customPrompt.value;
+            console.debug("using custom prompt:", prompt)
         }
 
-        const context: string = await convertHtmlToMd(""); // TODO
+        // Send a message to the active tab's content script to get the page HTML
+        const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+        if (!tab.id) {
+            throw new Error("No active tab found.");
+        }
+
+        const response = await chrome.tabs.sendMessage(tab.id, {action: 'getPageHTML'}) as { html: string };
+
+        const context: string = await convertHtmlToMd(response.html);
         const fullPrompt: string = generatePromptWithContext(prompt, context);
 
-        chrome.runtime.sendMessage(
+        await chrome.runtime.sendMessage(
             {
                 action: 'executePrompt',
                 model: currModel.value,
                 prompt: fullPrompt,
             },
-            (response: ActionResponse) => {
-                if (response.success) {
-                    console.debug(`Generated output: ${response.output}`);
-                } else {
-                    console.error('Error executing prompt:', response.error);
-                }
-            }
         );
     } catch (error) {
         console.error('Error executing prompt:', error);
