@@ -1,6 +1,6 @@
 import './style.css';
 import {toggleFieldAtt} from "@/common/entrypoints";
-import {SummarizePrompt, getAllPrompts, Prompt} from "@/components/prompts";
+import {SummarizePrompt, getPrompts, Prompt} from "@/components/prompts";
 import {setItem} from "@/common/storage";
 
 export const promptsHtmlTmpl = (summarize: Prompt) => `
@@ -18,7 +18,7 @@ export const promptsHtmlTmpl = (summarize: Prompt) => `
 `;
 
 export async function handlePrompts(mainContent: HTMLElement): Promise<void> {
-  const promptMappings = await getAllPrompts()
+  const promptMappings = await getPrompts()
 
   mainContent.innerHTML = promptsHtmlTmpl(promptMappings[SummarizePrompt.Name]);
 

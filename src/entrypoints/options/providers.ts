@@ -4,7 +4,7 @@ import {AiProvider, BaseProvider} from "@/components/providers/base";
 
 import {addModels, deleteModels, updateModels} from "@/components/models";
 import {setItem} from "@/common/storage";
-import {loadProvider} from "@/components/providers/provider";
+import {getProviders} from "@/components/providers/provider";
 import {ProviderType} from "@/components/providers/types";
 import {OllamaProvider} from "@/components/providers/ollama";
 
@@ -19,13 +19,6 @@ const providersHtmlTmpl = async (
           <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${providerMapping[ProviderType.Openai].key}" ${providerMapping[ProviderType.Openai].enabled ? '' : 'disabled'}></td>
           <td></td>
           <td>${providerMapping[ProviderType.Openai].enabled ? (await providerMapping[ProviderType.Openai].isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
-        </tr>
-        <tr>
-          <td><input type="checkbox" class="provider-checkbox" id="${providerMapping[ProviderType.Gemini].name}" ${providerMapping[ProviderType.Gemini].enabled ? 'checked' : ''}></td>
-          <td>Google Gemini</td>
-          <td><input type="text" class="apiKey" placeholder="API key (optional)" value="${providerMapping[ProviderType.Gemini].key}" ${providerMapping[ProviderType.Gemini].enabled ? '' : 'disabled'}></td>
-          <td></td>
-          <td>${providerMapping[ProviderType.Gemini].enabled ? (await providerMapping[ProviderType.Gemini].isConnected() ? '<span class="status connected">V</span>' : '<span class="status disconnected">X</span>') : ''}</td>
         </tr>
         <tr>
           <td><input type="checkbox" class="provider-checkbox" id="${providerMapping[ProviderType.Ollama].name}" ${providerMapping[ProviderType.Ollama].enabled ? 'checked' : ''}></td>
@@ -44,11 +37,7 @@ const providersHtmlTmpl = async (
 
 export const handleProviders = async (mainContent: HTMLElement): Promise<void> => {
     // Loading Provider classes to present Options -> Provider view
-    const providerMapping: Record<ProviderType, BaseProvider> = {} as Record<ProviderType, BaseProvider>;
-
-    for (const providerType of Object.values(ProviderType)) {
-        providerMapping[providerType] = await loadProvider(providerType);
-    }
+    const providerMapping = await getProviders();
 
     // Nested function def to render table after events
     const renderTable = async () => {

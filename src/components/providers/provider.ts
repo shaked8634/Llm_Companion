@@ -1,14 +1,14 @@
 import {OpenaiProvider} from "@/components/providers/openai";
-import {GeminiProvider} from "@/components/providers/gemini";
+// import {GeminiProvider} from "@/components/providers/gemini";
 import {OllamaProvider} from "@/components/providers/ollama";
 import {BaseProvider} from "@/components/providers/base";
 import {ProviderType} from "@/components/providers/types";
 import {getItem} from "@/common/storage";
 
 // Using Factory functions to store anon funcs that returns obj constructor
-export const providerClassMap: Record<ProviderType, new() => BaseProvider> = {
+const providerClassMap: Record<ProviderType, new() => BaseProvider> = {
     [ProviderType.Openai]: OpenaiProvider,
-    [ProviderType.Gemini]: GeminiProvider,
+    // [ProviderType.Gemini]: GeminiProvider,
     [ProviderType.Ollama]: OllamaProvider
 };
 
@@ -21,4 +21,13 @@ export async function loadProvider(providerType: string): Promise<BaseProvider> 
         providerInstance.populate(JSON.parse(providerData));
     }
     return providerInstance
+}
+
+export async function getProviders() {
+    const providerMapping: Record<ProviderType, BaseProvider> = {} as Record<ProviderType, BaseProvider>;
+
+    for (const providerType of Object.values(ProviderType)) {
+        providerMapping[providerType] = await loadProvider(providerType);
+    }
+    return providerMapping;
 }

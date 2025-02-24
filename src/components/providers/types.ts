@@ -1,5 +1,7 @@
 export enum ProviderType {
+    Ollama = 'Ollama',
     Openai = 'Openai',
-    Gemini = 'Gemini',
-    Ollama = 'Ollama'
+    // Deepseek = 'Deepseek',
+    // Gemini = 'Gemini',
+
 }
