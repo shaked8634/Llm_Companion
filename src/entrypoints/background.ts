@@ -29,7 +29,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 chrome.runtime.onUpdateAvailable.addListener(async (details) => {
     console.debug("Updating storage objects")
     await setItem(StorageKeys.Version, extensionVersion);
-
+    // TODO UPDATE prompts
 });
 
 // Background jobs

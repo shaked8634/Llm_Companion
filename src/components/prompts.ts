@@ -22,7 +22,7 @@ export class Prompt {
     }
 }
 
-export async function getPrompts(): Promise<{ [key: string]: Prompt }> {
+export async function getPromptMappings(): Promise<{ [key: string]: Prompt }> {
     const allPromptsStr: string = await getItem(StorageKeys.PromptMappings);
 
     return allPromptsStr ? JSON.parse(allPromptsStr) : {};

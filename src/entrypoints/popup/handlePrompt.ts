@@ -1,4 +1,4 @@
-import {getPrompts, SummarizePrompt} from "@/components/prompts";
+import {getPromptMappings, SummarizePrompt} from "@/components/prompts";
 import {getItem, StorageKeys} from "@/common/storage";
 import stopIcon from "@/assets/stop_icon.svg";
 import {convertHtmlToMd} from "@/components/preprocessing";
@@ -8,7 +8,7 @@ export const populatePromptsDropdown = async () => {
         const dropdown = document.querySelector<HTMLSelectElement>('#prompts-dropdown')!;
         dropdown.innerHTML = '';       // Clear existing options
 
-        const promptMappings = await getPrompts();
+        const promptMappings = await getPromptMappings();
         console.debug(`Found ${Object.keys(promptMappings).length} prompts`)
         const currPrompt = await getItem(StorageKeys.CurrPrompt) || SummarizePrompt.Name;
 
