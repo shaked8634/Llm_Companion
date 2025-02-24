@@ -1,4 +1,4 @@
-import {getProviderMappings, loadProvider} from "@/components/providers/provider";
+import {generateProviderMappings, loadProvider} from "@/components/providers/provider";
 import {setItem, StorageKeys} from "@/common/storage";
 import {extensionVersion} from "@/common/constants";
 import {Prompt, SummarizePrompt} from "@/components/prompts";
@@ -20,10 +20,8 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     await setItem(StorageKeys.Version, extensionVersion);
     await setItem(StorageKeys.PromptMappings, JSON.stringify({[SummarizePrompt.Name]: new Prompt(true, SummarizePrompt.Prompt)}));
 
-    const providerMappings = getProviderMappings();
-    console.debug('providers:\n', providerMappings)
+    const providerMappings = await generateProviderMappings();
     await setItem(StorageKeys.ProviderMappings, JSON.stringify(providerMappings));
-
 });
 
 chrome.runtime.onUpdateAvailable.addListener(async (details) => {
