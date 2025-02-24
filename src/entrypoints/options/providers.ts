@@ -4,7 +4,7 @@ import {AiProvider, BaseProvider} from "@/components/providers/base";
 
 import {addModels, deleteModels, updateModels} from "@/components/models";
 import {setItem} from "@/common/storage";
-import {getProviders} from "@/components/providers/provider";
+import {getProviderMappings} from "@/components/providers/provider";
 import {ProviderType} from "@/components/providers/types";
 import {OllamaProvider} from "@/components/providers/ollama";
 
@@ -37,7 +37,7 @@ const providersHtmlTmpl = async (
 
 export const handleProviders = async (mainContent: HTMLElement): Promise<void> => {
     // Loading Provider classes to present Options -> Provider view
-    const providerMapping = await getProviders();
+    const providerMapping = await getProviderMappings();
 
     // Nested function def to render table after events
     const renderTable = async () => {

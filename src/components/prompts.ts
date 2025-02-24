@@ -1,4 +1,4 @@
-import {getItem} from "@/common/storage";
+import {getItem, StorageKeys} from "@/common/storage";
 
 export enum SummarizePrompt {
      Name = 'Summarize this page',
@@ -23,7 +23,7 @@ export class Prompt {
 }
 
 export async function getPrompts(): Promise<{ [key: string]: Prompt }> {
-    const allPromptsStr: string = await getItem('prompts');
+    const allPromptsStr: string = await getItem(StorageKeys.PromptMappings);
 
     return allPromptsStr ? JSON.parse(allPromptsStr) : {};
 }

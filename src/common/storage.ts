@@ -1,4 +1,14 @@
 
+export enum StorageKeys {
+    ProviderMappings = 'ProviderMappings',
+    PromptMappings = 'PromptMappings',
+    ModelMappings = 'ModelMappings',
+    LastOutput = 'LastOutput',
+    CurrModel = 'CurrModel',
+    CurrPrompt = 'CurrPrompt',
+    Version = 'Version',
+}
+
 export async function getItem(objectName: string): Promise<string> {
     return await storage.getItem(`local:${objectName}`) || '';
 }

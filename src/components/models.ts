@@ -1,5 +1,5 @@
 import {AiProvider} from "@/components/providers/base";
-import {getItem, setItem} from "@/common/storage";
+import {getItem, setItem, StorageKeys} from "@/common/storage";
 
 export class Model {
     constructor(
@@ -43,7 +43,7 @@ export async function updateModels(providers: AiProvider[]) {
         promises.push(promise)
     })
     await Promise.all(promises)
-    await setItem('models', allModelMappings);
+    await setItem(StorageKeys.ModelMappings, allModelMappings);
 
     console.debug(`Saved: ${allModelMappings} models`)
 }
@@ -54,7 +54,7 @@ export async function addModels(models: Model[]) {
     models.forEach(model => {
         modelMapping[model.key()] = model
     })
-    await setItem('models', modelMapping);
+    await setItem(StorageKeys.ModelMappings, modelMapping);
 }
 
 export async function deleteModels(models: Model[]) {
@@ -63,13 +63,13 @@ export async function deleteModels(models: Model[]) {
     models.forEach(model => {
         delete modelMapping[model.key()]
     })
-    await setItem('models', modelMapping);
+    await setItem(StorageKeys.ModelMappings, modelMapping);
 
 }
 
 
 export async function getAllModels(): Promise<{ [key: string]: Model }> {
-    const allModelsString = await getItem('models');
+    const allModelsString = await getItem(StorageKeys.ModelMappings);
     const allModelsObject: {[key: string]: object} = JSON.parse(allModelsString || '{}');
     const allModels: { [key: string]: Model } = {};
 
@@ -90,7 +90,7 @@ export async function updateModelsState(providerName: string, state: boolean): P
             modelMapping[modelName].enabled = state
         }
     });
-    await setItem('models', modelMapping);
+    await setItem(StorageKeys.ModelMappings, modelMapping);
 
     console.debug(`The status of provider '${providerName}' models were ${state ? 'enabled' : 'disabled'}`)
 }

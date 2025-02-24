@@ -4,7 +4,7 @@ import optionsGear from '@/assets/options_gear.svg';
 import {aboutUrl} from "@/common/constants";
 import clearIcon from "@/assets/clear_icon.svg";
 import playIcon from '@/assets/play_icon.svg';
-import {setItem} from "@/common/storage";
+import {setItem, StorageKeys} from "@/common/storage";
 import {handleExecutePrompt, populatePromptsDropdown} from "@/entrypoints/popup/handlePrompt";
 import {populateOutputBox} from "@/entrypoints/popup/handleOutput";
 import {populateModelsDropdown} from "@/entrypoints/popup/HandleModels";
@@ -65,7 +65,7 @@ document.querySelector<HTMLSelectElement>('#models-dropdown')?.addEventListener(
     const selectedModel = (event.target as HTMLSelectElement).value;
     console.debug(`Model selected: ${selectedModel}`);
 
-    await setItem('currModel', selectedModel);
+    await setItem(StorageKeys.CurrModel, selectedModel);
 });
 
 document.querySelector<HTMLSelectElement>('#prompts-dropdown')?.addEventListener('change', async (event) => {
@@ -79,7 +79,7 @@ document.querySelector<HTMLSelectElement>('#prompts-dropdown')?.addEventListener
         customPromptInput?.focus();
     } else {
         customPromptInput?.classList.add('hidden');
-        await setItem('currPrompt', selectedPrompt);
+        await setItem(StorageKeys.CurrPrompt, selectedPrompt);
     }
 });
 
@@ -88,7 +88,7 @@ document.querySelector<HTMLButtonElement>('#clear-output')?.addEventListener('cl
     const outputContainer = document.querySelector<HTMLDivElement>('.output-container')!;
     outputContainer.textContent = ''
 
-    await setItem('lastOutput', '')
+    await setItem(StorageKeys.LastOutput, '')
     // Remove any styles that might affect the height
     outputContainer.style.height = 'auto';
     console.debug("Cleared output")

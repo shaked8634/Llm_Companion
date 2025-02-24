@@ -1,7 +1,7 @@
 import './style.css';
 import {toggleFieldAtt} from "@/common/entrypoints";
 import {SummarizePrompt, getPrompts, Prompt} from "@/components/prompts";
-import {setItem} from "@/common/storage";
+import {setItem, StorageKeys} from "@/common/storage";
 
 export const promptsHtmlTmpl = (summarize: Prompt) => `
  <div class="section-container">
@@ -35,11 +35,11 @@ export async function handlePrompts(mainContent: HTMLElement): Promise<void> {
     }
 
     promptMappings[SummarizePrompt.Name].enabled = isChecked;
-    await setItem('prompts', promptMappings);
+    await setItem(StorageKeys.PromptMappings, promptMappings);
   });
 
   input.addEventListener('input', async () => {
     promptMappings[SummarizePrompt.Name].prompt = input.value;
-    await setItem('prompts', promptMappings);
+    await setItem(StorageKeys.PromptMappings, promptMappings);
   });
 }

@@ -23,7 +23,7 @@ export async function loadProvider(providerType: string): Promise<BaseProvider> 
     return providerInstance
 }
 
-export async function getProviders() {
+export async function getProviderMappings() {
     const providerMapping: Record<ProviderType, BaseProvider> = {} as Record<ProviderType, BaseProvider>;
 
     for (const providerType of Object.values(ProviderType)) {

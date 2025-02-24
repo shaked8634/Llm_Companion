@@ -1,5 +1,5 @@
 import {getPrompts, SummarizePrompt} from "@/components/prompts";
-import {getItem} from "@/common/storage";
+import {getItem, StorageKeys} from "@/common/storage";
 import stopIcon from "@/assets/stop_icon.svg";
 import {convertHtmlToMd} from "@/components/preprocessing";
 
@@ -10,7 +10,7 @@ export const populatePromptsDropdown = async () => {
 
         const promptMappings = await getPrompts();
         console.debug(`Found ${Object.keys(promptMappings).length} prompts`)
-        const currPrompt = await getItem('currPrompt') || SummarizePrompt.Name;
+        const currPrompt = await getItem(StorageKeys.CurrPrompt) || SummarizePrompt.Name;
 
         Object.keys(promptMappings).forEach(promptName => {
             const prompt = promptMappings[promptName];
@@ -61,7 +61,7 @@ export async function handleExecutePrompt(this: HTMLButtonElement) {
         const clearButton = document.querySelector<HTMLButtonElement>('#clear-output')!;
         clearButton.disabled = true;
 
-        const promptsObj: { [key: string]: Prompt } = JSON.parse(await getItem('prompts'))
+        const promptsObj: { [key: string]: Prompt } = JSON.parse(await getItem(StorageKeys.PromptMappings))
 
         let prompt = promptsObj[currPrompt.value].prompt;
         if (currPrompt.value == 'Other') {

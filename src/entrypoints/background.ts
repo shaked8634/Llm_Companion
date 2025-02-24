@@ -1,6 +1,5 @@
-import {loadProvider} from "@/components/providers/provider";
-import {setItem} from "@/common/storage";
-import {ActionResponse} from "@/common/types";
+import {getProviderMappings, loadProvider} from "@/components/providers/provider";
+import {setItem, StorageKeys} from "@/common/storage";
 import {extensionVersion} from "@/common/constants";
 import {Prompt, SummarizePrompt} from "@/components/prompts";
 
@@ -11,18 +10,26 @@ export default defineBackground(() => {
 });
 
 chrome.runtime.onStartup.addListener(async () => {
-    await setItem('lastOutput', '');
+    await setItem(StorageKeys.LastOutput, '');
     console.debug("Clean last output");
 });
 
 
 chrome.runtime.onInstalled.addListener(async (details) => {
-    await setItem('version', extensionVersion);
+    console.debug("Creating storage objects")
+    await setItem(StorageKeys.Version, extensionVersion);
+    await setItem(StorageKeys.PromptMappings, JSON.stringify({[SummarizePrompt.Name]: new Prompt(true, SummarizePrompt.Prompt)}));
 
-    // Creating prompts object if doesn't exist
-    const prompts = await getAllPrompts();
-    console.debug("Adding prompts to storage")
-    await setItem('prompts', JSON.stringify({[SummarizePrompt.Name]: new Prompt(true, SummarizePrompt.Prompt)}));
+    const providerMappings = getProviderMappings();
+    console.debug('providers:\n', providerMappings)
+    await setItem(StorageKeys.ProviderMappings, JSON.stringify(providerMappings));
+
+});
+
+chrome.runtime.onUpdateAvailable.addListener(async (details) => {
+    console.debug("Updating storage objects")
+    await setItem(StorageKeys.Version, extensionVersion);
+
 });
 
 // Background jobs
@@ -51,7 +58,7 @@ async function executePrompt(providerModelName: string, prompt: string) {
         const provider = await loadProvider(providerName)
         console.debug(`Executing prompt on '${providerModelName}'`);
         const output = await provider.stream(modelName, prompt)
-        await setItem('lastOutput', output);
+        await setItem(StorageKeys.LastOutput, output);
         console.debug("Sending output to popup\n:", output);
         await chrome.runtime.sendMessage({ action: 'updateOutput', output});
         return output;

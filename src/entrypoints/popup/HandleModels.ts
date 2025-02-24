@@ -1,5 +1,5 @@
 import {getAllModels} from "@/components/models";
-import {getItem} from "@/common/storage";
+import {getItem, StorageKeys} from "@/common/storage";
 
 export const populateModelsDropdown = async () => {
     const modelsDropdown = document.querySelector<HTMLSelectElement>('#models-dropdown')!;
@@ -8,7 +8,7 @@ export const populateModelsDropdown = async () => {
     try {
         modelsDropdown.innerHTML = '';       // Clear existing options
         const modelMappings = await getAllModels();
-        const currModel = await getItem('currModel');
+        const currModel = await getItem(StorageKeys.CurrModel);
         console.debug(`Found ${Object.keys(modelMappings).length} models (default: ${currModel})`)
 
         Object.keys(modelMappings).forEach(modelName => {
