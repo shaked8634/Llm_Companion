@@ -31,3 +31,13 @@ export async function getProviderMappings() {
     }
     return providerMapping;
 }
+
+export async function generateProviderMappings() {
+    const providerMapping: Record<ProviderType, BaseProvider> = {} as Record<ProviderType, BaseProvider>;
+
+    Object.keys(providerClassMap).forEach(providerClassType => {
+        providerMapping[providerClassType as keyof typeof providerClassMap] = new providerClassMap[providerClassType as keyof typeof providerClassMap]();
+    });
+
+    return providerMapping;
+}
