@@ -3,7 +3,7 @@ import {getTabSession, settingsStorage, TabSession} from '@/lib/store';
 import {useStorage} from '@/hooks/useStorage';
 import {ProviderFactory} from '@/lib/providers/factory';
 import {Model} from '@/lib/providers/types';
-import {Cpu, MessageSquareText, Play, Settings, Sparkles} from 'lucide-preact';
+import {Cpu, MessageSquareText, Play, Settings, Sparkles, Trash2} from 'lucide-preact';
 import '@/assets/main.css';
 
 export default function App() {
@@ -61,32 +61,45 @@ export default function App() {
         });
     };
 
-    if (!session || !settings) return <div class="p-4 text-slate-500">Loading...</div>;
+    const clearHistory = () => {
+        if (sessionItem) {
+            sessionItem.setValue({ messages: [], isLoading: false });
+        }
+    };
+
+    if (!session || !settings) return <div class="p-4 text-slate-500 dark:text-slate-400 font-medium bg-white dark:bg-slate-900">Loading...</div>;
     const hasEnabledProviders = settings.providers.ollama.enabled || settings.providers.gemini.enabled;
 
     return (
-        <div class="flex flex-col h-[550px] w-[400px] bg-slate-50">
-            <header class="flex items-center justify-between px-4 py-3 bg-white border-b shadow-sm">
+        <div class="flex flex-col h-[550px] w-[400px] bg-slate-100 dark:bg-slate-950">
+            {/* Header */}
+            <header class="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0">
                 <div class="flex items-center gap-2">
-                    <Sparkles class="w-5 h-5 text-indigo-600" />
-                    <h1 class="font-bold text-slate-800 text-lg">Companion</h1>
+                    <Sparkles class="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <span class="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight">LLM Companion</span>
                 </div>
-                <button onClick={() => chrome.runtime.openOptionsPage()} class="p-1.5 text-slate-400 hover:text-indigo-600">
-                    <Settings class="w-5 h-5" />
-                </button>
+                <div class="flex items-center gap-1">
+                    {session.messages.length > 0 && (
+                        <button onClick={clearHistory} class="p-1.5 text-slate-400 hover:text-red-500 dark:hover:text-red-400 rounded-lg transition-all">
+                            <Trash2 class="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
             </header>
 
-            <div class="p-4 space-y-3 bg-white border-b">
-                <div class="flex items-center gap-3">
+            {/* Controls Grid */}
+            <div class="p-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 space-y-2">
+                {/* Row 1: Models + Settings */}
+                <div class="flex items-center gap-2">
                     <div class="relative flex-1">
-                        <Cpu class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Cpu class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                         <select
                             disabled={!hasEnabledProviders || models.length === 0}
                             value={settings.selectedModelId}
                             onChange={(e) => setSettings({ ...settings, selectedModelId: (e.target as HTMLSelectElement).value })}
-                            class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none outline-none"
+                            class="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs appearance-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer disabled:opacity-50"
                         >
-                            <option value="">{!hasEnabledProviders ? 'No providers enabled' : 'Select a model...'}</option>
+                            <option value="">{!hasEnabledProviders ? 'No providers' : 'Select model...'}</option>
                             {models.map(m => (
                                 <option key={`${m.providerId}:${m.id}`} value={`${m.providerId}:${m.id}`}>
                                     {m.name} ({m.providerName})
@@ -94,36 +107,64 @@ export default function App() {
                             ))}
                         </select>
                     </div>
+                    <button 
+                        onClick={() => chrome.runtime.openOptionsPage()} 
+                        class="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-all shrink-0"
+                    >
+                        <Settings class="w-4 h-4" />
+                    </button>
                 </div>
 
+                {/* Row 2: Prompts + Execute */}
                 <div class="flex items-center gap-2">
                     <div class="relative flex-1">
-                        <MessageSquareText class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <select class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none outline-none">
+                        <MessageSquareText class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                        <select class="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs appearance-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer">
                             <option value="summarize">Summarize this page</option>
                         </select>
                     </div>
                     <button 
                         onClick={handleExecute}
                         disabled={!settings.selectedModelId || session.isLoading}
-                        class="p-2.5 bg-indigo-600 text-white rounded-xl disabled:bg-slate-200"
+                        class="p-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 transition-all shrink-0"
                     >
-                        <Play class="w-5 h-5 fill-current" />
+                        <Play class="w-4 h-4 fill-current" />
                     </button>
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Output Box */}
+            <div class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+                {session.messages.length === 0 && !session.isLoading && (
+                    <div class="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-600 text-center px-8">
+                        <Sparkles class="w-8 h-8 opacity-20 mb-3" />
+                        <p class="text-xs font-medium">Ready. Select a model and run a prompt.</p>
+                    </div>
+                )}
+                
                 {session.messages.map((m, i) => (
                     <div key={i} class={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div class={`max-w-[90%] px-4 py-3 rounded-2xl text-sm ${
-                            m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-white border text-slate-800'
+                        <div class={`max-w-[90%] px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm transition-colors ${
+                            m.role === 'user' 
+                                ? 'bg-indigo-600 text-white rounded-tr-none' 
+                                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none'
                         }`}>
                             <div class="whitespace-pre-wrap">{m.content}</div>
                         </div>
                     </div>
                 ))}
-                {session.isLoading && <div class="text-xs text-indigo-400 animate-pulse">Thinking...</div>}
+
+                {session.isLoading && (
+                    <div class="flex justify-start animate-pulse">
+                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2.5 rounded-2xl rounded-tl-none">
+                            <div class="flex gap-1">
+                                <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></span>
+                                <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                                <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 <div ref={messagesEndRef} />
             </div>
         </div>

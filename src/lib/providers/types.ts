@@ -7,6 +7,7 @@ export interface ProviderConfig {
     url?: string;
     apiKey?: string;
     enabled: boolean;
+    defaultModel?: string;
 }
 
 export interface ChatMessage {
