@@ -71,7 +71,7 @@ export default function App() {
     const hasEnabledProviders = settings.providers.ollama.enabled || settings.providers.gemini.enabled;
 
     return (
-        <div class="flex flex-col h-[550px] w-[400px] bg-slate-100 dark:bg-slate-950">
+        <div class="flex flex-col h-[600px] w-[480px] bg-slate-100 dark:bg-slate-950">
             {/* Header */}
             <header class="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0">
                 <div class="flex items-center gap-2">

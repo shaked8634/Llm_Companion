@@ -58,66 +58,80 @@ export default function Options() {
     ] as const;
 
     return (
-        <div class="flex min-h-screen w-full bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
-            <aside class="w-64 min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col shrink-0">
-                <nav class="flex-1 p-4 flex flex-col gap-1">
+        <div class="flex min-h-screen w-full bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans p-6 gap-6">
+            {/* Sidebar */}
+            <aside class="w-64 flex flex-col shrink-0">
+                <nav class="flex-1 flex flex-col gap-4">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            class={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
+                            class={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${
                                 activeTab === tab.id 
-                                    ? 'bg-white dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 shadow-sm' 
-                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-700'
+                                    ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-sm font-bold scale-[1.02]' 
+                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 font-medium'
                             }`}
                         >
-                            <tab.icon class="w-4 h-4 shrink-0" />
+                            <tab.icon class={`w-4 h-4 shrink-0 ${activeTab === tab.id ? 'text-indigo-600' : ''}`} />
                             <span>{tab.label}</span>
                         </button>
                     ))}
                 </nav>
-                <div class="p-4">
-                    <button onClick={handleSave} class={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold ${status === 'saved' ? 'bg-green-600' : 'bg-indigo-600'} text-white shadow-lg`}>
+                <div class="mt-auto pt-6">
+                    <button onClick={handleSave} class={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold ${status === 'saved' ? 'bg-green-600' : 'bg-indigo-600'} text-white shadow-lg transition-all hover:opacity-90 active:scale-95`}>
                         {status === 'saving' ? 'Saving...' : status === 'saved' ? 'Saved' : 'Save changes'}
                     </button>
                 </div>
             </aside>
 
-            <main class="flex-1 p-10 bg-slate-100 dark:bg-slate-950">
+            {/* Main Content */}
+            <main class="flex-1 bg-slate-100 dark:bg-slate-950">
                 <div class="w-full">
                     {activeTab === 'models' && (
-                        <div class="space-y-6">
+                        <div class="space-y-8">
                             <div>
-                                <h1 class="text-2xl font-bold">Providers</h1>
-                                <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">Configure your LLM providers.</p>
+                                <h1 class="text-3xl font-bold tracking-tight">Providers</h1>
+                                <p class="text-slate-500 dark:text-slate-400 mt-2 text-sm">Configure your LLM providers and API connections.</p>
                             </div>
-                            <div class="overflow-hidden">
-                                <table class="w-full text-left border-collapse">
+                            
+                            <div class="w-full">
+                                <table class="w-full border-separate border-spacing-y-4 border-spacing-x-4 -ml-4">
                                     <thead>
                                         <tr>
-                                            <th class="px-6 py-4 text-[11px] font-bold text-slate-400 tracking-wider w-20 text-center">Enable</th>
-                                            <th class="px-6 py-4 text-[11px] font-bold text-slate-400 tracking-wider w-32">Provider</th>
-                                            <th class="px-6 py-4 text-[11px] font-bold text-slate-400 tracking-wider">API Key</th>
-                                            <th class="px-6 py-4 text-[11px] font-bold text-slate-400 tracking-wider">URL</th>
+                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider w-20 text-center">Enable</th>
+                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider w-32 text-left">Provider</th>
+                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-left w-1/3">API Key</th>
+                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-left w-1/3">URL</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y-0">
+                                    <tbody>
                                         {(['ollama', 'gemini'] as const).map((id) => {
                                             const config = settings.providers[id];
                                             const isDisabled = !config.enabled;
                                             return (
-                                                <tr key={id} class={`${isDisabled ? 'grayscale opacity-60' : ''}`}>
-                                                    <td class="px-6 py-4 text-center">
-                                                        <input type="checkbox" checked={config.enabled} onChange={(e) => updateProvider(id, { enabled: (e.target as HTMLInputElement).checked })} class="w-4 h-4 rounded text-indigo-600 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800" />
+                                                <tr key={id}>
+                                                    <td class="text-center">
+                                                        <div class="flex items-center justify-center h-10">
+                                                            <input type="checkbox" checked={config.enabled} onChange={(e) => {
+                                                            const isEnabled = (e.target as HTMLInputElement).checked;
+                                                            if (!isEnabled) {
+                                                                updateProvider(id, { enabled: false, apiKey: '', url: '' });
+                                                            } else {
+                                                                updateProvider(id, { enabled: true });
+                                                            }
+                                                        }} class="w-5 h-5 rounded-lg text-indigo-600 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 transition-all cursor-pointer" />
+                                                        </div>
                                                     </td>
-                                                    <td class="px-6 py-4">
-                                                        <span class={`font-semibold capitalize ${isDisabled ? 'text-slate-400 dark:text-slate-600' : 'text-slate-900'}`}>{id}</span>
+                                                    <td>
+                                                        <div class="flex items-center h-10 px-4">
+                                                            <span class={`font-bold capitalize text-base ${isDisabled ? 'text-slate-400 dark:text-slate-600' : 'text-slate-900 dark:text-slate-100'}`}>{id}</span>
+                                                        </div>
                                                     </td>
-                                                    <td class="px-6 py-4">
-                                                        <input type="password" value={config.apiKey || ''} disabled={isDisabled} onInput={(e) => updateProvider(id, { apiKey: (e.target as HTMLInputElement).value })} placeholder="API Key" class={`w-full px-3 py-1.5 bg-white dark:bg-slate-800 border rounded-lg text-sm ${id !== 'ollama' && !config.apiKey && !isDisabled ? 'border-amber-300' : 'border-slate-300 dark:border-slate-700'}`} />
+                                                    <td>
+                                                        <input type="password" value={config.apiKey || ''} disabled={isDisabled} onInput={(e) => updateProvider(id, { apiKey: (e.target as HTMLInputElement).value })} placeholder="API Key" class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? 'opacity-40 grayscale' : 'shadow-sm focus:ring-2 focus:ring-indigo-500/20'} ${id !== 'ollama' && !config.apiKey && !isDisabled ? 'border-amber-300' : 'border-slate-200 dark:border-slate-800'}`} />
                                                     </td>
-                                                    <td class="px-6 py-4">
-                                                        <input type="text" value={config.url || ''} disabled={isDisabled} onInput={(e) => updateProvider(id, { url: (e.target as HTMLInputElement).value })} class="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm" />
+                                                    <td>
+                                                        <input type="text" value={config.url || ''} disabled={isDisabled} onInput={(e) => updateProvider(id, { url: (e.target as HTMLInputElement).value })} class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? 'opacity-40 grayscale' : 'shadow-sm focus:ring-2 focus:ring-indigo-500/20'} border-slate-200 dark:border-slate-800`} />
                                                     </td>
                                                 </tr>
                                             );
@@ -127,8 +141,8 @@ export default function Options() {
                             </div>
                         </div>
                     )}
-                    {activeTab === 'prompts' && <div class="text-center py-20 text-slate-400">Prompts coming soon</div>}
-                    {activeTab === 'about' && <div class="text-center py-20 text-slate-400">About coming soon</div>}
+                    {activeTab === 'prompts' && <div class="text-center py-20 text-slate-400 font-medium">Prompts management coming soon</div>}
+                    {activeTab === 'about' && <div class="text-center py-20 text-slate-400 font-medium">LLM Companion v0.0.1</div>}
                 </div>
             </main>
         </div>
