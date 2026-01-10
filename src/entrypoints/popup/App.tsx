@@ -71,7 +71,7 @@ export default function App() {
     const hasEnabledProviders = settings.providers.ollama.enabled || settings.providers.gemini.enabled;
 
     return (
-        <div class="flex flex-col h-[600px] w-[480px] bg-slate-100 dark:bg-slate-950">
+        <div class="flex flex-col h-[700px] w-[550px] bg-slate-100 dark:bg-slate-950">
             {/* Header */}
             <header class="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0">
                 <div class="flex items-center gap-2">
@@ -134,14 +134,14 @@ export default function App() {
             </div>
 
             {/* Output Box */}
-            <div class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+            <div class="flex-1 overflow-y-auto p-4 flex flex-col justify-end scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
                 {session.messages.length === 0 && !session.isLoading && (
-                    <div class="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-600 text-center px-8">
+                    <div class="flex flex-col items-center justify-end h-full text-slate-400 dark:text-slate-600 text-center px-8 pb-8">
                         <Sparkles class="w-8 h-8 opacity-20 mb-3" />
                         <p class="text-xs font-medium">Ready. Select a model and run a prompt.</p>
                     </div>
                 )}
-                
+                <div class="space-y-4">
                 {session.messages.map((m, i) => (
                     <div key={i} class={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div class={`max-w-[90%] px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm transition-colors ${
@@ -166,6 +166,7 @@ export default function App() {
                     </div>
                 )}
                 <div ref={messagesEndRef} />
+                </div>
             </div>
         </div>
     );

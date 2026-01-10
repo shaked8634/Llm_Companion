@@ -58,7 +58,7 @@ export default function Options() {
     ] as const;
 
     return (
-        <div class="flex min-h-screen w-full bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans p-6 gap-6">
+        <div class="flex min-h-screen w-full bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans p-6 gap-4">
             {/* Sidebar */}
             <aside class="w-64 flex flex-col shrink-0">
                 <nav class="flex-1 flex flex-col gap-4">
@@ -95,13 +95,19 @@ export default function Options() {
                             </div>
                             
                             <div class="w-full">
-                                <table class="w-full border-separate border-spacing-y-4 border-spacing-x-4 -ml-4">
+                                <table class="w-full border-separate border-spacing-y-4 border-spacing-x-2 -ml-2" style="table-layout: fixed;">
+                                    <colgroup>
+                                        <col style="width: 100px;" />
+                                        <col style="width: 150px;" />
+                                        <col style="width: 45%;" />
+                                        <col style="width: 45%;" />
+                                    </colgroup>
                                     <thead>
                                         <tr>
-                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider w-20 text-center">Enable</th>
-                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider w-32 text-left">Provider</th>
-                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-left w-1/3">API Key</th>
-                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-left w-1/3">URL</th>
+                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-center">Enable</th>
+                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-left">Provider</th>
+                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-left">API Key</th>
+                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-left">URL</th>
                                         </tr>
                                     </thead>
                                     <tbody>
