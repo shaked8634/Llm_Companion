@@ -3,7 +3,7 @@ import {getTabSession, settingsStorage, TabSession} from '@/lib/store';
 import {useStorage} from '@/hooks/useStorage';
 import {ProviderFactory} from '@/lib/providers/factory';
 import {Model} from '@/lib/providers/types';
-import {Cpu, MessageSquareText, Play, Settings, Sparkles, Trash2} from 'lucide-preact';
+import {ChevronDown, Cpu, Eraser, MessageSquareText, Play, Settings, Sparkles} from 'lucide-preact';
 import '@/assets/main.css';
 
 interface PageContent {
@@ -98,10 +98,14 @@ export default function App() {
     };
 
     const clearHistory = () => {
+        console.log('[Popup] Clearing chat history');
         if (sessionItem) {
             sessionItem.setValue({ messages: [], isLoading: false });
         }
     };
+
+    // Calculate dynamic height based on content
+    const outputBoxHeight = (session?.messages && session.messages.length > 0) ? 'min-h-[200px] max-h-[600px]' : '';
 
     if (!session || !settings) return <div class="p-4 text-slate-500 dark:text-slate-400 font-medium bg-white dark:bg-slate-900">Loading...</div>;
     const hasEnabledProviders = settings.providers.ollama.enabled || settings.providers.gemini.enabled;
@@ -113,7 +117,7 @@ export default function App() {
     }
 
     return (
-        <div class="flex flex-col w-[500px] bg-slate-100 dark:bg-slate-950">
+        <div class="flex flex-col w-[500px] min-h-0 bg-slate-100 dark:bg-slate-950">
             {/* Header */}
             <header class="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0">
                 <div class="flex items-center gap-2">
@@ -122,8 +126,12 @@ export default function App() {
                 </div>
                 <div class="flex items-center gap-1">
                     {session.messages.length > 0 && (
-                        <button onClick={clearHistory} class="p-1.5 text-slate-400 hover:text-red-500 dark:hover:text-red-400 rounded-lg transition-all">
-                            <Trash2 class="w-4 h-4" />
+                        <button
+                            onClick={clearHistory}
+                            title="Clear conversation"
+                            class="p-1.5 text-slate-400 hover:text-red-500 dark:hover:text-red-400 rounded-lg transition-all"
+                        >
+                            <Eraser class="w-4 h-4" />
                         </button>
                     )}
                 </div>
@@ -134,12 +142,13 @@ export default function App() {
                 {/* Row 1: Models + Settings */}
                 <div class="flex items-center gap-2">
                     <div class="relative flex-1">
-                        <Cpu class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                        <Cpu class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                        <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500 pointer-events-none" />
                         <select
                             disabled={!hasEnabledProviders || models.length === 0}
                             value={settings.selectedModelId}
                             onChange={(e) => setSettings({ ...settings, selectedModelId: (e.target as HTMLSelectElement).value })}
-                            class="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs appearance-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer disabled:opacity-50"
+                            class="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs appearance-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer disabled:opacity-50"
                         >
                             <option value="">{!hasEnabledProviders ? 'No providers' : 'Select model...'}</option>
                             {models.map(m => (
@@ -151,6 +160,7 @@ export default function App() {
                     </div>
                     <button 
                         onClick={() => chrome.runtime.openOptionsPage()} 
+                        title="Open settings"
                         class="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-all shrink-0"
                     >
                         <Settings class="w-4 h-4" />
@@ -160,12 +170,13 @@ export default function App() {
                 {/* Row 2: Prompts + Execute */}
                 <div class="flex items-center gap-2">
                     <div class="relative flex-1">
-                        <MessageSquareText class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                        <MessageSquareText class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                        <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500 pointer-events-none" />
                         <select
                             value={selectedPrompt}
                             onChange={(e) => setSelectedPrompt((e.target as HTMLSelectElement).value)}
                             disabled={prompts.length === 0}
-                            class="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs appearance-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer disabled:opacity-50"
+                            class="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs appearance-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer disabled:opacity-50"
                         >
                             {prompts.length === 0 ? (
                                 <option value="">No prompts available</option>
@@ -179,6 +190,7 @@ export default function App() {
                     <button 
                         onClick={handleExecute}
                         disabled={!settings.selectedModelId || session.isLoading || !selectedPrompt}
+                        title="Execute prompt"
                         class="p-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 transition-all shrink-0"
                     >
                         <Play class="w-4 h-4 fill-current" />
@@ -188,7 +200,7 @@ export default function App() {
 
             {/* Output Box */}
             {(session.messages.length > 0 || session.isLoading) && (
-                <div class="flex-1 overflow-y-auto p-4 flex flex-col max-h-[500px]">
+                <div class={`overflow-y-auto p-4 flex flex-col ${outputBoxHeight}`}>
                     <div class="space-y-4">
                     {session.messages.map((m, i) => (
                         <div key={i} class={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>

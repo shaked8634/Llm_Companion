@@ -17,7 +17,10 @@ export async function handleExecutePrompt(tabId: number, userPrompt: string, pag
 
     console.debug('[Chat Handler] Selected model:', settings.selectedModelId);
 
-    const [providerType, modelId] = settings.selectedModelId.split(':') as [ProviderType, string];
+    // Split only on the first colon to preserve model tags like "qwen3:4b"
+    const colonIndex = settings.selectedModelId.indexOf(':');
+    const providerType = settings.selectedModelId.substring(0, colonIndex) as ProviderType;
+    const modelId = settings.selectedModelId.substring(colonIndex + 1);
     const providerConfig = settings.providers[providerType];
     console.debug('[Chat Handler] Provider:', providerType, 'Model:', modelId);
 
