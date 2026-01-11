@@ -126,14 +126,10 @@ export default function Options() {
             </aside>
 
             <main class="flex-1 bg-slate-100 dark:bg-slate-950">
-                <div class="w-full">
+                <div class="w-full min-h-[700px]">
                     {activeTab === 'models' && (
-                        <div class="space-y-8">
-                            <div>
-                                <h1 class="text-3xl font-bold tracking-tight">Providers</h1>
-                                <p class="text-slate-500 dark:text-slate-400 mt-2 text-sm">Configure your LLM providers and API connections.</p>
-                            </div>
-                            
+                        <div class="space-y-6 min-h-[700px] flex flex-col">
+
                             <div class="w-full">
                                 <table class="w-full border-separate border-spacing-y-4 border-spacing-x-2 -ml-2" style="table-layout: fixed;">
                                     <colgroup>
@@ -197,7 +193,9 @@ export default function Options() {
                                 </table>
                             </div>
 
-                            <div class="mt-auto flex justify-end pb-4">
+                            <div class="flex-1"></div>
+
+                            <div class="flex justify-end pb-4">
                                 <button
                                     onClick={refreshModels}
                                     class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 shadow-sm"
@@ -208,15 +206,14 @@ export default function Options() {
                             </div>
                         </div>
                     )}
-                    {activeTab === 'prompts' && <div class="text-center py-20 text-slate-400 font-medium">Prompts management coming soon</div>}
+                    {activeTab === 'prompts' && (
+                        <div class="min-h-[700px] flex items-center justify-center">
+                            <div class="text-center text-slate-400 font-medium">Prompts management coming soon</div>
+                        </div>
+                    )}
                     {activeTab === 'about' && (
-                        <div class="max-w-2xl mx-auto py-10 space-y-8">
-                            <div>
-                                <h1 class="text-3xl font-bold tracking-tight">About</h1>
-                                <p class="text-slate-500 dark:text-slate-400 mt-2 text-sm">Learn more about LLM Companion.</p>
-                            </div>
-
-                            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 space-y-6 shadow-sm">
+                        <div class="space-y-6 min-h-[700px] flex flex-col">
+                            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 space-y-6 shadow-sm max-w-4xl">
                                 <p class="text-lg font-medium leading-relaxed">
                                     LLM Companion - an Open Source Extension harnessing local and cloud LLM power in the browsers.
                                 </p>
