@@ -38,7 +38,11 @@ export class OllamaProvider extends BaseProvider {
         options?: GenerationOptions
     ): AsyncGenerator<string, void, unknown> {
         const url = this.config.url || OllamaProvider.defaultUrl;
-        
+        console.debug('[Ollama] Starting stream request');
+        console.debug('[Ollama] URL:', `${url}/api/chat`);
+        console.debug('[Ollama] Model:', model);
+        console.debug('[Ollama] Messages count:', messages.length);
+
         const response = await fetch(`${url}/api/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -54,17 +58,31 @@ export class OllamaProvider extends BaseProvider {
         });
 
         if (!response.ok) {
+            const errorText = await response.text().catch(() => 'Unknown error');
+            console.error('[Ollama] Request failed:', response.status, response.statusText);
+            console.error('[Ollama] Error details:', errorText);
             throw new Error(`Ollama error: ${response.statusText}`);
         }
 
+        console.debug('[Ollama] Stream connection established');
+
         const reader = response.body?.getReader();
-        if (!reader) return;
+        if (!reader) {
+            console.error('[Ollama] No reader available from response');
+            return;
+        }
 
         const decoder = new TextDecoder();
+        let totalChunks = 0;
         try {
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) break;
+                if (done) {
+                    console.debug('[Ollama] Stream ended, total chunks:', totalChunks);
+                    break;
+                }
+
+                totalChunks++;
 
                 const chunk = decoder.decode(value, { stream: true });
                 const lines = chunk.split('\n');
@@ -76,9 +94,12 @@ export class OllamaProvider extends BaseProvider {
                         if (json.message?.content) {
                             yield json.message.content;
                         }
-                        if (json.done) break;
+                        if (json.done) {
+                            console.debug('[Ollama] Received done signal');
+                            break;
+                        }
                     } catch (_e) {
-                        console.warn('Failed to parse Ollama chunk:', line);
+                        console.warn('[Ollama] Failed to parse chunk:', line);
                     }
                 }
             }

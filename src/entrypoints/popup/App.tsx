@@ -53,20 +53,40 @@ export default function App() {
     }, [session?.messages]);
 
     const handleExecute = async () => {
-        if (!currentTabId || !settings?.selectedModelId || !selectedPrompt) return;
+        console.debug('[Popup] Execute button clicked');
+
+        if (!currentTabId || !settings?.selectedModelId || !selectedPrompt) {
+            console.warn('[Popup] Missing required data:', { currentTabId, selectedModelId: settings?.selectedModelId, selectedPrompt });
+            return;
+        }
+
         const prompt = settings.prompts?.find(p => p.id === selectedPrompt);
-        if (!prompt) return;
+        if (!prompt) {
+            console.error('[Popup] Prompt not found:', selectedPrompt);
+            return;
+        }
+
+        console.debug('[Popup] Selected prompt:', { id: prompt.id, name: prompt.name, text: prompt.text });
+        console.debug('[Popup] Requesting page scrape from tab:', currentTabId);
 
         let pageContent: PageContent | null = null;
         try {
             const response = await chrome.tabs.sendMessage(currentTabId, { type: 'SCRAPE_PAGE' });
             if (response?.success) {
                 pageContent = response.payload as PageContent;
+                console.debug('[Popup] Page content received:', {
+                    title: pageContent?.title,
+                    domain: pageContent?.domain,
+                    wordCount: pageContent?.wordCount
+                });
+            } else {
+                console.warn('[Popup] Scrape failed:', response?.error);
             }
         } catch (e) {
-            console.warn(e);
+            console.error('[Popup] Failed to scrape page:', e);
         }
 
+        console.debug('[Popup] Sending EXECUTE_PROMPT to background');
         chrome.runtime.sendMessage({
             type: 'EXECUTE_PROMPT',
             payload: {

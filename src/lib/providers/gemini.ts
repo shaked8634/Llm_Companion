@@ -35,7 +35,14 @@ export class GeminiProvider extends BaseProvider {
         messages: ChatMessage[],
         options?: GenerationOptions
     ): AsyncGenerator<string, void, unknown> {
-        if (!this.config.apiKey) throw new Error('Gemini API Key is missing');
+        if (!this.config.apiKey) {
+            console.error('[Gemini] API Key is missing');
+            throw new Error('Gemini API Key is missing');
+        }
+
+        console.debug('[Gemini] Starting stream request');
+        console.debug('[Gemini] Model:', model);
+        console.debug('[Gemini] Messages count:', messages.length);
 
         const contents = messages.map(m => ({
             role: m.role === 'assistant' ? 'model' : 'user',
@@ -59,19 +66,32 @@ export class GeminiProvider extends BaseProvider {
 
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
+            console.error('[Gemini] Request failed:', response.status, response.statusText);
+            console.error('[Gemini] Error details:', error);
             throw new Error(`Gemini error: ${error.error?.message || response.statusText}`);
         }
 
+        console.debug('[Gemini] Stream connection established');
+
         const reader = response.body?.getReader();
-        if (!reader) return;
+        if (!reader) {
+            console.error('[Gemini] No reader available from response');
+            return;
+        }
 
         const decoder = new TextDecoder();
         let buffer = '';
+        let totalChunks = 0;
 
         try {
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) break;
+                if (done) {
+                    console.debug('[Gemini] Stream ended, total chunks processed:', totalChunks);
+                    break;
+                }
+
+                totalChunks++;
 
                 buffer += decoder.decode(value, { stream: true });
                 
@@ -99,7 +119,7 @@ export class GeminiProvider extends BaseProvider {
                                     const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
                                     if (text) yield text;
                                 } catch (_e) {
-                                    console.warn('Failed to parse Gemini chunk:', jsonStr);
+                                    console.warn('[Gemini] Failed to parse chunk:', jsonStr.substring(0, 100));
                                 }
                                 buffer = buffer.substring(i + 1).replace(/^,\s*/, '');
                                 i = -1; // Reset loop for new buffer
