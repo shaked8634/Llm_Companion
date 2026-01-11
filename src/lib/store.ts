@@ -1,6 +1,13 @@
 import {storage} from 'wxt/storage';
 import {ChatMessage, ProviderConfig} from './providers/types';
 
+export interface Prompt {
+    id: string;
+    name: string;
+    text: string;
+    isDefault?: boolean;
+}
+
 export interface AppSettings {
     activeProvider: 'ollama' | 'gemini';
     providers: {
@@ -13,6 +20,7 @@ export interface AppSettings {
     };
     selectedModelId?: string; // Format: "providerId:modelId"
     systemPrompt: string;
+    prompts: Prompt[];
 }
 
 export interface TabSession {
@@ -29,7 +37,15 @@ export const defaultSettings: AppSettings = {
     },
     activeModel: {},
     selectedModelId: undefined,
-    systemPrompt: 'You are a helpful browsing assistant. Summarize or answer questions based on the provided page content.'
+    systemPrompt: 'You are a helpful browsing assistant. Summarize or answer questions based on the provided page content.',
+    prompts: [
+        {
+            id: 'default-summarize',
+            name: 'Summarize this page',
+            text: 'Summarize this page with less than 500 words',
+            isDefault: true
+        }
+    ]
 };
 
 export const settingsStorage = storage.defineItem<AppSettings>(

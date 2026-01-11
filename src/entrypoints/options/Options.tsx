@@ -1,18 +1,18 @@
 import {useEffect, useState} from 'preact/hooks';
-import {AppSettings, settingsStorage} from '@/lib/store';
+import {AppSettings, Prompt, settingsStorage} from '@/lib/store';
 import {useStorage} from '@/hooks/useStorage';
 import {ProviderFactory} from '@/lib/providers/factory';
-import {Bot, CheckCircle2, FileText, Info, Loader2, RotateCw, XCircle} from 'lucide-preact';
+import {Bot, CheckCircle2, FileText, Info, Loader2, Plus, RotateCw, Trash2, XCircle} from 'lucide-preact';
 import '@/assets/main.css';
 
 type TabId = 'models' | 'prompts' | 'about';
 type VerificationStatus = 'idle' | 'loading' | 'success' | 'error';
+type VerificationState = Record<string, VerificationStatus>;
 
 export default function Options() {
     const [settings, setSettings] = useStorage(settingsStorage);
     const [activeTab, setActiveTab] = useState<TabId>('models');
-    const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-    const [verification, setVerification] = useState<Record<string, VerificationStatus>>({
+    const [verification, setVerification] = useState<VerificationState>({
         ollama: 'idle',
         gemini: 'idle'
     });
@@ -48,7 +48,6 @@ export default function Options() {
         });
     };
 
-    // Run verification when settings change
     useEffect(() => {
         if (!settings) return;
         ['ollama', 'gemini'].forEach(id => {
@@ -59,15 +58,22 @@ export default function Options() {
         });
     }, [settings?.providers]);
 
-    const handleSave = async () => {
-        setStatus('saving');
-        setTimeout(() => {
-            setStatus('saved');
-            setTimeout(() => setStatus('idle'), 2000);
-        }, 500);
-    };
-
     if (!settings) return <div class="p-8 text-slate-500 font-medium">Loading settings...</div>;
+
+    if (!settings.prompts) {
+        setSettings({
+            ...settings,
+            prompts: [
+                {
+                    id: 'default-summarize',
+                    name: 'Summarize this page',
+                    text: 'Summarize this page with less than 500 words',
+                    isDefault: true
+                }
+            ]
+        });
+        return <div class="p-8 text-slate-500 font-medium">Loading settings...</div>;
+    }
 
     const updateProvider = (id: keyof AppSettings['providers'], updates: any) => {
         const newSettings = {
@@ -78,15 +84,12 @@ export default function Options() {
             }
         };
 
-        // If disabling, clear verification state
         if (updates.enabled === false) {
             setVerification(prev => ({ ...prev, [id]: 'idle' }));
-            // Also reset selected model if it belongs to this provider
             if (settings.selectedModelId?.startsWith(`${id}:`)) {
                 newSettings.selectedModelId = '';
             }
         } else if (updates.enabled === true || updates.apiKey !== undefined || updates.url !== undefined) {
-            // Trigger verification on change
             verifyProvider(id, newSettings.providers[id]);
         }
 
@@ -102,7 +105,7 @@ export default function Options() {
     return (
         <div class="flex min-h-screen w-full bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans p-6 gap-4">
             <aside class="w-64 flex flex-col shrink-0">
-                <nav class="flex-1 flex flex-col gap-4">
+                <nav class="flex flex-col gap-4">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
@@ -118,18 +121,12 @@ export default function Options() {
                         </button>
                     ))}
                 </nav>
-                <div class="mt-auto pt-6">
-                    <button onClick={handleSave} class={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold ${status === 'saved' ? 'bg-green-600' : 'bg-indigo-600'} text-white shadow-lg transition-all hover:opacity-90 active:scale-95`}>
-                        {status === 'saving' ? 'Saving...' : status === 'saved' ? 'Saved' : 'Save changes'}
-                    </button>
-                </div>
             </aside>
 
             <main class="flex-1 bg-slate-100 dark:bg-slate-950">
-                <div class="w-full min-h-[700px]">
+                <div class="w-full">
                     {activeTab === 'models' && (
-                        <div class="space-y-6 min-h-[700px] flex flex-col">
-
+                        <div class="space-y-8">
                             <div class="w-full">
                                 <table class="w-full border-separate border-spacing-y-4 border-spacing-x-2 -ml-2" style="table-layout: fixed;">
                                     <colgroup>
@@ -193,9 +190,7 @@ export default function Options() {
                                 </table>
                             </div>
 
-                            <div class="flex-1"></div>
-
-                            <div class="flex justify-end pb-4">
+                            <div class="flex justify-end">
                                 <button
                                     onClick={refreshModels}
                                     class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 shadow-sm"
@@ -206,13 +201,102 @@ export default function Options() {
                             </div>
                         </div>
                     )}
+
                     {activeTab === 'prompts' && (
-                        <div class="min-h-[700px] flex items-center justify-center">
-                            <div class="text-center text-slate-400 font-medium">Prompts management coming soon</div>
+                        <div class="space-y-8">
+                            <div class="w-full">
+                                <table class="w-full border-separate border-spacing-y-4 border-spacing-x-2 -ml-2" style="table-layout: fixed;">
+                                    <colgroup>
+                                        <col style="width: 200px;" />
+                                        <col style="width: auto;" />
+                                        <col style="width: 60px;" />
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-left">Name</th>
+                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-left">Prompt Text</th>
+                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {(settings.prompts || []).map((prompt) => (
+                                            <tr key={prompt.id}>
+                                                <td class="align-top">
+                                                    <input
+                                                        type="text"
+                                                        value={prompt.name}
+                                                        maxLength={30}
+                                                        onInput={(e) => {
+                                                            const newPrompts = settings.prompts.map(p =>
+                                                                p.id === prompt.id ? { ...p, name: (e.target as HTMLInputElement).value } : p
+                                                            );
+                                                            setSettings({ ...settings, prompts: newPrompts });
+                                                        }}
+                                                        class="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm transition-all shadow-sm focus:ring-2 focus:ring-indigo-500/20"
+                                                    />
+                                                </td>
+                                                <td class="align-top">
+                                                    <textarea
+                                                        value={prompt.text}
+                                                        maxLength={1000}
+                                                        onInput={(e) => {
+                                                            const newPrompts = settings.prompts.map(p =>
+                                                                p.id === prompt.id ? { ...p, text: (e.target as HTMLTextAreaElement).value } : p
+                                                            );
+                                                            setSettings({ ...settings, prompts: newPrompts });
+                                                        }}
+                                                        rows={3}
+                                                        class="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm transition-all shadow-sm focus:ring-2 focus:ring-indigo-500/20 resize-y min-h-[80px]"
+                                                    />
+                                                </td>
+                                                <td class="text-center align-top">
+                                                    <div class="flex items-start justify-center pt-2.5">
+                                                        <button
+                                                            onClick={() => {
+                                                                if (!prompt.isDefault) {
+                                                                    const newPrompts = settings.prompts.filter(p => p.id !== prompt.id);
+                                                                    setSettings({ ...settings, prompts: newPrompts });
+                                                                }
+                                                            }}
+                                                            disabled={prompt.isDefault}
+                                                            class={`p-2 rounded-lg transition-all ${
+                                                                prompt.isDefault
+                                                                    ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
+                                                                    : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 active:scale-95 cursor-pointer'
+                                                            }`}
+                                                        >
+                                                            <Trash2 class="w-5 h-5" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="flex justify-end">
+                                <button
+                                    onClick={() => {
+                                        const newPrompt: Prompt = {
+                                            id: `prompt-${Date.now()}`,
+                                            name: 'New Prompt',
+                                            text: '',
+                                            isDefault: false
+                                        };
+                                        setSettings({ ...settings, prompts: [...(settings.prompts || []), newPrompt] });
+                                    }}
+                                    class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 shadow-sm"
+                                >
+                                    <Plus class="w-4 h-4" />
+                                    <span>Add Prompt</span>
+                                </button>
+                            </div>
                         </div>
                     )}
+
                     {activeTab === 'about' && (
-                        <div class="space-y-6 min-h-[700px] flex flex-col">
+                        <div class="space-y-6">
                             <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 space-y-6 shadow-sm max-w-4xl">
                                 <p class="text-lg font-medium leading-relaxed">
                                     LLM Companion - an Open Source Extension harnessing local and cloud LLM power in the browsers.
