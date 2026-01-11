@@ -1,11 +1,2 @@
 @import "tailwindcss";
 
-/* Remove scrollbars globally for options view */
-html, body {
-  overflow: hidden;
-  height: 100%;
-}
-
-::-webkit-scrollbar {
-  display: none;
-}

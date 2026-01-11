@@ -10,12 +10,24 @@ export class GeminiProvider extends BaseProvider {
     }
 
     async getModels(): Promise<Model[]> {
-        // Common Gemini models
-        return [
-            { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
-            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
-            { id: 'gemini-pro', name: 'Gemini 1.0 Pro' },
-        ];
+        if (!this.config.apiKey) return [];
+        try {
+        const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models?key=${this.config.apiKey}`
+            );
+            if (!response.ok) throw new Error('Failed to fetch Gemini models');
+
+            const data = await response.json();
+            return data.models
+                .filter((m: any) => m.supportedGenerationMethods.includes('generateContent'))
+                .map((m: any) => ({
+                    id: m.name.replace('models/', ''),
+                    name: m.displayName
+                }));
+        } catch (e) {
+            console.error('Gemini getModels error:', e);
+            throw e;
+        }
     }
 
     async* stream(
