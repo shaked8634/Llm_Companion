@@ -6,6 +6,10 @@ import {Model} from '@/lib/providers/types';
 import {Cpu, MessageSquareText, Play, Settings, Sparkles, Trash2} from 'lucide-preact';
 import '@/assets/main.css';
 
+interface PageContent {
+    [key: string]: unknown;
+}
+
 export default function App() {
     const [currentTabId, setCurrentTabId] = useState<number | null>(null);
     const [settings, setSettings] = useStorage(settingsStorage);
@@ -53,15 +57,23 @@ export default function App() {
         const prompt = settings.prompts?.find(p => p.id === selectedPrompt);
         if (!prompt) return;
 
-        let pageContext = '';
+        let pageContent: PageContent | null = null;
         try {
             const response = await chrome.tabs.sendMessage(currentTabId, { type: 'SCRAPE_PAGE' });
-            if (response?.success) pageContext = response.payload.content;
-        } catch (e) { console.warn(e); }
+            if (response?.success) {
+                pageContent = response.payload as PageContent;
+            }
+        } catch (e) {
+            console.warn(e);
+        }
 
         chrome.runtime.sendMessage({
             type: 'EXECUTE_PROMPT',
-            payload: { tabId: currentTabId, userPrompt: prompt.text, pageContext }
+            payload: {
+                tabId: currentTabId,
+                userPrompt: prompt.text,
+                pageContext: pageContent ? JSON.stringify(pageContent) : ''
+            }
         });
     };
 
