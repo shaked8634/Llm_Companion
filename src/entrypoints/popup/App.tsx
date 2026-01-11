@@ -1,9 +1,7 @@
-import {useEffect, useRef, useState} from 'preact/hooks';
+import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import {getTabSession, settingsStorage, TabSession} from '@/lib/store';
 import {useStorage} from '@/hooks/useStorage';
-import {ProviderFactory} from '@/lib/providers/factory';
-import {Model} from '@/lib/providers/types';
-import {ChevronDown, Cpu, Eraser, MessageSquareText, Play, Settings, Sparkles} from 'lucide-preact';
+import {ChevronDown, Cpu, Eraser, MessageSquareText, Play, RefreshCw, Settings, Sparkles} from 'lucide-preact';
 import '@/assets/main.css';
 
 interface PageContent {
@@ -13,7 +11,7 @@ interface PageContent {
 export default function App() {
     const [currentTabId, setCurrentTabId] = useState<number | null>(null);
     const [settings, setSettings] = useStorage(settingsStorage);
-    const [models, setModels] = useState<(Model & { providerId: string, providerName: string })[]>([]);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [selectedPrompt, setSelectedPrompt] = useState<string>('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -23,34 +21,31 @@ export default function App() {
         });
     }, []);
 
-    const sessionItem = currentTabId ? getTabSession(currentTabId) : null;
+    const sessionItem = useMemo(() => {
+        return currentTabId ? getTabSession(currentTabId) : null;
+    }, [currentTabId]);
+
     const [session] = useStorage<TabSession>(sessionItem);
 
     useEffect(() => {
-        if (!settings) return;
-        const discoverModels = async () => {
-            const allModels: (Model & { providerId: string, providerName: string })[] = [];
-            const providers = [
-                { id: 'ollama', name: 'Ollama', config: settings.providers.ollama },
-                { id: 'gemini', name: 'Gemini', config: settings.providers.gemini }
-            ];
-            for (const p of providers) {
-                if (p.config.enabled) {
-                    try {
-                        const provider = ProviderFactory.create(p.id as any, p.config);
-                        const pModels = await provider.getModels();
-                        allModels.push(...pModels.map(m => ({ ...m, providerId: p.id, providerName: p.name })));
-                    } catch (e) { console.error(e); }
-                }
-            }
-            setModels(allModels);
-        };
-        discoverModels();
-    }, [settings?.providers]);
-
-    useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [session?.messages]);
+    }, [session?.messages?.length]); // Only depend on length to prevent re-renders on content changes
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            console.debug('[Popup] Component unmounting, cleaning up');
+        };
+    }, []);
+
+    const handleRefreshModels = async () => {
+        setIsRefreshing(true);
+        try {
+            await chrome.runtime.sendMessage({ type: 'REFRESH_MODELS' });
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
 
     const handleExecute = async () => {
         console.debug('[Popup] Execute button clicked');
@@ -108,8 +103,10 @@ export default function App() {
     const outputBoxHeight = (session?.messages && session.messages.length > 0) ? 'min-h-[200px] max-h-[600px]' : '';
 
     if (!session || !settings) return <div class="p-4 text-slate-500 dark:text-slate-400 font-medium bg-white dark:bg-slate-900">Loading...</div>;
+
     const hasEnabledProviders = settings.providers.ollama.enabled || settings.providers.gemini.enabled;
     const prompts = settings.prompts || [];
+    const models = settings.discoveredModels || [];
 
     // Auto-select first prompt if none selected
     if (!selectedPrompt && prompts.length > 0) {
@@ -117,7 +114,7 @@ export default function App() {
     }
 
     return (
-        <div class="flex flex-col w-[500px] min-h-0 bg-slate-100 dark:bg-slate-950">
+        <div class="flex flex-col w-[500px] h-[700px] max-h-[700px] overflow-hidden bg-slate-100 dark:bg-slate-950">
             {/* Header */}
             <header class="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0">
                 <div class="flex items-center gap-2">
@@ -125,6 +122,14 @@ export default function App() {
                     <span class="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight">LLM Companion</span>
                 </div>
                 <div class="flex items-center gap-1">
+                    <button
+                        onClick={handleRefreshModels}
+                        title="Refresh models"
+                        disabled={isRefreshing}
+                        class={`p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-all ${isRefreshing ? 'animate-spin text-indigo-500' : ''}`}
+                    >
+                        <RefreshCw class="w-4 h-4" />
+                        </button>
                     {session.messages.length > 0 && (
                         <button
                             onClick={clearHistory}
@@ -132,13 +137,13 @@ export default function App() {
                             class="p-1.5 text-slate-400 hover:text-red-500 dark:hover:text-red-400 rounded-lg transition-all"
                         >
                             <Eraser class="w-4 h-4" />
-                        </button>
+                    </button>
                     )}
-                </div>
+                    </div>
             </header>
 
             {/* Controls Grid */}
-            <div class="p-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 space-y-2">
+            <div class="p-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 space-y-2 shrink-0">
                 {/* Row 1: Models + Settings */}
                 <div class="flex items-center gap-2">
                     <div class="relative flex-1">
@@ -149,17 +154,17 @@ export default function App() {
                             value={settings.selectedModelId}
                             onChange={(e) => setSettings({ ...settings, selectedModelId: (e.target as HTMLSelectElement).value })}
                             class="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs appearance-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer disabled:opacity-50"
-                        >
-                            <option value="">{!hasEnabledProviders ? 'No providers' : 'Select model...'}</option>
+                    >
+                            <option value="">{!hasEnabledProviders ? 'No providers' : models.length === 0 ? 'Loading models...' : 'Select model...'}</option>
                             {models.map(m => (
                                 <option key={`${m.providerId}:${m.id}`} value={`${m.providerId}:${m.id}`}>
                                     {m.name} ({m.providerName})
                                 </option>
-                            ))}
+                ))}
                         </select>
-                    </div>
-                    <button 
-                        onClick={() => chrome.runtime.openOptionsPage()} 
+                                </div>
+                    <button
+                        onClick={() => chrome.runtime.openOptionsPage()}
                         title="Open settings"
                         class="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-all shrink-0"
                     >
@@ -184,10 +189,10 @@ export default function App() {
                                 prompts.map(prompt => (
                                     <option key={prompt.id} value={prompt.id}>{prompt.name}</option>
                                 ))
-                            )}
+            )}
                         </select>
-                    </div>
-                    <button 
+        </div>
+                    <button
                         onClick={handleExecute}
                         disabled={!settings.selectedModelId || session.isLoading || !selectedPrompt}
                         title="Execute prompt"
@@ -200,19 +205,18 @@ export default function App() {
 
             {/* Output Box */}
             {(session.messages.length > 0 || session.isLoading) && (
-                <div class={`overflow-y-auto p-4 flex flex-col ${outputBoxHeight}`}>
-                    <div class="space-y-4">
+                <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
                     {session.messages.map((m, i) => (
                         <div key={i} class={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div class={`max-w-[90%] px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm transition-colors ${
-                                m.role === 'user' 
-                                    ? 'bg-indigo-600 text-white rounded-tr-none' 
+                                m.role === 'user'
+                                    ? 'bg-indigo-600 text-white rounded-tr-none'
                                     : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none'
                             }`}>
                                 <div class="whitespace-pre-wrap">{m.content}</div>
                             </div>
                         </div>
-                ))}
+                    ))}
 
                     {session.isLoading && (
                         <div class="flex justify-start animate-pulse">
@@ -226,7 +230,6 @@ export default function App() {
                         </div>
                     )}
                     <div ref={messagesEndRef} />
-                    </div>
                 </div>
             )}
         </div>

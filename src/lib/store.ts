@@ -1,11 +1,16 @@
 import {storage} from 'wxt/storage';
-import {ChatMessage, ProviderConfig} from './providers/types';
+import {ChatMessage, Model, ProviderConfig} from './providers/types';
 
 export interface Prompt {
     id: string;
     name: string;
     text: string;
     isDefault?: boolean;
+}
+
+export interface DiscoveredModel extends Model {
+    providerId: string;
+    providerName: string;
 }
 
 export interface AppSettings {
@@ -19,6 +24,7 @@ export interface AppSettings {
         gemini?: string;
     };
     selectedModelId?: string; // Format: "providerId:modelId"
+    discoveredModels: DiscoveredModel[];
     systemPrompt: string;
     prompts: Prompt[];
 }
@@ -37,6 +43,7 @@ export const defaultSettings: AppSettings = {
     },
     activeModel: {},
     selectedModelId: undefined,
+    discoveredModels: [],
     systemPrompt: 'You are a helpful browsing assistant. Summarize or answer questions based on the provided page content.',
     prompts: [
         {

@@ -22,10 +22,50 @@ export class OllamaProvider extends BaseProvider {
             const url = this.config.url || OllamaProvider.defaultUrl;
             const response = await fetch(`${url}/api/tags`);
             const data = await response.json();
-            return (data.models || []).map((m: any) => ({
-                id: m.name,
-                name: m.name,
-            }));
+
+            const models: Model[] = [];
+
+            // Fetch detailed info for each model to get context length
+            for (const m of (data.models || [])) {
+                try {
+                    const showResponse = await fetch(`${url}/api/show`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: m.name })
+                    });
+
+                    if (showResponse.ok) {
+                        const modelInfo = await showResponse.json();
+                        // Extract num_ctx from model parameters
+                        const contextLength = modelInfo.model_info?.['llama.context_length'] ||
+                                            modelInfo.details?.parameter_size?.context ||
+                                            undefined;
+
+                        console.debug(`[Ollama] Model ${m.name} context length:`, contextLength);
+
+                        models.push({
+                            id: m.name,
+                            name: m.name,
+                            contextLength
+                        });
+                    } else {
+                        // Fallback if show API fails
+                        models.push({
+                            id: m.name,
+                            name: m.name
+                        });
+                    }
+                } catch (showError) {
+                    console.warn(`[Ollama] Could not fetch details for ${m.name}:`, showError);
+                    // Fallback without context length
+                    models.push({
+                        id: m.name,
+                        name: m.name
+                    });
+                }
+            }
+
+            return models;
         } catch (error) {
             console.error('Ollama getModels error:', error);
             return [];
@@ -43,25 +83,56 @@ export class OllamaProvider extends BaseProvider {
         console.debug('[Ollama] Model:', model);
         console.debug('[Ollama] Messages count:', messages.length);
 
+        // Log message details for debugging
+        messages.forEach((msg, idx) => {
+            console.debug(`[Ollama] Message ${idx} - Role: ${msg.role}, Length: ${msg.content.length} chars`);
+            if (msg.content.length > 1000) {
+                console.debug(`[Ollama] Message ${idx} preview:`, msg.content.substring(0, 200) + '...');
+            }
+        });
+
+        const requestBody = {
+            model,
+            messages,
+            stream: true,
+            options: {
+                temperature: options?.temperature,
+                num_predict: options?.maxTokens,
+            }
+        };
+
+        console.debug('[Ollama] Request body size:', JSON.stringify(requestBody).length, 'bytes');
+
         const response = await fetch(`${url}/api/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model,
-                messages,
-                stream: true,
-                options: {
-                    temperature: options?.temperature,
-                    num_predict: options?.maxTokens,
-                }
-            }),
+            body: JSON.stringify(requestBody),
         });
 
         if (!response.ok) {
-            const errorText = await response.text().catch(() => 'Unknown error');
-            console.error('[Ollama] Request failed:', response.status, response.statusText);
-            console.error('[Ollama] Error details:', errorText);
-            throw new Error(`Ollama error: ${response.statusText}`);
+            let errorDetails = response.statusText;
+            try {
+                const errorText = await response.text();
+                console.error('[Ollama] Request failed:', response.status, response.statusText);
+                console.error('[Ollama] Error details:', errorText);
+
+                // Try to parse JSON error for better message
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    if (errorJson.error) {
+                        errorDetails = errorJson.error;
+                    }
+                } catch (parseError) {
+                    // Not JSON, use text as-is
+                    if (errorText && errorText.length < 200) {
+                        errorDetails = errorText;
+                    }
+                }
+            } catch (e) {
+                console.error('[Ollama] Could not read error response:', e);
+            }
+
+            throw new Error(`Ollama ${response.status}: ${errorDetails}`);
         }
 
         console.debug('[Ollama] Stream connection established');
@@ -74,6 +145,7 @@ export class OllamaProvider extends BaseProvider {
 
         const decoder = new TextDecoder();
         let totalChunks = 0;
+
         try {
             while (true) {
                 const { done, value } = await reader.read();
@@ -104,7 +176,12 @@ export class OllamaProvider extends BaseProvider {
                 }
             }
         } finally {
-            reader.releaseLock();
+            try {
+                reader.releaseLock();
+                console.log('[Ollama] Reader released');
+            } catch (e) {
+                console.warn('[Ollama] Error releasing reader:', e);
+            }
         }
     }
 }

@@ -26,6 +26,12 @@ export async function handleExecutePrompt(tabId: number, userPrompt: string, pag
 
     const provider = ProviderFactory.create(providerType, providerConfig);
 
+    // Get model info to check context length
+    console.debug('[Chat Handler] Fetching model info for context validation');
+    const models = await provider.getModels();
+    const activeModel = models.find(m => m.id === modelId);
+    const contextLimit = activeModel?.contextLength;
+
     // Prepare messages
     const currentSession = await session.getValue();
 
@@ -47,12 +53,31 @@ export async function handleExecutePrompt(tabId: number, userPrompt: string, pag
         }
     }
 
+    // Combine system messages into one (some models ignore multiple system messages)
+    const systemContent = formattedPageContext
+        ? `${settings.systemPrompt}\n\n---\n\nContext from current page:\n\n${formattedPageContext}`
+        : settings.systemPrompt;
+
     const messages: ChatMessage[] = [
-        { role: 'system', content: settings.systemPrompt },
-        ...(formattedPageContext ? [{ role: 'system', content: `Context from current page:\n\n${formattedPageContext}` } as ChatMessage] : []),
+        { role: 'system', content: systemContent },
         ...currentSession.messages,
         { role: 'user', content: userPrompt }
     ];
+
+    // Calculate total text length and estimate tokens
+    const totalChars = messages.reduce((sum, msg) => sum + msg.content.length, 0);
+    const estimatedTokens = Math.ceil(totalChars / 4); // Standard rule: 4 chars per token
+    console.debug('[Chat Handler] Context check:', {
+        totalChars,
+        estimatedTokens,
+        contextLimit: contextLimit || 'Unknown'
+    });
+
+    // Warn if content is very large (might exceed context window)
+    if (systemContent.length > 50000) {
+        console.warn('[Chat Handler] Large context detected:', systemContent.length, 'characters');
+        console.warn('[Chat Handler] Some models may truncate or fail with this size');
+    }
 
     // DEBUG: Print the full prompt being sent to LLM
     console.debug('\n========== FULL PROMPT TO LLM ==========');
@@ -83,15 +108,21 @@ export async function handleExecutePrompt(tabId: number, userPrompt: string, pag
         const assistantMessageIndex = (await session.getValue()).messages.length;
         console.debug('[Chat Handler] Assistant message will be at index:', assistantMessageIndex);
 
-        for await (const chunk of generator) {
-            chunkCount++;
-            fullResponse += chunk;
-            
-            if (chunkCount === 1) {
-                console.debug('[Chat Handler] First chunk received, starting response');
+        // Throttle storage updates to prevent performance issues
+        let lastUpdateTime = 0;
+        const UPDATE_INTERVAL_MS = 100; // Update at most every 100ms
+        let pendingUpdate = false;
+
+        const updateSession = async (force = false) => {
+            const now = Date.now();
+            if (!force && now - lastUpdateTime < UPDATE_INTERVAL_MS) {
+                pendingUpdate = true;
+                return;
             }
 
-            // Update storage reactively
+            pendingUpdate = false;
+            lastUpdateTime = now;
+
             const updatedSession = await session.getValue();
             const newMessages = [...updatedSession.messages];
             newMessages[assistantMessageIndex] = { role: 'assistant', content: fullResponse };
@@ -100,25 +131,110 @@ export async function handleExecutePrompt(tabId: number, userPrompt: string, pag
                 ...updatedSession,
                 messages: newMessages
             });
+        };
+
+        try {
+            let lastChunkTime = Date.now();
+            const CHUNK_TIMEOUT_MS = 30000; // 30 seconds without chunks = timeout
+
+            for await (const chunk of generator) {
+                chunkCount++;
+                fullResponse += chunk;
+                lastChunkTime = Date.now();
+
+                if (chunkCount === 1) {
+                    console.debug('[Chat Handler] First chunk received, starting response');
+                }
+
+                // Check for timeout
+                const timeSinceLastChunk = Date.now() - lastChunkTime;
+                if (timeSinceLastChunk > CHUNK_TIMEOUT_MS) {
+                    console.warn('[Chat Handler] Chunk timeout - no data received for 30 seconds');
+                    throw new Error('Request timeout - no response from provider');
+                }
+
+                // Throttled update
+                await updateSession(false);
+            }
+
+            // Final update with any pending content
+            if (pendingUpdate || fullResponse) {
+                await updateSession(true);
+            }
+        } catch (streamError) {
+            console.error('[Chat Handler] Stream error:', streamError);
+            // Ensure we save what we have before re-throwing
+            if (fullResponse) {
+                await updateSession(true);
+            }
+            throw streamError;
         }
 
         console.debug('[Chat Handler] Streaming completed');
         console.debug('[Chat Handler] Total chunks received:', chunkCount);
         console.debug('[Chat Handler] Final response length:', fullResponse.length, 'characters');
 
+        const finalSession = await session.getValue();
+
         console.debug('[Chat Handler] Setting loading to false');
         await session.setValue({
-            ...(await session.getValue()),
+            ...finalSession,
             isLoading: false
         });
 
     } catch (error: any) {
         console.error('[Chat Handler] Error during chat execution:', error);
         console.error('[Chat Handler] Error stack:', error.stack);
-        await session.setValue({
-            ...(await session.getValue()),
-            isLoading: false,
-            lastError: error.message
-        });
+
+        const errorMessage = error.message || 'Unknown error occurred';
+        const userFriendlyError = `Error: ${errorMessage}. Please check your provider connection and try again.`;
+
+        try {
+            const currentSessionState = await session.getValue();
+
+            // Add error message to chat if there's any partial response
+            const errorMessages = [...currentSessionState.messages];
+
+            // If the last message is an assistant message, it might be incomplete
+            // Add error as a new assistant message
+            if (errorMessages.length > 0 && errorMessages[errorMessages.length - 1].role === 'assistant') {
+                // Append error to existing partial response
+                const lastMsg = errorMessages[errorMessages.length - 1];
+                if (lastMsg.content.trim()) {
+                    // Keep partial response, add error as new message
+                    errorMessages.push({ role: 'assistant', content: `⚠️ ${userFriendlyError}` });
+                } else {
+                    // Replace empty assistant message with error
+                    errorMessages[errorMessages.length - 1] = { role: 'assistant', content: `⚠️ ${userFriendlyError}` };
+                }
+            } else {
+                // No assistant message yet, add error message
+                errorMessages.push({ role: 'assistant', content: `⚠️ ${userFriendlyError}` });
+            }
+
+            await session.setValue({
+                ...currentSessionState,
+                messages: errorMessages,
+                isLoading: false,
+                lastError: errorMessage
+            });
+
+            console.debug('[Chat Handler] Error state updated successfully');
+        } catch (storageError) {
+            console.error('[Chat Handler] Failed to update session after error:', storageError);
+            // Last resort - try to at least stop loading state
+            try {
+                const fallbackState = await session.getValue();
+                await session.setValue({
+                    ...fallbackState,
+                    isLoading: false
+                });
+            } catch (finalError) {
+                console.error('[Chat Handler] Fatal: Could not update any session state:', finalError);
+            }
+        }
+
+        // Don't re-throw - error is handled and displayed to user
+        console.debug('[Chat Handler] Error handled, execution complete');
     }
 }

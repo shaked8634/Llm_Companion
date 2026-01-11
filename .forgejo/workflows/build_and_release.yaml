@@ -1,0 +1,24 @@
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: act-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Set Environment Variables and tags (based on tag value)
+        run: |
+          TAG="latest"
+          RELEASE=false
+          BRANCH=${{ github.head_ref || github.ref_name }}
+          DEFAULT_BRANCH=${{ github.event.repository.default_branch }}
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            TAG=$(echo ${{github.ref}} |  cut -d / -f 3)
+            RELEASE=true
+          fi
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "RELEASE=$RELEASE" >> $GITHUB_ENV
+      - uses: actions/checkout@v4

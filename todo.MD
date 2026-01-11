@@ -1,0 +1,20 @@
+# TODO
+- [x] Implement web page to text preprocessing.
+- [x] Send web page text with prompt.
+- [x] Implement popup box for text.
+- [x] Implement custom prompt in popup.
+- [x] Implement text generation output in streaming style.
+- [x] Add support for Gemini.
+- [ ] Fix double scroll bars in popup.
+- [ ] Check why reasoning models print the thinking but not generate the text
+- [ ] Implement text sanity in input.
+- [ ] Implement CI to create extension for Chrome and FF.
+- [ ] Add support for OpenAI.
+- [ ] Implement conversation style on prompt (perhaps using sidebar).
+- [ ] Add an ability to save custom prompt directly from pop-up.
+- [ ] Add a testing framework.
+- [ ] Add Readme.MD
+- [ ] Code cleanup
+- [ ] Security audit
+- [ ] Handle txt pages and pdf flies.
+- [ ] Handle large website

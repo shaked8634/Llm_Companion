@@ -1,6 +1,7 @@
 export interface Model {
     id: string;
     name: string;
+    contextLength?: number; // Context window size in tokens
 }
 
 export interface ProviderConfig {
