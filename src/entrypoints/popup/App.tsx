@@ -99,9 +99,6 @@ export default function App() {
         }
     };
 
-    // Calculate dynamic height based on content
-    const outputBoxHeight = (session?.messages && session.messages.length > 0) ? 'min-h-[200px] max-h-[600px]' : '';
-
     if (!session || !settings) return <div class="p-4 text-slate-500 dark:text-slate-400 font-medium bg-white dark:bg-slate-900">Loading...</div>;
 
     const hasEnabledProviders = settings.providers.ollama.enabled || settings.providers.gemini.enabled;
@@ -114,7 +111,7 @@ export default function App() {
     }
 
     return (
-        <div class="flex flex-col w-[500px] h-[700px] max-h-[700px] overflow-hidden bg-slate-100 dark:bg-slate-950">
+        <div class="flex flex-col w-[400px] min-w-[350px] max-w-[90vw] h-auto min-h-0 overflow-hidden bg-slate-100 dark:bg-slate-950">
             {/* Header */}
             <header class="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0">
                 <div class="flex items-center gap-2">
@@ -203,9 +200,9 @@ export default function App() {
                 </div>
             </div>
 
-            {/* Output Box */}
+            {/* Output Box: only expands when messages or loading */}
             {(session.messages.length > 0 || session.isLoading) && (
-                <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+                <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 transition-all">
                     {session.messages.map((m, i) => (
                         <div key={i} class={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div class={`max-w-[90%] px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm transition-colors ${

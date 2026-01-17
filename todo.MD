@@ -3,18 +3,21 @@
 - [x] Send web page text with prompt.
 - [x] Implement popup box for text.
 - [x] Implement custom prompt in popup.
-- [x] Implement text generation output in streaming style.
+- [x] Implement text generation output in a streaming style.
 - [x] Add support for Gemini.
 - [ ] Fix double scroll bars in popup.
 - [ ] Check why reasoning models print the thinking but not generate the text
 - [ ] Implement text sanity in input.
 - [ ] Implement CI to create extension for Chrome and FF.
 - [ ] Add support for OpenAI.
+- [ ] Icon should dynamically change when generating text.
+  - [ ] Consider changing the icon per LLM provider / model
+- [ ] Add an ability to select text on the page and use it as input.
 - [ ] Implement conversation style on prompt (perhaps using sidebar).
-- [ ] Add an ability to save custom prompt directly from pop-up.
+- [ ] Add an ability to save custom prompt directly from the pop-up.
 - [ ] Add a testing framework.
 - [ ] Add Readme.MD
 - [ ] Code cleanup
 - [ ] Security audit
 - [ ] Handle txt pages and pdf flies.
-- [ ] Handle large website
+- [ ] Handle large websites
