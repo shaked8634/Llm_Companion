@@ -121,7 +121,7 @@ export default function App() {
     }
 
     return (
-        <div class="flex flex-col w-[400px] min-w-[350px] max-w-[90vw] h-auto min-h-0 overflow-hidden bg-slate-100 dark:bg-slate-950">
+        <div class="flex flex-col w-[460px] min-w-[400px] max-w-[95vw] h-auto min-h-0 overflow-hidden bg-slate-100 dark:bg-slate-950">
             {/* Header */}
             <header class="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0">
                 <div class="flex items-center gap-2">
@@ -231,7 +231,7 @@ export default function App() {
                 <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 transition-all">
                     {session.messages.map((m, i) => (
                         <div key={i} class={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div class={`max-w-[90%] px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm transition-colors ${
+                            <div class={`w-full px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm transition-colors ${
                                 m.role === 'user'
                                     ? 'bg-indigo-600 text-white rounded-tr-none'
                                     : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none'
@@ -243,7 +243,7 @@ export default function App() {
 
                     {session.isLoading && (
                         <div class="flex justify-start animate-pulse">
-                            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2.5 rounded-2xl rounded-tl-none">
+                            <div class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2.5 rounded-2xl rounded-tl-none">
                                 <div class="flex gap-1">
                                     <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></span>
                                     <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
