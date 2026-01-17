@@ -1,7 +1,7 @@
 import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import {getTabSession, settingsStorage, TabSession} from '@/lib/store';
 import {useStorage} from '@/hooks/useStorage';
-import {ChevronDown, Cpu, Eraser, MessageSquareText, Play, RefreshCw, Settings, Sparkles} from 'lucide-preact';
+import {ChevronDown, Cpu, Eraser, MessageSquareText, Play, RefreshCw, Settings, Square} from 'lucide-preact';
 import '@/assets/main.css';
 
 interface PageContent {
@@ -92,6 +92,16 @@ export default function App() {
         });
     };
 
+    const handleStop = () => {
+        // Implement cancellation logic, e.g., send a cancel message to background
+        chrome.runtime.sendMessage({ type: 'STOP_EXECUTION', payload: { tabId: currentTabId } });
+        if (sessionItem) sessionItem.setValue({
+            ...session,
+            isLoading: false,
+            messages: session?.messages ?? []
+        });
+    };
+
     const clearHistory = () => {
         console.log('[Popup] Clearing chat history');
         if (sessionItem) {
@@ -115,7 +125,21 @@ export default function App() {
             {/* Header */}
             <header class="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0">
                 <div class="flex items-center gap-2">
-                    <Sparkles class="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <span class="inline-flex items-center justify-center w-8 h-8">
+                        <svg
+                            class={`w-8 h-8 transition-colors duration-200 ${session.isLoading ? 'animate-spin' : ''} text-black dark:text-white`}
+                            viewBox="0 0 76 76"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linejoin="round"
+                                d="M 37,19C 38.1046,19 39,19.8954 39,21C 39,21.8215 38.2547,22.5274 37.5464,22.8352L 38.0834,28.0005C 41.9109,28.0452 44.9999,31.1619 44.9999,35L 45,38L 43.9999,38C 46.2091,38 47.9999,39.7909 47.9999,42L 47.9999,44C 47.9999,46.2091 46.2092,47.9999 44.0002,48L 45,48L 45,55.6003C 43.1755,56.4503 40.2712,57 37,57C 33.7288,57 30.8245,56.4503 29,55.6003L 29,48L 29.9997,48C 27.7907,47.9999 26,46.2091 26,44L 26,42C 26,39.7909 27.7908,38 30,38L 29,38L 29,35C 29,31.1619 32.089,28.0452 35.9166,28.0005L 36.4536,22.8352C 35.7453,22.5274 35,21.8215 35,21C 35,19.8954 35.8954,19 37,19 Z M 43.9999,39.0001L 29.9999,39.0001C 28.3431,39.0001 26.9999,40.3432 26.9999,42.0001L 26.9999,44.0001C 26.9999,45.6569 28.3431,47.0001 29.9999,47.0001L 43.9999,47.0001C 45.6567,47.0001 46.9999,45.6569 46.9999,44.0001L 46.9999,42.0001C 46.9999,40.3432 45.6567,39.0001 43.9999,39.0001 Z M 37,49.25L 36,49.0145L 36,51L 38,51L 38,49.0145L 37,49.25 Z M 43.9999,51C 44,49 43.2371,49.323 42,48.9954L 42,51L 43.9999,51 Z M 39,49.0609L 39,51L 41,51L 41,49.0331L 39,49.0609 Z M 33,49.0331L 33,51L 35,51L 35,49.0609L 33,49.0331 Z M 30,51L 32,51L 32,48.9954C 30.7628,49.323 30,49 30,51 Z M 37,54L 38,53.9772L 38,52L 36,52L 36,53.9772L 37,54 Z M 43.6475,52L 42,52L 42,53.1936C 42.7917,52.8545 43.3305,52.4373 43.6475,52 Z M 39,52L 39,53.9024C 39.7607,53.823 40.4253,53.6981 41,53.5394L 41,52L 39,52 Z M 33,52L 33,53.5L 32.8616,53.5C 33.4673,53.6776 34.1774,53.8165 35,53.9024L 35,52L 33,52 Z M 30.3523,52C 30.6694,52.4373 31.2082,52.8545 32,53.1936L 32,52L 30.3523,52 Z M 32,42L 34,42L 34,44L 32,44L 32,42 Z M 40,42L 42,42L 42,44L 40,44L 40,42 Z M 29.9999,40.0001L 31.1961,40.0001C 30.1797,40.6125 29.5,41.7269 29.5,43C 29.5,44.2732 30.1798,45.3876 31.1963,46.0001L 29.9999,46.0001C 28.8954,46.0001 27.9999,45.1046 27.9999,44.0001L 27.9999,42.0001C 27.9999,40.8955 28.8954,40.0001 29.9999,40.0001 Z M 43.9999,40.0001C 45.1044,40.0001 45.9999,40.8955 45.9999,42.0001L 45.9999,44.0001C 45.9999,45.1046 45.1044,46.0001 43.9999,46.0001L 42.8037,46.0001C 43.8202,45.3876 44.5,44.2732 44.5,43C 44.5,41.7269 43.8202,40.6125 42.8039,40.0001L 43.9999,40.0001 Z M 34.8037,46.0001C 35.8202,45.3876 36.5,44.2732 36.5,43C 36.5,41.7269 35.8202,40.6125 34.8039,40.0001L 39.1961,40.0001C 38.1797,40.6125 37.5,41.7269 37.5,43C 37.5,44.2732 38.1798,45.3876 39.1963,46.0001L 34.8037,46.0001 Z"
+                            />
+                        </svg>
+                    </span>
                     <span class="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight">LLM Companion</span>
                 </div>
                 <div class="flex items-center gap-1">
@@ -190,12 +214,14 @@ export default function App() {
                         </select>
         </div>
                     <button
-                        onClick={handleExecute}
-                        disabled={!settings.selectedModelId || session.isLoading || !selectedPrompt}
-                        title="Execute prompt"
-                        class="p-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 transition-all shrink-0"
+                        onClick={session.isLoading ? handleStop : handleExecute}
+                        disabled={!settings.selectedModelId || (!session.isLoading && !selectedPrompt)}
+                        title={session.isLoading ? 'Stop' : 'Execute prompt'}
+                        class={session.isLoading
+                            ? 'p-2 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg transition-all shrink-0'
+                            : 'p-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 transition-all shrink-0'}
                     >
-                        <Play class="w-4 h-4 fill-current" />
+                        {session.isLoading ? <Square class="w-4 h-4" /> : <Play class="w-4 h-4 fill-current" />}
                     </button>
                 </div>
             </div>
