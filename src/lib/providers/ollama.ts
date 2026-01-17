@@ -120,14 +120,11 @@ export class OllamaProvider extends BaseProvider {
                     if (errorJson.error) {
                         errorDetails = errorJson.error;
                     }
-                } catch (parseError) {
-                    // Not JSON, use text as-is
-                    if (errorText && errorText.length < 200) {
-                        errorDetails = errorText;
-                    }
+                } catch {
+                    // ignore JSON parse errors
                 }
-            } catch (e) {
-                console.error('[Ollama] Could not read error response:', e);
+            } catch {
+                // ignore error reading response
             }
 
             throw new Error(`Ollama ${response.status}: ${errorDetails}`);
@@ -168,7 +165,7 @@ export class OllamaProvider extends BaseProvider {
                             console.debug('[Ollama] Received done signal');
                             break;
                         }
-                    } catch (_e) {
+                    } catch {
                         console.warn('[Ollama] Failed to parse chunk:', line);
                     }
                 }
@@ -177,8 +174,8 @@ export class OllamaProvider extends BaseProvider {
             try {
                 reader.releaseLock();
                 console.log('[Ollama] Reader released');
-            } catch (e) {
-                console.warn('[Ollama] Error releasing reader:', e);
+            } catch {
+                console.warn('[Ollama] Error releasing reader');
             }
         }
     }

@@ -19,5 +19,5 @@
 - [ ] Add Readme.MD
 - [ ] Code cleanup
 - [ ] Security audit
-- [ ] Handle txt pages and pdf flies.
+- [x] Handle txt files
 - [ ] Handle large websites

@@ -25,6 +25,7 @@
     "@eslint/js": "^9.17.0",
     "@preact/preset-vite": "^2.10.2",
     "@tailwindcss/postcss": "^4.1.18",
+    "@testing-library/preact": "^3.2.4",
     "@types/chrome": "^0.0.304",
     "@types/jsdom": "^21.1.7",
     "@types/mozilla-readability": "^0.2.1",
@@ -39,5 +40,15 @@
     "typescript-eslint": "^8.24.1",
     "vitest": "^3.0.6",
     "wxt": "^0.19.27"
+  },
+  "pnpm": {
+    "ignoredBuiltDependencies": [
+      "esbuild",
+      "spawn-sync"
+    ],
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "spawn-sync"
+    ]
   }
 }

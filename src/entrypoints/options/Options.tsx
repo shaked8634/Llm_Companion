@@ -18,6 +18,9 @@ export default function Options() {
         openai: 'idle'
     });
 
+    // Validation state for provider fields
+    const [providerErrors, setProviderErrors] = useState<{ [key: string]: string }>({});
+
     const verifyProvider = async (id: string, config: any) => {
         if (!config.enabled) {
             setVerification(prev => ({ ...prev, [id]: 'idle' }));
@@ -105,6 +108,20 @@ export default function Options() {
         return <div class="p-8 text-slate-500 font-medium">Loading settings...</div>;
     }
 
+    function validateProvider(id: keyof AppSettings['providers'], config: any) {
+        let error = '';
+        if (config.enabled) {
+            if ((id === 'gemini' || id === 'openai') && !config.apiKey) {
+                error = 'API Key is required.';
+            }
+            if (id === 'ollama' && (!config.url || !/^https?:\/\/.+/.test(config.url))) {
+                error = 'Valid URL is required.';
+            }
+        }
+        setProviderErrors(prev => ({ ...prev, [id]: error }));
+        return !error;
+    }
+
     const updateProvider = (id: keyof AppSettings['providers'], updates: any) => {
         const newSettings = {
             ...settings,
@@ -113,7 +130,8 @@ export default function Options() {
                 [id]: { ...settings.providers[id], ...updates }
             }
         };
-
+        // Validate before saving/enabling
+        if (!validateProvider(id, newSettings.providers[id])) return;
         if (updates.enabled === false) {
             setVerification(prev => ({ ...prev, [id]: 'idle' }));
             if (settings.selectedModelId?.startsWith(`${id}:`)) {
@@ -121,7 +139,6 @@ export default function Options() {
             }
         }
         setSettings(newSettings);
-        // Only verify the updated provider
         verifyProvider(id, newSettings.providers[id]);
     };
 
@@ -199,11 +216,19 @@ export default function Options() {
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <input type="password" value={config.apiKey || ''} disabled={isDisabled} onInput={(e) => updateProvider(id, { apiKey: (e.target as HTMLInputElement).value })} placeholder="API Key" class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? 'opacity-40 grayscale' : 'shadow-sm focus:ring-2 focus:ring-indigo-500/20'} ${id !== 'ollama' && !config.apiKey && !isDisabled ? 'border-amber-300' : 'border-slate-200 dark:border-slate-800'}`} />
+                                                        <input type="password" value={config.apiKey || ''} disabled={isDisabled} onInput={(e) => updateProvider(id, { apiKey: (e.target as HTMLInputElement).value })} placeholder="API Key" class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? 'opacity-40 grayscale' : 'shadow-sm focus:ring-2 focus:ring-indigo-500/20'} ${id !== 'ollama' && !config.apiKey && !isDisabled ? 'border-amber-300' : 'border-slate-200 dark:border-slate-800'} ${providerErrors[id] ? 'border-red-500' : ''}`} />
+                                                        {providerErrors[id] && id !== 'ollama' && (
+                                                            <div class="text-xs text-red-500 mt-1">{providerErrors[id]}</div>
+                                                        )}
                                                     </td>
                                                     <td>
                                                         {id === 'ollama' ? (
-                                                            <input type="text" value={config.url || ''} disabled={isDisabled} onInput={(e) => updateProvider(id, { url: (e.target as HTMLInputElement).value })} class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? 'opacity-40 grayscale' : 'shadow-sm focus:ring-2 focus:ring-indigo-500/20'} border-slate-200 dark:border-slate-800`} />
+                                                            <div>
+                                                                <input type="text" value={config.url || ''} disabled={isDisabled} onInput={(e) => updateProvider(id, { url: (e.target as HTMLInputElement).value })} class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? 'opacity-40 grayscale' : 'shadow-sm focus:ring-2 focus:ring-indigo-500/20'} border-slate-200 dark:border-slate-800 ${providerErrors[id] ? 'border-red-500' : ''}`} />
+                                                                {providerErrors[id] && (
+                                                                    <div class="text-xs text-red-500 mt-1">{providerErrors[id]}</div>
+                                                                )}
+                                                            </div>
                                                         ) : (
                                                             <div class="w-full h-10" />
                                                         )}
