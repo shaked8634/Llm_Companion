@@ -2,7 +2,7 @@ import {useEffect, useState} from 'preact/hooks';
 import {AppSettings, Prompt, settingsStorage} from '@/lib/store';
 import {useStorage} from '@/hooks/useStorage';
 import {ProviderFactory} from '@/lib/providers/factory';
-import {Bot, CheckCircle2, FileText, Info, Loader2, Plus, RotateCw, Trash2, XCircle} from 'lucide-preact';
+import {Bot, CheckCircle2, FileText, Info, Loader2, Plus, Trash2, XCircle} from 'lucide-preact';
 import '@/assets/main.css';
 
 type TabId = 'models' | 'prompts' | 'about';
@@ -14,7 +14,8 @@ export default function Options() {
     const [activeTab, setActiveTab] = useState<TabId>('models');
     const [verification, setVerification] = useState<VerificationState>({
         ollama: 'idle',
-        gemini: 'idle'
+        gemini: 'idle',
+        openai: 'idle'
     });
 
     const verifyProvider = async (id: string, config: any) => {
@@ -40,7 +41,7 @@ export default function Options() {
 
     const refreshModels = () => {
         if (!settings) return;
-        ['ollama', 'gemini'].forEach(id => {
+        ['ollama', 'gemini', 'openai'].forEach(id => {
             const config = settings.providers[id as keyof AppSettings['providers']];
             if (config.enabled) {
                 verifyProvider(id, config);
@@ -50,13 +51,42 @@ export default function Options() {
 
     useEffect(() => {
         if (!settings) return;
-        ['ollama', 'gemini'].forEach(id => {
+        ['ollama', 'gemini', 'openai'].forEach(id => {
             const config = settings.providers[id as keyof AppSettings['providers']];
             if (config.enabled && verification[id] === 'idle') {
                 verifyProvider(id, config);
             }
         });
     }, [settings?.providers]);
+
+    // Patch settings to ensure all providers exist
+    useEffect(() => {
+        if (!settings) return;
+        let changed = false;
+        const patchedProviders = { ...settings.providers };
+        if (!patchedProviders.ollama) {
+            patchedProviders.ollama = { enabled: true, url: 'http://localhost:11434' };
+            changed = true;
+        }
+        if (!patchedProviders.gemini) {
+            patchedProviders.gemini = { enabled: false, apiKey: '' };
+            changed = true;
+        }
+        if (!patchedProviders.openai) {
+            patchedProviders.openai = { enabled: false, apiKey: '' };
+            changed = true;
+        }
+        if (changed) {
+            setSettings({ ...settings, providers: patchedProviders });
+        }
+    }, [settings]);
+
+    // Refresh models when the options page is closed (unmounted)
+    useEffect(() => {
+        return () => {
+            refreshModels();
+        };
+    }, []);
 
     if (!settings) return <div class="p-8 text-slate-500 font-medium">Loading settings...</div>;
 
@@ -89,11 +119,10 @@ export default function Options() {
             if (settings.selectedModelId?.startsWith(`${id}:`)) {
                 newSettings.selectedModelId = '';
             }
-        } else if (updates.enabled === true || updates.apiKey !== undefined || updates.url !== undefined) {
-            verifyProvider(id, newSettings.providers[id]);
         }
-
         setSettings(newSettings);
+        // Only verify the updated provider
+        verifyProvider(id, newSettings.providers[id]);
     };
 
     const tabs = [
@@ -104,7 +133,7 @@ export default function Options() {
 
     return (
         <div class="flex min-h-screen w-full bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans p-6 gap-4">
-            <aside class="w-64 flex flex-col shrink-0">
+            <aside class="w-44 flex flex-col shrink-0">
                 <nav class="flex flex-col gap-4">
                     {tabs.map(tab => (
                         <button
@@ -124,7 +153,7 @@ export default function Options() {
             </aside>
 
             <main class="flex-1 bg-slate-100 dark:bg-slate-950">
-                <div class="w-full">
+                <div class="w-full max-w-5xl mx-auto">
                     {activeTab === 'models' && (
                         <div class="space-y-8">
                             <div class="w-full">
@@ -146,8 +175,9 @@ export default function Options() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {(['ollama', 'gemini'] as const).map((id) => {
+                                        {settings.providers && (['ollama', 'gemini', 'openai'] as const).map((id) => {
                                             const config = settings.providers[id];
+                                            if (!config) return null;
                                             const isDisabled = !config.enabled;
                                             return (
                                                 <tr key={id}>
@@ -172,7 +202,11 @@ export default function Options() {
                                                         <input type="password" value={config.apiKey || ''} disabled={isDisabled} onInput={(e) => updateProvider(id, { apiKey: (e.target as HTMLInputElement).value })} placeholder="API Key" class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? 'opacity-40 grayscale' : 'shadow-sm focus:ring-2 focus:ring-indigo-500/20'} ${id !== 'ollama' && !config.apiKey && !isDisabled ? 'border-amber-300' : 'border-slate-200 dark:border-slate-800'}`} />
                                                     </td>
                                                     <td>
-                                                        <input type="text" value={config.url || ''} disabled={isDisabled} onInput={(e) => updateProvider(id, { url: (e.target as HTMLInputElement).value })} class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? 'opacity-40 grayscale' : 'shadow-sm focus:ring-2 focus:ring-indigo-500/20'} border-slate-200 dark:border-slate-800`} />
+                                                        {id === 'ollama' ? (
+                                                            <input type="text" value={config.url || ''} disabled={isDisabled} onInput={(e) => updateProvider(id, { url: (e.target as HTMLInputElement).value })} class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? 'opacity-40 grayscale' : 'shadow-sm focus:ring-2 focus:ring-indigo-500/20'} border-slate-200 dark:border-slate-800`} />
+                                                        ) : (
+                                                            <div class="w-full h-10" />
+                                                        )}
                                                     </td>
                                                     <td class="text-center">
                                                         {config.enabled && (
@@ -188,16 +222,6 @@ export default function Options() {
                                         })}
                                     </tbody>
                                 </table>
-                            </div>
-
-                            <div class="flex justify-end">
-                                <button
-                                    onClick={refreshModels}
-                                    class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 shadow-sm"
-                                >
-                                    <RotateCw class={`w-4 h-4 ${Object.values(verification).some(v => v === 'loading') ? 'animate-spin' : ''}`} />
-                                    <span>Refresh Models</span>
-                                </button>
                             </div>
                         </div>
                     )}

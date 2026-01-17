@@ -8,7 +8,8 @@ export async function refreshDiscoveredModels() {
     
     const providers = [
         { id: 'ollama', name: 'Ollama', config: settings.providers.ollama },
-        { id: 'gemini', name: 'Gemini', config: settings.providers.gemini }
+        { id: 'gemini', name: 'Gemini', config: settings.providers.gemini },
+        { id: 'openai', name: 'OpenAI', config: settings.providers.openai }
     ];
 
     for (const p of providers) {

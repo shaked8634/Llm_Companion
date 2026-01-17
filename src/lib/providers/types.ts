@@ -24,4 +24,4 @@ export interface GenerationOptions {
 
 export type StreamHandler = (chunk: string) => void;
 
-export type ProviderType = 'ollama' | 'gemini';
+export type ProviderType = 'ollama' | 'gemini' | 'openai';

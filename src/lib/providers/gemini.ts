@@ -18,6 +18,7 @@ export class GeminiProvider extends BaseProvider {
             if (!response.ok) throw new Error('Failed to fetch Gemini models');
 
             const data = await response.json();
+            console.log(`[Gemini] Fetched ${data.models.length} models`);
             return data.models
                 .filter((m: any) => m.supportedGenerationMethods.includes('generateContent'))
                 .map((m: any) => ({

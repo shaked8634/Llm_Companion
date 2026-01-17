@@ -40,9 +40,6 @@ export class OllamaProvider extends BaseProvider {
                         const contextLength = modelInfo.model_info?.['llama.context_length'] ||
                                             modelInfo.details?.parameter_size?.context ||
                                             undefined;
-
-                        console.debug(`[Ollama] Model ${m.name} context length:`, contextLength);
-
                         models.push({
                             id: m.name,
                             name: m.name,
@@ -65,6 +62,7 @@ export class OllamaProvider extends BaseProvider {
                 }
             }
 
+            console.log(`[Ollama] Fetched ${models.length} models`);
             return models;
         } catch (error) {
             console.error('Ollama getModels error:', error);
