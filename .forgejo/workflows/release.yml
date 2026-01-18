@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - '*.*.*'
 
 jobs:
   build-release:
@@ -25,10 +25,14 @@ jobs:
         run: pnpm pkg set version=${{ github.ref_name }}
       - run: pnpm run zip
       - run: pnpm run zip:firefox
+      - name: Copy artifacts
+        run: |
+          mkdir /upload
+          mv *.zip /upload
       - uses: actions/forgejo-release@v2.8.0
         with:
           direction: upload
           tag: ${{ github.ref_name }}
-          release-dir: .output
+          release-dir: upload
           release-notes: ""
           override: true
