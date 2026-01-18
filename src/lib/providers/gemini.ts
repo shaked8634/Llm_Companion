@@ -10,12 +10,25 @@ export class GeminiProvider extends BaseProvider {
     }
 
     async getModels(): Promise<Model[]> {
-        // Common Gemini models
-        return [
-            { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
-            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
-            { id: 'gemini-pro', name: 'Gemini 1.0 Pro' },
-        ];
+        if (!this.config.apiKey) return [];
+        try {
+        const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models?key=${this.config.apiKey}`
+            );
+            if (!response.ok) throw new Error('Failed to fetch Gemini models');
+
+            const data = await response.json();
+            console.log(`[Gemini] Fetched ${data.models.length} models`);
+            return data.models
+                .filter((m: any) => m.supportedGenerationMethods.includes('generateContent'))
+                .map((m: any) => ({
+                    id: m.name.replace('models/', ''),
+                    name: m.displayName
+                }));
+        } catch (e) {
+            console.error('Gemini getModels error:', e);
+            throw e;
+        }
     }
 
     async* stream(
@@ -30,8 +43,9 @@ export class GeminiProvider extends BaseProvider {
             parts: [{ text: m.content }]
         }));
 
+        // Use ?alt=sse to get Server-Sent Events format
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${this.config.apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${this.config.apiKey}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -62,37 +76,21 @@ export class GeminiProvider extends BaseProvider {
                 if (done) break;
 
                 buffer += decoder.decode(value, { stream: true });
-                
-                // Gemini stream is an array of JSON objects: [ {...}, {...}
-                // We need to extract the individual objects.
 
-                // Remove the starting '[' or leading ',\n'
-                buffer = buffer.replace(/^\[\s*/, '').replace(/^,\s*/, '');
+                // SSE format: each event is "data: {json}\n\n"
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
-                let braceCount = 0;
-                let inString = false;
-                let start = 0;
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const jsonStr = line.substring(6); // Remove "data: " prefix
 
-                for (let i = 0; i < buffer.length; i++) {
-                    const char = buffer[i];
-                    if (char === '"' && buffer[i - 1] !== '\\') inString = !inString;
-                    if (!inString) {
-                        if (char === '{') braceCount++;
-                        if (char === '}') {
-                            braceCount--;
-                            if (braceCount === 0) {
-                                const jsonStr = buffer.substring(start, i + 1);
-                                try {
-                                    const json = JSON.parse(jsonStr);
-                                    const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-                                    if (text) yield text;
-                                } catch (_e) {
-                                    console.warn('Failed to parse Gemini chunk:', jsonStr);
-                                }
-                                buffer = buffer.substring(i + 1).replace(/^,\s*/, '');
-                                i = -1; // Reset loop for new buffer
-                                start = 0;
-                            }
+                        try {
+                            const json = JSON.parse(jsonStr);
+                            const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+                            if (text) yield text;
+                        } catch (e) {
+                            console.warn('[Gemini] Failed to parse SSE data:', e);
                         }
                     }
                 }

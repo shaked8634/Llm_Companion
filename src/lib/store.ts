@@ -1,18 +1,35 @@
-import {storage} from 'wxt/storage';
-import {ChatMessage, ProviderConfig} from './providers/types';
+import {storage} from '#imports';
+import type {WxtStorageItem} from 'wxt/utils/storage';
+import {ChatMessage, Model, ProviderConfig} from './providers/types';
+
+export interface Prompt {
+    id: string;
+    name: string;
+    text: string;
+    isDefault?: boolean;
+}
+
+export interface DiscoveredModel extends Model {
+    providerId: string;
+    providerName: string;
+}
 
 export interface AppSettings {
-    activeProvider: 'ollama' | 'gemini';
+    activeProvider: 'ollama' | 'gemini' | 'openai';
     providers: {
         ollama: ProviderConfig;
         gemini: ProviderConfig;
+        openai: ProviderConfig;
     };
     activeModel: {
         ollama?: string;
         gemini?: string;
+        openai?: string;
     };
     selectedModelId?: string; // Format: "providerId:modelId"
+    discoveredModels: DiscoveredModel[];
     systemPrompt: string;
+    prompts: Prompt[];
 }
 
 export interface TabSession {
@@ -25,23 +42,32 @@ export const defaultSettings: AppSettings = {
     activeProvider: 'ollama',
     providers: {
         ollama: { enabled: true, url: 'http://localhost:11434' },
-        gemini: { enabled: false, apiKey: '' }
+        gemini: { enabled: false, apiKey: '' },
+        openai: { enabled: false, apiKey: '' }
     },
     activeModel: {},
     selectedModelId: undefined,
-    systemPrompt: 'You are a helpful browsing assistant. Summarize or answer questions based on the provided page content.'
+    discoveredModels: [],
+    systemPrompt: 'You are a helpful browsing assistant. Summarize or answer questions based on the provided page content.',
+    prompts: [
+        {
+            id: 'default-summarize',
+            name: 'Summarize this page',
+            text: 'Summarize this page with less than 500 words',
+            isDefault: true
+        }
+    ]
 };
 
-export const settingsStorage = storage.defineItem<AppSettings>(
-    'local:settings',
-    { defaultValue: defaultSettings }
-);
+export const settingsStorage: WxtStorageItem<AppSettings, Record<string, never>> = storage.defineItem('local:settings', {
+    defaultValue: defaultSettings
+});
 
-export function getTabSessionKey(tabId: number) {
-    return `local:session:${tabId}` as const as any;
+export function getTabSessionKey(tabId: number): `local:session:${number}` {
+    return `local:session:${tabId}`;
 }
 
-export function getTabSession(tabId: number) {
+export function getTabSession(tabId: number): WxtStorageItem<TabSession, Record<string, never>> {
     return storage.defineItem<TabSession>(
         getTabSessionKey(tabId),
         { defaultValue: { messages: [], isLoading: false } }

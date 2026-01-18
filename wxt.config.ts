@@ -1,20 +1,35 @@
 import {defineConfig} from 'wxt';
+import preact from '@preact/preset-vite';
 
 export default defineConfig({
-    extensionApi: 'chrome', // Disable polyfill
     srcDir: 'src',
+    publicDir: 'src/public',
+    vite: () => ({
+        plugins: [preact()],
+    }),
 
     manifest: {
-        name: "LLM companion",
+        name: "LLM Companion",
+        icons: {
+            96: 'icon-96.png',
+        },
         action: {
             default_title: 'Your friendly surfing companion',
+            default_icon: {
+                96: 'icon-96.png',
+            },
         },
         web_accessible_resources: [
             {
                 matches: ['*://*/*'],
-                resources: []
+                resources: ['logo.svg']
             },
         ],
-        permissions: ['storage', "activeTab"],
+        permissions: ['storage', 'activeTab', 'scripting'],
+    },
+
+    webExt: {
+        openConsole: true,
+        chromiumArgs: ['--user-data-dir=./.wxt/chrome-data'], // Persist browser data
     }
 });

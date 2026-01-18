@@ -1,0 +1,38 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+jobs:
+  build-release:
+    runs-on: act-latest
+    env:
+      EXTENSION_ARTIFACT_NAME: llm_companion
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install
+      - name: Update version in package.json
+        run: pnpm pkg set version=${{ github.ref_name }}
+      - run: pnpm run zip
+      - run: pnpm run zip:firefox
+      - name: Copy artifacts
+        run: |
+          mkdir /upload
+          mv .output/*.zip /upload
+      - uses: actions/forgejo-release@v2.8.0
+        with:
+          direction: upload
+          tag: ${{ github.ref_name }}
+          release-dir: /upload
+          release-notes: ""
+          override: true
