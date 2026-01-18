@@ -7,17 +7,18 @@
 - [x] Add support for Gemini.
 - [x] Fix double scroll bars in the pop-up.
 - [ ] Check why reasoning models print the thinking but do not generate the text
-- [ ] Implement text sanity in input.
-- [ ] Implement CI to create extension for Chrome and FF.
+- [x] Implement text sanity in input.
+- [x] Implement CI to create extension for Chrome and FF.
 - [x] Add support for OpenAI.
-- [ ] Icon should dynamically change when generating text.
+- [x] Icon should dynamically change when generating text.
   - [ ] Consider changing the icon per LLM provider / model
 - [ ] Add an ability to select text on the page and use it as input.
 - [ ] Implement conversation style on prompt (perhaps using sidebar).
 - [ ] Add an ability to save custom prompt directly from the pop-up.
-- [ ] Add a testing framework.
+- [x] Add a testing framework.
 - [ ] Add Readme.MD
 - [ ] Code cleanup
 - [ ] Security audit
 - [x] Handle txt files
 - [ ] Handle large websites
+- 
