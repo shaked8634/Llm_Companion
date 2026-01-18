@@ -112,7 +112,7 @@ export default function Options() {
         let error = '';
         if (config.enabled) {
             if ((id === 'gemini' || id === 'openai') && !config.apiKey) {
-                error = 'API Key is required.';
+                error = 'API Key is required for verification.';
             }
             if (id === 'ollama' && (!config.url || !/^https?:\/\/.+/.test(config.url))) {
                 error = 'Valid URL is required.';
@@ -130,16 +130,30 @@ export default function Options() {
                 [id]: { ...settings.providers[id], ...updates }
             }
         };
-        // Validate before saving/enabling
-        if (!validateProvider(id, newSettings.providers[id])) return;
+
+        // Only validate when disabling or when updating API keys/URLs (not just enabling)
+        const isEnablingOnly = updates.enabled === true && Object.keys(updates).length === 1;
+        if (!isEnablingOnly && !validateProvider(id, newSettings.providers[id])) {
+            return;
+        }
+
         if (updates.enabled === false) {
             setVerification(prev => ({ ...prev, [id]: 'idle' }));
+            setProviderErrors(prev => ({ ...prev, [id]: '' }));
             if (settings.selectedModelId?.startsWith(`${id}:`)) {
                 newSettings.selectedModelId = '';
             }
+        } else if (isEnablingOnly) {
+            // Clear any existing errors when enabling
+            setProviderErrors(prev => ({ ...prev, [id]: '' }));
         }
+
         setSettings(newSettings);
-        verifyProvider(id, newSettings.providers[id]);
+
+        // Only verify if the config is complete and enabled
+        if (newSettings.providers[id].enabled) {
+            verifyProvider(id, newSettings.providers[id]);
+        }
     };
 
     const tabs = [
@@ -205,7 +219,11 @@ export default function Options() {
                                                                 if (!isEnabled) {
                                                                     updateProvider(id, { enabled: false, apiKey: '', url: '' });
                                                                 } else {
-                                                                    updateProvider(id, { enabled: true });
+                                                                    const enableUpdates: any = { enabled: true };
+                                                                    if (id === 'ollama') {
+                                                                        enableUpdates.url = 'http://localhost:11434';
+                                                                    }
+                                                                    updateProvider(id, enableUpdates);
                                                                 }
                                                             }} class="w-5 h-5 rounded-lg text-indigo-600 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 transition-all cursor-pointer" />
                                                         </div>

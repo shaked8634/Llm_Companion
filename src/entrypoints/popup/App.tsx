@@ -189,11 +189,32 @@ export default function App() {
                             class="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs appearance-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer disabled:opacity-50"
                     >
                             <option value="">{!hasEnabledProviders ? 'No providers' : models.length === 0 ? 'Loading models...' : 'Select model...'}</option>
-                            {models.map(m => (
-                                <option key={`${m.providerId}:${m.id}`} value={`${m.providerId}:${m.id}`}>
-                                    {m.name} ({m.providerName})
-                                </option>
-                ))}
+                            {(() => {
+                                // Group models by provider and sort by name
+                                const grouped = models.reduce((acc, model) => {
+                                    if (!acc[model.providerName]) {
+                                        acc[model.providerName] = [];
+                                    }
+                                    acc[model.providerName].push(model);
+                                    return acc;
+                                }, {} as Record<string, typeof models>);
+
+                                // Sort each provider's models by name and render
+                                return Object.entries(grouped)
+                                    .sort(([a], [b]) => a.localeCompare(b)) // Sort providers alphabetically
+                                    .map(([providerName, providerModels]) => (
+                                        <optgroup key={providerName} label={providerName}>
+                                            {providerModels
+                                                .sort((a, b) => a.name.localeCompare(b.name))
+                                                .map(m => (
+                                                    <option key={`${m.providerId}:${m.id}`} value={`${m.providerId}:${m.id}`}>
+                                                        {m.name}
+                                                    </option>
+                                                ))
+                                            }
+                                        </optgroup>
+                                    ));
+                            })()}
                         </select>
                                 </div>
                     <button
