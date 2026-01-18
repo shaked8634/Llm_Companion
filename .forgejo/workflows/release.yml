@@ -7,25 +7,28 @@ on:
 
 jobs:
   build-release:
-    runs-on: ubuntu-latest
+    runs-on: act-latest
     env:
       EXTENSION_ARTIFACT_NAME: llm_companion
     steps:
       - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 10
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install
-      - run: pnpm exec wxt build --target=chrome-mv3
-      - run: pnpm exec wxt build --target=firefox
-      - run: pnpm exec wxt zip --target=chrome-mv3 --name $EXTENSION_ARTIFACT_NAME
-      - run: pnpm exec wxt zip --target=firefox --name $EXTENSION_ARTIFACT_NAME
-      - name: Archive Chrome build
-        run: mv .output/chrome-mv3.zip $EXTENSION_ARTIFACT_NAME-chrome-mv3.zip
-      - name: Archive Firefox build
-        run: mv .output/firefox.zip $EXTENSION_ARTIFACT_NAME-firefox.zip
-      # TODO: Add Forgejo release upload step
+      - name: Update version in package.json
+        run: pnpm pkg set version=${{ github.ref_name }}
+      - run: pnpm run zip
+      - run: pnpm run zip:firefox
+      - uses: actions/forgejo-release@v2.8.0
+        with:
+          direction: upload
+          tag: ${{ github.ref_name }}
+          release-dir: .output
+          release-notes: ""
+          override: true

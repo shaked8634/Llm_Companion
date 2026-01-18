@@ -20,6 +20,8 @@ jobs:
           node-version: 20
           cache: 'pnpm'
       - run: pnpm install
+      - name: Update version in package.json
+        run: pnpm pkg set version=${{ github.ref_name }}
       - run: pnpm exec wxt build --target=chrome-mv3
       - run: pnpm exec wxt build --target=firefox
       - run: pnpm exec wxt zip --target=chrome-mv3 --name $EXTENSION_ARTIFACT_NAME
