@@ -9,7 +9,7 @@
     "test": "vitest",
     "build": "wxt build",
     "build:firefox": "wxt build -b firefox",
-    "zip": "wxt zip",
+    "zip": "wxt zip -b chromium",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
     "postinstall": "wxt prepare"
