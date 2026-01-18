@@ -3,15 +3,27 @@ import preact from '@preact/preset-vite';
 
 export default defineConfig({
     srcDir: 'src',
+    publicDir: 'src/public',
     vite: () => ({
         plugins: [preact()],
-        publicDir: 'src/public',
     }),
 
     manifest: {
-        name: "LLM companion",
+        name: "LLM Companion",
+        icons: {
+            16: 'icon-16.png',
+            32: 'icon-32.png',
+            48: 'icon-48.png',
+            96: 'icon-96.png',
+            128: 'icon-128.png',
+        },
         action: {
             default_title: 'Your friendly surfing companion',
+            default_icon: {
+                16: 'icon-16.png',
+                32: 'icon-32.png',
+                48: 'icon-48.png',
+            },
         },
         web_accessible_resources: [
             {
@@ -19,7 +31,7 @@ export default defineConfig({
                 resources: ['logo.svg']
             },
         ],
-        permissions: ['storage', "activeTab"],
+        permissions: ['storage', 'activeTab', 'scripting'],
     },
 
     webExt: {
