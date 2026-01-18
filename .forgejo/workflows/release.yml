@@ -28,11 +28,11 @@ jobs:
       - name: Copy artifacts
         run: |
           mkdir /upload
-          mv *.zip /upload
+          mv .output/*.zip /upload
       - uses: actions/forgejo-release@v2.8.0
         with:
           direction: upload
           tag: ${{ github.ref_name }}
-          release-dir: upload
+          release-dir: /upload
           release-notes: ""
           override: true
