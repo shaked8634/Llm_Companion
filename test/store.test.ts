@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {defaultSettings, getTabSessionKey} from '../src/lib/store';
+import {defaultSettings, getTabSessionKey} from '@/lib/store';
 
 describe('Store', () => {
   it('defaultSettings should have required properties', () => {

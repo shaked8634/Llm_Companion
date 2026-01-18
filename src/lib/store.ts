@@ -1,4 +1,5 @@
-import {storage} from 'wxt/storage';
+import {storage} from '#imports';
+import type {WxtStorageItem} from 'wxt/utils/storage';
 import {ChatMessage, Model, ProviderConfig} from './providers/types';
 
 export interface Prompt {
@@ -58,16 +59,15 @@ export const defaultSettings: AppSettings = {
     ]
 };
 
-export const settingsStorage = storage.defineItem<AppSettings>(
-    'local:settings',
-    { defaultValue: defaultSettings }
-);
+export const settingsStorage: WxtStorageItem<AppSettings, Record<string, never>> = storage.defineItem('local:settings', {
+    defaultValue: defaultSettings
+});
 
-export function getTabSessionKey(tabId: number) {
-    return `local:session:${tabId}` as const as any;
+export function getTabSessionKey(tabId: number): `local:session:${number}` {
+    return `local:session:${tabId}`;
 }
 
-export function getTabSession(tabId: number) {
+export function getTabSession(tabId: number): WxtStorageItem<TabSession, Record<string, never>> {
     return storage.defineItem<TabSession>(
         getTabSessionKey(tabId),
         { defaultValue: { messages: [], isLoading: false } }

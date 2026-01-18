@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'preact/hooks';
-import {WxtStorageItem} from 'wxt/storage';
+import type {WxtStorageItem} from 'wxt/utils/storage';
 
 export function useStorage<T>(storageItem: WxtStorageItem<T, any> | null) {
     const [value, setValue] = useState<T | null>(null);
