@@ -25,5 +25,4 @@ web-ext.config.ts
 *.njsproj
 *.sln
 *.sw?
-/pnpm-lock.yaml
 /out/
