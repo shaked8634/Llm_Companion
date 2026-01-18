@@ -2,10 +2,10 @@ import {defineConfig} from 'wxt';
 import preact from '@preact/preset-vite';
 
 export default defineConfig({
-    extensionApi: 'chrome', // Disable polyfill
     srcDir: 'src',
     vite: () => ({
         plugins: [preact()],
+        publicDir: 'src/public',
     }),
 
     manifest: {
@@ -16,9 +16,14 @@ export default defineConfig({
         web_accessible_resources: [
             {
                 matches: ['*://*/*'],
-                resources: []
+                resources: ['logo.svg']
             },
         ],
         permissions: ['storage', "activeTab"],
+    },
+
+    webExt: {
+        openConsole: true,
+        chromiumArgs: ['--user-data-dir=./.wxt/chrome-data'], // Persist browser data
     }
 });

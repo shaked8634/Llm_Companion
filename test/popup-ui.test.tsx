@@ -2,12 +2,12 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/preact';
 import App from '../src/entrypoints/popup/App';
 import * as useStorageModule from '../src/hooks/useStorage';
-import {defaultSettings} from '../src/lib/store';
+import {defaultSettings} from '@/lib/store';
 
 describe('Popup UI', () => {
   beforeEach(() => {
     // Mock chrome.tabs.query
-    global.chrome = {
+    globalThis.chrome = {
       tabs: {
         query: vi.fn((query, callback) => {
           callback([{ id: 1 }]);
