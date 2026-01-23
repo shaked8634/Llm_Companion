@@ -14,8 +14,7 @@
 - [x] Icon should dynamically change when generating text.
   - [ ] Consider changing the icon per LLM provider / model
 - [ ] Add an ability to select text on the page and use it as input.
-- [ ] Implement conversation style on prompt (perhaps using sidebar).
-- [ ] Add an ability to save custom prompt directly from the pop-up.
+- [x] Implement conversation style on prompt (perhaps using sidebar).
 - [x] Add a testing framework.
 - [ ] Add Readme.MD
 - [ ] Code cleanup

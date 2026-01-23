@@ -13,6 +13,7 @@ export default function App() {
     const [settings, setSettings] = useStorage(settingsStorage);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [selectedPrompt, setSelectedPrompt] = useState<string>('');
+    const [followUpText, setFollowUpText] = useState<string>('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -90,6 +91,41 @@ export default function App() {
                 pageContext: pageContent ? JSON.stringify(pageContent) : ''
             }
         });
+    };
+
+    const handleFollowUp = async () => {
+        console.debug('[Popup] Follow-up button clicked');
+
+        if (!currentTabId || !settings?.selectedModelId || !followUpText.trim()) {
+            console.warn('[Popup] Missing required data for follow-up:', {
+                currentTabId,
+                selectedModelId: settings?.selectedModelId,
+                followUpText: followUpText.trim()
+            });
+            return;
+        }
+
+        console.debug('[Popup] Sending follow-up message:', followUpText);
+
+        // Send follow-up without page context (conversation continuation)
+        chrome.runtime.sendMessage({
+            type: 'EXECUTE_PROMPT',
+            payload: {
+                tabId: currentTabId,
+                userPrompt: followUpText.trim(),
+                pageContext: '' // No page context for follow-up messages
+            }
+        });
+
+        // Clear the input after sending
+        setFollowUpText('');
+    };
+
+    const handleFollowUpKeyPress = (e: KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleFollowUp();
+        }
     };
 
     const handleStop = () => {
@@ -301,6 +337,31 @@ export default function App() {
                         </div>
                     )}
                     <div ref={messagesEndRef} />
+                </div>
+            )}
+
+            {/* Follow-up Input: shown when there are messages */}
+            {session.messages.length > 0 && (
+                <div class="p-3 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0">
+                    <div class="flex items-end gap-2">
+                        <textarea
+                            value={followUpText}
+                            onInput={(e) => setFollowUpText((e.target as HTMLTextAreaElement).value)}
+                            onKeyPress={handleFollowUpKeyPress}
+                            placeholder="Continue the conversation..."
+                            disabled={session.isLoading}
+                            class="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs resize-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all disabled:opacity-50 min-h-[2.5rem] max-h-32"
+                            rows={1}
+                        />
+                        <button
+                            onClick={handleFollowUp}
+                            disabled={!followUpText.trim() || session.isLoading}
+                            title="Send follow-up message"
+                            class="p-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 transition-all shrink-0"
+                        >
+                            <Play class="w-4 h-4 fill-current" />
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
