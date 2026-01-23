@@ -17,6 +17,82 @@ export default defineBackground(() => {
         }
     });
 
+    // Handle keyboard shortcut command - opens popup and executes prompt
+    chrome.commands.onCommand.addListener(async (command) => {
+        console.debug('[Background] Command received:', command);
+
+        if (command === 'execute-prompt') {
+            try {
+                // Open the popup first (must be done synchronously in response to user action)
+                try {
+                    await chrome.action.openPopup();
+                    console.debug('[Background] Popup opened via keyboard shortcut');
+                } catch (popupError) {
+                    console.warn('[Background] Could not open popup:', popupError);
+                    // Continue with execution even if popup fails to open
+                }
+
+                // Get the active tab
+                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                if (!tab?.id) {
+                    console.warn('[Background] No active tab found');
+                    return;
+                }
+
+                console.debug('[Background] Executing prompt for tab:', tab.id);
+
+                // Get current settings
+                const settings = await settingsStorage.getValue();
+                if (!settings.selectedModelId) {
+                    console.warn('[Background] No model selected');
+                    return;
+                }
+
+                // Get the last selected prompt or first prompt
+                let promptId = settings.lastSelectedPromptId;
+                if (!promptId || !settings.prompts?.find(p => p.id === promptId)) {
+                    promptId = settings.prompts?.[0]?.id;
+                }
+
+                if (!promptId) {
+                    console.warn('[Background] No prompts available');
+                    return;
+                }
+
+                const prompt = settings.prompts.find(p => p.id === promptId);
+                if (!prompt) {
+                    console.error('[Background] Prompt not found:', promptId);
+                    return;
+                }
+
+                console.debug('[Background] Using prompt:', prompt.name);
+
+                // Scrape the page
+                let pageContent = null;
+                try {
+                    const response = await chrome.tabs.sendMessage(tab.id, { type: 'SCRAPE_PAGE' });
+                    if (response?.success) {
+                        pageContent = response.payload;
+                        console.debug('[Background] Page scraped successfully');
+                    }
+                } catch (e) {
+                    console.warn('[Background] Failed to scrape page:', e);
+                }
+
+                // Execute the prompt
+                await handleExecutePrompt(
+                    tab.id,
+                    prompt.text,
+                    pageContent ? JSON.stringify(pageContent) : ''
+                );
+
+                console.debug('[Background] Keyboard shortcut execution completed');
+            } catch (error) {
+                console.error('[Background] Error executing keyboard shortcut:', error);
+            }
+        }
+    });
+
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         console.debug('[Background] Received message:', message.type);
 
