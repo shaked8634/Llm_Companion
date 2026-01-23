@@ -91,6 +91,18 @@ export default defineBackground(() => {
                 console.error('[Background] Error executing keyboard shortcut:', error);
             }
         }
+
+        if (command === 'open-sidepanel') {
+            try {
+                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                if (tab?.id) {
+                    await chrome.sidePanel.open({ tabId: tab.id });
+                    console.debug('[Background] Sidepanel opened via keyboard shortcut');
+                }
+            } catch (error) {
+                console.error('[Background] Error opening sidepanel:', error);
+            }
+        }
     });
 
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {

@@ -25,7 +25,7 @@ export default defineConfig({
                 resources: ['logo.svg']
             },
         ],
-        permissions: ['storage', 'activeTab', 'scripting'],
+        permissions: ['storage', 'activeTab', 'scripting', 'sidePanel'],
         commands: {
             'execute-prompt': {
                 suggested_key: {
@@ -33,7 +33,17 @@ export default defineConfig({
                     mac: 'Command+Shift+L'
                 },
                 description: 'Execute the current selected prompt'
+            },
+            'open-sidepanel': {
+                suggested_key: {
+                    default: 'Ctrl+Shift+S',
+                    mac: 'Command+Shift+S'
+                },
+                description: 'Open LLM Companion sidebar'
             }
+        },
+        side_panel: {
+            default_path: 'sidepanel.html'
         }
     },
 
