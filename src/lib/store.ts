@@ -63,6 +63,13 @@ export const defaultSettings: AppSettings = {
             text: 'Summarize this page with less than 500 words',
             type: PromptType.WITH_WEBPAGE,
             isDefault: true
+        },
+        {
+            id: 'default-grammar-check',
+            name: 'Check Grammar',
+            text: 'Fix any grammar mistakes, spelling errors, and abbreviations in the following text. Respond ONLY with the corrected text, without any explanations or comments.',
+            type: PromptType.FREE_TEXT,
+            isDefault: true
         }
     ]
 };

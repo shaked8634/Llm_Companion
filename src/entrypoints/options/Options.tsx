@@ -337,8 +337,13 @@ export default function Options() {
                                                             );
                                                             debouncedSavePrompts(newPrompts);
                                                         }}
-                                                        class="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm transition-all shadow-sm focus:ring-2 focus:ring-indigo-500/20"
+                                                        class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all shadow-sm focus:ring-2 focus:ring-indigo-500/20 ${
+                                                            !prompt.name.trim() ? 'border-red-500' : 'border-slate-200 dark:border-slate-800'
+                                                        }`}
                                                     />
+                                                    {!prompt.name.trim() && (
+                                                        <div class="text-xs text-red-500 mt-1">Name is required</div>
+                                                    )}
                                                 </td>
                                                 <td class="align-top">
                                                     <select
@@ -366,8 +371,13 @@ export default function Options() {
                                                             debouncedSavePrompts(newPrompts);
                                                         }}
                                                         rows={3}
-                                                        class="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm transition-all shadow-sm focus:ring-2 focus:ring-indigo-500/20 resize-y min-h-[80px]"
+                                                        class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all shadow-sm focus:ring-2 focus:ring-indigo-500/20 resize-y min-h-[80px] ${
+                                                            !prompt.text.trim() ? 'border-red-500' : 'border-slate-200 dark:border-slate-800'
+                                                        }`}
                                                     />
+                                                    {!prompt.text.trim() && (
+                                                        <div class="text-xs text-red-500 mt-1">Prompt text is required</div>
+                                                    )}
                                                 </td>
                                                 <td class="text-center align-top">
                                                     <div class="flex items-start justify-center pt-2.5">
