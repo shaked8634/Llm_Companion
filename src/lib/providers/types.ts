@@ -1,12 +1,14 @@
 export interface Model {
     id: string;
     name: string;
+    contextLength?: number; // Context window size in tokens
 }
 
 export interface ProviderConfig {
     url?: string;
     apiKey?: string;
     enabled: boolean;
+    defaultModel?: string;
 }
 
 export interface ChatMessage {
@@ -22,4 +24,4 @@ export interface GenerationOptions {
 
 export type StreamHandler = (chunk: string) => void;
 
-export type ProviderType = 'ollama' | 'gemini';
+export type ProviderType = 'ollama' | 'gemini' | 'openai';
