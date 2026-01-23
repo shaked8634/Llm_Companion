@@ -6,7 +6,8 @@
 - [x] Implement text generation output in a streaming style.
 - [x] Add support for Gemini.
 - [x] Fix double scroll bars in the pop-up.
-- [ ] Check why reasoning models print the thinking but do not generate the text
+- [x] Save the last prompt in the popup.
+- [x] Add a shortcut to run the current prompt
 - [x] Implement text sanity in input.
 - [x] Implement CI to create extension for Chrome and FF.
 - [x] Add support for OpenAI.
@@ -20,5 +21,6 @@
 - [ ] Code cleanup
 - [ ] Security audit
 - [x] Handle txt files
+- [ ] Check why reasoning models print the thinking but do not generate the text
 - [ ] Handle large websites
 - 

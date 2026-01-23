@@ -127,10 +127,18 @@ export default function App() {
         }
     }, [models.length]);
 
-    // Auto-select first prompt if none selected
-    if (!selectedPrompt && prompts.length > 0) {
-        setSelectedPrompt(prompts[0].id);
-    }
+    // Load last selected prompt or auto-select first prompt
+    useEffect(() => {
+        if (!settings || prompts.length === 0) return;
+
+        // Try to restore last selected prompt
+        if (settings.lastSelectedPromptId && prompts.some(p => p.id === settings.lastSelectedPromptId)) {
+            setSelectedPrompt(settings.lastSelectedPromptId);
+        } else if (!selectedPrompt) {
+            // Fallback to first prompt if no last selection or it's no longer available
+            setSelectedPrompt(prompts[0].id);
+        }
+    }, [settings?.lastSelectedPromptId, prompts.length]);
 
     return (
         <div class="flex flex-col w-132.5 min-w-115 max-w-[95vw] h-auto min-h-0 overflow-hidden bg-slate-100 dark:bg-slate-950">
@@ -233,9 +241,16 @@ export default function App() {
                         <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500 pointer-events-none" />
                         <select
                             value={selectedPrompt}
-                            onChange={(e) => setSelectedPrompt((e.target as HTMLSelectElement).value)}
+                            onChange={(e) => {
+                                const newPromptId = (e.target as HTMLSelectElement).value;
+                                setSelectedPrompt(newPromptId);
+                                // Save last selected prompt
+                                if (settings) {
+                                    setSettings({ ...settings, lastSelectedPromptId: newPromptId });
+                                }
+                            }}
                             disabled={prompts.length === 0}
-                            class="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs appearance-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer disabled:opacity-50"
+                            class="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs appearance-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer disabled:opacity-50 truncate"
                         >
                             {prompts.length === 0 ? (
                                 <option value="">No prompts available</option>

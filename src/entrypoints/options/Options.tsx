@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'preact/hooks';
+import {useEffect, useRef, useState} from 'preact/hooks';
 import {AppSettings, Prompt, settingsStorage} from '@/lib/store';
 import {useStorage} from '@/hooks/useStorage';
 import {ProviderFactory} from '@/lib/providers/factory';
@@ -17,6 +17,41 @@ export default function Options() {
         gemini: 'idle',
         openai: 'idle'
     });
+
+    // Local state for prompts to avoid instant save conflicts
+    const [localPrompts, setLocalPrompts] = useState<Prompt[]>([]);
+    const saveTimeoutRef = useRef<number>();
+
+    // Sync local prompts with settings
+    useEffect(() => {
+        if (settings?.prompts) {
+            setLocalPrompts(settings.prompts);
+        }
+    }, [settings?.prompts]);
+
+    // Debounced save function
+    const debouncedSavePrompts = (prompts: Prompt[]) => {
+        setLocalPrompts(prompts);
+
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+
+        saveTimeoutRef.current = window.setTimeout(() => {
+            if (settings) {
+                setSettings({ ...settings, prompts });
+            }
+        }, 500);
+    };
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
+    }, []);
 
     // Validation state for provider fields
     const [providerErrors, setProviderErrors] = useState<{ [key: string]: string }>({});
@@ -286,7 +321,7 @@ export default function Options() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {(settings.prompts || []).map((prompt) => (
+                                        {localPrompts.map((prompt) => (
                                             <tr key={prompt.id}>
                                                 <td class="align-top">
                                                     <input
@@ -294,10 +329,10 @@ export default function Options() {
                                                         value={prompt.name}
                                                         maxLength={30}
                                                         onInput={(e) => {
-                                                            const newPrompts = settings.prompts.map(p =>
+                                                            const newPrompts = localPrompts.map(p =>
                                                                 p.id === prompt.id ? { ...p, name: (e.target as HTMLInputElement).value } : p
                                                             );
-                                                            setSettings({ ...settings, prompts: newPrompts });
+                                                            debouncedSavePrompts(newPrompts);
                                                         }}
                                                         class="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm transition-all shadow-sm focus:ring-2 focus:ring-indigo-500/20"
                                                     />
@@ -307,10 +342,10 @@ export default function Options() {
                                                         value={prompt.text}
                                                         maxLength={1000}
                                                         onInput={(e) => {
-                                                            const newPrompts = settings.prompts.map(p =>
+                                                            const newPrompts = localPrompts.map(p =>
                                                                 p.id === prompt.id ? { ...p, text: (e.target as HTMLTextAreaElement).value } : p
                                                             );
-                                                            setSettings({ ...settings, prompts: newPrompts });
+                                                            debouncedSavePrompts(newPrompts);
                                                         }}
                                                         rows={3}
                                                         class="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm transition-all shadow-sm focus:ring-2 focus:ring-indigo-500/20 resize-y min-h-[80px]"
@@ -321,8 +356,11 @@ export default function Options() {
                                                         <button
                                                             onClick={() => {
                                                                 if (!prompt.isDefault) {
-                                                                    const newPrompts = settings.prompts.filter(p => p.id !== prompt.id);
-                                                                    setSettings({ ...settings, prompts: newPrompts });
+                                                                    const newPrompts = localPrompts.filter(p => p.id !== prompt.id);
+                                                                    setLocalPrompts(newPrompts);
+                                                                    if (settings) {
+                                                                        setSettings({ ...settings, prompts: newPrompts });
+                                                                    }
                                                                 }
                                                             }}
                                                             disabled={prompt.isDefault}
@@ -351,7 +389,11 @@ export default function Options() {
                                             text: '',
                                             isDefault: false
                                         };
-                                        setSettings({ ...settings, prompts: [...(settings.prompts || []), newPrompt] });
+                                        const newPrompts = [...localPrompts, newPrompt];
+                                        setLocalPrompts(newPrompts);
+                                        if (settings) {
+                                            setSettings({ ...settings, prompts: newPrompts });
+                                        }
                                     }}
                                     class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 shadow-sm"
                                 >

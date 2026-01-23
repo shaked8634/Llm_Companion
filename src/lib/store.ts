@@ -30,6 +30,7 @@ export interface AppSettings {
     discoveredModels: DiscoveredModel[];
     systemPrompt: string;
     prompts: Prompt[];
+    lastSelectedPromptId?: string; // Last selected prompt ID for persistence
 }
 
 export interface TabSession {

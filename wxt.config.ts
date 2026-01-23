@@ -26,6 +26,15 @@ export default defineConfig({
             },
         ],
         permissions: ['storage', 'activeTab', 'scripting'],
+        commands: {
+            'execute-prompt': {
+                suggested_key: {
+                    default: 'Ctrl+Shift+L',
+                    mac: 'Command+Shift+L'
+                },
+                description: 'Execute the current selected prompt'
+            }
+        }
     },
 
     webExt: {
