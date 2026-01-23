@@ -2,10 +2,16 @@ import {storage} from '#imports';
 import type {WxtStorageItem} from 'wxt/utils/storage';
 import {ChatMessage, Model, ProviderConfig} from './providers/types';
 
+export enum PromptType {
+    WITH_WEBPAGE = 'with-webpage',
+    FREE_TEXT = 'free-text'
+}
+
 export interface Prompt {
     id: string;
     name: string;
     text: string;
+    type: PromptType;
     isDefault?: boolean;
 }
 
@@ -55,6 +61,7 @@ export const defaultSettings: AppSettings = {
             id: 'default-summarize',
             name: 'Summarize this page',
             text: 'Summarize this page with less than 500 words',
+            type: PromptType.WITH_WEBPAGE,
             isDefault: true
         }
     ]

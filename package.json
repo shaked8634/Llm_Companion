@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",
-    "test": "vitest",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "build": "wxt build",
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip -b chromium",

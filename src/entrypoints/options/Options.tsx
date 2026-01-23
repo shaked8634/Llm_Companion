@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'preact/hooks';
-import {AppSettings, Prompt, settingsStorage} from '@/lib/store';
+import {AppSettings, Prompt, PromptType, settingsStorage} from '@/lib/store';
 import {useStorage} from '@/hooks/useStorage';
 import {ProviderFactory} from '@/lib/providers/factory';
 import {Bot, CheckCircle2, FileText, Info, Loader2, Plus, Trash2, XCircle} from 'lucide-preact';
@@ -136,6 +136,7 @@ export default function Options() {
                     id: 'default-summarize',
                     name: 'Summarize this page',
                     text: 'Summarize this page with less than 500 words',
+                    type: PromptType.WITH_WEBPAGE,
                     isDefault: true
                 }
             ]
@@ -219,7 +220,7 @@ export default function Options() {
             </aside>
 
             <main class="flex-1 bg-slate-100 dark:bg-slate-950">
-                <div class="w-full max-w-5xl mx-auto">
+                <div class="w-[80vw] mx-auto">
                     {activeTab === 'models' && (
                         <div class="space-y-8">
                             <div class="w-full">
@@ -309,13 +310,15 @@ export default function Options() {
                             <div class="w-full">
                                 <table class="w-full border-separate border-spacing-y-4 border-spacing-x-2 -ml-2" style="table-layout: fixed;">
                                     <colgroup>
-                                        <col style="width: 200px;" />
+                                        <col style="width: 180px;" />
+                                        <col style="width: 180px;" />
                                         <col style="width: auto;" />
                                         <col style="width: 60px;" />
                                     </colgroup>
                                     <thead>
                                         <tr>
                                             <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-left">Name</th>
+                                            <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-left">Type</th>
                                             <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-left">Prompt Text</th>
                                             <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-center">Action</th>
                                         </tr>
@@ -336,6 +339,21 @@ export default function Options() {
                                                         }}
                                                         class="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm transition-all shadow-sm focus:ring-2 focus:ring-indigo-500/20"
                                                     />
+                                                </td>
+                                                <td class="align-top">
+                                                    <select
+                                                        value={prompt.type || PromptType.WITH_WEBPAGE}
+                                                        onChange={(e) => {
+                                                            const newPrompts = localPrompts.map(p =>
+                                                                p.id === prompt.id ? { ...p, type: (e.target as HTMLSelectElement).value as PromptType } : p
+                                                            );
+                                                            debouncedSavePrompts(newPrompts);
+                                                        }}
+                                                        class="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm transition-all shadow-sm focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
+                                                    >
+                                                        <option value={PromptType.WITH_WEBPAGE}>With Webpage</option>
+                                                        <option value={PromptType.FREE_TEXT}>Free Text</option>
+                                                    </select>
                                                 </td>
                                                 <td class="align-top">
                                                     <textarea
@@ -387,6 +405,7 @@ export default function Options() {
                                             id: `prompt-${Date.now()}`,
                                             name: 'New Prompt',
                                             text: '',
+                                            type: PromptType.WITH_WEBPAGE,
                                             isDefault: false
                                         };
                                         const newPrompts = [...localPrompts, newPrompt];

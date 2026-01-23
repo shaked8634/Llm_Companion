@@ -1,9 +1,34 @@
 import {handleExecutePrompt} from './chat-handler';
 import {refreshDiscoveredModels} from '@/lib/utils/discovery';
-import {settingsStorage} from '@/lib/store';
+import {PromptType, settingsStorage} from '@/lib/store';
 
 export default defineBackground(() => {
     console.debug('[Background] Service worker initialized');
+
+    // Migrate old prompts to have type field
+    settingsStorage.getValue().then(settings => {
+        if (!settings || !settings.prompts) return;
+
+        let needsUpdate = false;
+        const updatedPrompts = settings.prompts.map(prompt => {
+            if (!prompt.type) {
+                needsUpdate = true;
+                return {
+                    ...prompt,
+                    type: PromptType.WITH_WEBPAGE
+                };
+            }
+            return prompt;
+        });
+
+        if (needsUpdate) {
+            console.debug('[Background] Migrating prompts to include type field');
+            settingsStorage.setValue({
+                ...settings,
+                prompts: updatedPrompts
+            });
+        }
+    });
 
     // Initial discovery on startup
     refreshDiscoveredModels();

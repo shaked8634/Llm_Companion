@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
-import {getTabSession, settingsStorage, TabSession} from '@/lib/store';
+import {getTabSession, PromptType, settingsStorage, TabSession} from '@/lib/store';
 import {useStorage} from '@/hooks/useStorage';
 import {
     ChevronDown,
@@ -27,6 +27,7 @@ export default function ChatInterface({ mode = 'popup' }: ChatInterfaceProps) {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [selectedPrompt, setSelectedPrompt] = useState<string>('');
     const [followUpText, setFollowUpText] = useState<string>('');
+    const [freeTextInput, setFreeTextInput] = useState<string>('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -104,35 +105,57 @@ export default function ChatInterface({ mode = 'popup' }: ChatInterfaceProps) {
             return;
         }
 
-        console.debug(`[${mode}] Selected prompt:`, { id: prompt.id, name: prompt.name, text: prompt.text });
-        console.debug(`[${mode}] Requesting page scrape from tab:`, currentTabId);
-
-        let pageContent: PageContent | null = null;
-        try {
-            const response = await chrome.tabs.sendMessage(currentTabId, { type: 'SCRAPE_PAGE' });
-            if (response?.success) {
-                pageContent = response.payload as PageContent;
-                console.debug(`[${mode}] Page content received:`, {
-                    title: pageContent?.title,
-                    domain: pageContent?.domain,
-                    wordCount: pageContent?.wordCount
-                });
-            } else {
-                console.warn(`[${mode}] Scrape failed:`, response?.error);
-            }
-        } catch (e) {
-            console.error(`[${mode}] Failed to scrape page:`, e);
+        // For FREE_TEXT prompts, check if freeTextInput is provided
+        if (prompt.type === PromptType.FREE_TEXT && !freeTextInput.trim()) {
+            console.warn(`[${mode}] Free text input is required for FREE_TEXT prompts`);
+            return;
         }
 
+        console.debug(`[${mode}] Selected prompt:`, { id: prompt.id, name: prompt.name, text: prompt.text, type: prompt.type });
+
+        let pageContent: PageContent | null = null;
+
+        // Only scrape page for WITH_WEBPAGE prompts
+        if (prompt.type === PromptType.WITH_WEBPAGE) {
+            console.debug(`[${mode}] Requesting page scrape from tab:`, currentTabId);
+            try {
+                const response = await chrome.tabs.sendMessage(currentTabId, { type: 'SCRAPE_PAGE' });
+                if (response?.success) {
+                    pageContent = response.payload as PageContent;
+                    console.debug(`[${mode}] Page content received:`, {
+                        title: pageContent?.title,
+                        domain: pageContent?.domain,
+                        wordCount: pageContent?.wordCount
+                    });
+                } else {
+                    console.warn(`[${mode}] Scrape failed:`, response?.error);
+                }
+            } catch (e) {
+                console.error(`[${mode}] Failed to scrape page:`, e);
+            }
+        } else {
+            console.debug(`[${mode}] Skipping page scrape for FREE_TEXT prompt`);
+        }
+
+        // For FREE_TEXT prompts, combine prompt text with user input
+        const userPrompt = prompt.type === PromptType.FREE_TEXT
+            ? `${prompt.text}\n\n${freeTextInput.trim()}`
+            : prompt.text;
+
         console.debug(`[${mode}] Sending EXECUTE_PROMPT to background`);
-        chrome.runtime.sendMessage({
+        await chrome.runtime.sendMessage({
             type: 'EXECUTE_PROMPT',
             payload: {
                 tabId: currentTabId,
-                userPrompt: prompt.text,
+                userPrompt: userPrompt,
                 pageContext: pageContent ? JSON.stringify(pageContent) : ''
             }
         });
+
+        // Clear free text input after sending
+        if (prompt.type === PromptType.FREE_TEXT) {
+            setFreeTextInput('');
+        }
     };
 
     const handleFollowUp = async () => {
@@ -165,6 +188,13 @@ export default function ChatInterface({ mode = 'popup' }: ChatInterfaceProps) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleFollowUp();
+        }
+    };
+
+    const handleFreeTextKeyPress = (e: KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleExecute();
         }
     };
 
@@ -363,6 +393,24 @@ export default function ChatInterface({ mode = 'popup' }: ChatInterfaceProps) {
                         {session.isLoading ? <Square class="w-4 h-4" /> : <Play class="w-4 h-4 fill-current" />}
                     </button>
                 </div>
+
+                {/* Free Text Input - shown only for FREE_TEXT prompts */}
+                {(() => {
+                    const currentPrompt = prompts.find(p => p.id === selectedPrompt);
+                    return currentPrompt?.type === PromptType.FREE_TEXT && (
+                        <div class="mt-2">
+                            <textarea
+                                value={freeTextInput}
+                                onInput={(e) => setFreeTextInput((e.target as HTMLTextAreaElement).value)}
+                                onKeyPress={handleFreeTextKeyPress}
+                                placeholder="Enter your text here..."
+                                disabled={session.isLoading}
+                                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs resize-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all disabled:opacity-50 min-h-24"
+                                rows={4}
+                            />
+                        </div>
+                    );
+                })()}
             </div>
 
             {/* Output Box */}
