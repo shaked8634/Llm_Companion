@@ -10,8 +10,10 @@ A browser extension that allows interaction with web pages using local or cloud-
   - OpenAI
 
 - Smart Web Page Interaction
-
 - Free Text Mode
+- Supported conversations
+- Sidebar and Popup modes
+- Text Selection Support
 
 ## Repository
 
