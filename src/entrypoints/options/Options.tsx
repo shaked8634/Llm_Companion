@@ -2,7 +2,7 @@ import {useEffect, useRef, useState} from 'preact/hooks';
 import {AppSettings, Prompt, PromptType, settingsStorage} from '@/lib/store';
 import {useStorage} from '@/hooks/useStorage';
 import {ProviderFactory} from '@/lib/providers/factory';
-import {Bot, CheckCircle2, FileText, Info, Loader2, Plus, Trash2, XCircle} from 'lucide-preact';
+import {Bot, CheckCircle2, Copy, FileText, Info, Loader2, Plus, Trash2, XCircle} from 'lucide-preact';
 import '@/assets/main.css';
 
 type TabId = 'models' | 'prompts' | 'about';
@@ -220,7 +220,7 @@ export default function Options() {
             </aside>
 
             <main class="flex-1 bg-slate-100 dark:bg-slate-950">
-                <div class="w-[80vw] mx-auto">
+                <div class="w-full px-4">
                     {activeTab === 'models' && (
                         <div class="space-y-8">
                             <div class="w-full">
@@ -435,31 +435,46 @@ export default function Options() {
 
                     {activeTab === 'about' && (
                         <div class="space-y-6">
-                            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 space-y-6 shadow-sm max-w-4xl">
-                                <p class="text-lg font-medium leading-relaxed">
-                                    LLM Companion - an Open Source Extension harnessing local and cloud LLM power in the browsers.
-                                </p>
-
+                            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 space-y-6 shadow-sm">
+                                <div class="text-center space-y-2">
+                                    <p class="text-2xl font-bold text-slate-900 dark:text-slate-100">LLM Companion</p>
+                                    <p class="text-sm text-slate-600 dark:text-slate-300">An Open Source Extension harnessing local and cloud LLM power in the browsers</p>
+                                </div>
                                 <div class="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                                     <div>
-                                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Code</h3>
-                                        <a href="https://github.com/" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">https://github.com/....</a>
-                                    </div>
-
-                                    <div>
-                                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Bugs / Questions / Feature Requests</h3>
-                                        <a href="https://github.com/" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">https://github.com/....</a>
-                                    </div>
-
-                                    <div>
-                                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Credits</h3>
-                                        <p class="text-slate-600 dark:text-slate-300">TBD</p>
-                                    </div>
-
-                                    <div class="pt-4 p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl border border-indigo-100 dark:border-indigo-900/50">
-                                        <p class="text-sm text-indigo-900 dark:text-indigo-200 font-medium">
-                                            Donations are appreciated and encouraged further extension development: <span class="font-bold">TBD</span>
+                                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Repository</h3>
+                                        <p class="text-sm text-slate-600 dark:text-slate-300">
+                                            <a href="https://forgejo.o-st.dev/ozzt/Llm_companion" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Forgejo</a>
                                         </p>
+                                    </div>
+
+                                    <div>
+                                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Support Development</h3>
+                                        <div class="space-y-2">
+                                            {[
+                                                { name: 'Bitcoin', addr: 'bc1q40kq55283px33xv5hqms94hf8mk7rc52h294wz', symbol: 'BTC', mime: 'bitcoin:bc1q40kq55283px33xv5hqms94hf8mk7rc52h294wz' },
+                                                { name: 'Ethereum', addr: '0x15735a6c937A836688A00dfC8BB2Ea1261B9fB5A', symbol: 'ETH', mime: 'ethereum:0x15735a6c937A836688A00dfC8BB2Ea1261B9fB5A' },
+                                                { name: 'Solana', addr: 'HNcSiKXhJVpSdF9BA2ZugfS1rsNNpWLwJRpzk3NbDDxn', symbol: 'SOL', mime: 'solana:HNcSiKXhJVpSdF9BA2ZugfS1rsNNpWLwJRpzk3NbDDxn' },
+                                                { name: 'Monero', addr: '42TdDbz5tCj4f2Dmap8NVVXCMc8VWZEZ4LCrDC9LbPEuPLkZivN8zFTCZt5iJ1xmGufo4UH5r28KGHVLWHWE5sqzSdVnWY8', symbol: 'XMR', mime: 'monero:42TdDbz5tCj4f2Dmap8NVVXCMc8VWZEZ4LCrDC9LbPEuPLkZivN8zFTCZt5iJ1xmGufo4UH5r28KGHVLWHWE5sqzSdVnWY8' }
+                                            ].map(crypto => (
+                                                <div key={crypto.symbol} class="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group">
+                                                    <div class="flex-1 min-w-0">
+                                                        <a href={crypto.mime} class="text-xs font-mono text-indigo-600 dark:text-indigo-400 hover:underline break-all">
+                                                            <span class="font-bold">{crypto.symbol}:</span> {crypto.addr}
+                                                        </a>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(crypto.addr);
+                                                        }}
+                                                        title={`Copy ${crypto.name} address`}
+                                                        class="ml-3 p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-700 rounded transition-all opacity-0 group-hover:opacity-100"
+                                                    >
+                                                        <Copy class="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

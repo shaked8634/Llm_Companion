@@ -23,5 +23,4 @@
 - [ ] Security audit
 - [x] Handle txt files
 - [ ] Check why reasoning models print the thinking but do not generate the text
-- [ ] Handle large websites
-- 
+  - [ ] Validate large websites works
