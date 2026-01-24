@@ -199,7 +199,7 @@ export default function Options() {
     ] as const;
 
     return (
-        <div class="flex min-h-screen w-full bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans p-6 gap-4">
+        <div class="flex min-h-screen w-full bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans p-4 gap-4">
             <aside class="w-44 flex flex-col shrink-0">
                 <nav class="flex flex-col gap-4">
                     {tabs.map(tab => (
@@ -303,9 +303,9 @@ export default function Options() {
                                 </table>
                             </div>
                         </div>
-                    )}
+                     )}
 
-                    {activeTab === 'prompts' && (
+                     {activeTab === 'prompts' && (
                         <div class="space-y-8">
                             <div class="w-full">
                                 <table class="w-full border-separate border-spacing-y-4 border-spacing-x-2 -ml-2" style="table-layout: fixed;">
@@ -432,9 +432,9 @@ export default function Options() {
                                 </button>
                             </div>
                         </div>
-                    )}
+                     )}
 
-                    {activeTab === 'about' && (
+                     {activeTab === 'about' && (
                         <div class="space-y-6">
                             <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-sm">
                                 <div class="text-center space-y-1">
@@ -484,7 +484,7 @@ export default function Options() {
                                 </div>
                             </div>
                         </div>
-                    )}
+                     )}
                 </div>
             </main>
         </div>
