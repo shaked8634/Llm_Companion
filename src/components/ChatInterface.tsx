@@ -203,6 +203,7 @@ export default function ChatInterface({ mode = 'popup' }: ChatInterfaceProps) {
     };
 
     useEffect(() => {
+        const runtime = chrome?.runtime;
         const listener = (message: any) => {
             if (message?.type === 'EXECUTE_SELECTED_TEXT_PROMPT') {
                 const { promptId, text } = message.payload || {};
@@ -212,9 +213,9 @@ export default function ChatInterface({ mode = 'popup' }: ChatInterfaceProps) {
                 setTimeout(() => handleExecute(text, promptId), 50);
             }
         };
-        chrome.runtime.onMessage.addListener(listener);
+        runtime?.onMessage?.addListener?.(listener);
         return () => {
-            chrome.runtime.onMessage.removeListener(listener);
+            runtime?.onMessage?.removeListener?.(listener);
         };
     }, [handleExecute]);
 
