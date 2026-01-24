@@ -435,12 +435,12 @@ export default function Options() {
 
                     {activeTab === 'about' && (
                         <div class="space-y-6">
-                            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 space-y-6 shadow-sm">
-                                <div class="text-center space-y-2">
+                            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-sm">
+                                <div class="text-center space-y-1">
                                     <p class="text-2xl font-bold text-slate-900 dark:text-slate-100">LLM Companion</p>
                                     <p class="text-sm text-slate-600 dark:text-slate-300">An Open Source Extension harnessing local and cloud LLM power in the browsers</p>
                                 </div>
-                                <div class="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <div class="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                                     <div>
                                         <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Repository</h3>
                                         <p class="text-sm text-slate-600 dark:text-slate-300">
@@ -475,6 +475,10 @@ export default function Options() {
                                                 </div>
                                             ))}
                                         </div>
+                                    </div>
+
+                                    <div class="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
+                                        <p class="text-xs text-slate-400 dark:text-slate-600 text-right">v0.0.0</p>
                                     </div>
                                 </div>
                             </div>
