@@ -2,8 +2,95 @@ import {handleExecutePrompt} from './chat-handler';
 import {refreshDiscoveredModels} from '@/lib/utils/discovery';
 import {PromptType, settingsStorage} from '@/lib/store';
 
+const CONTEXT_PARENT_ID = 'llm-companion-selected-text-parent';
+const CONTEXT_ITEM_PREFIX = 'llm-companion-selected-text-';
+const MAX_SELECTION_LENGTH = 4000;
+
+function truncateSelection(text: string): string {
+    const trimmed = text.trim();
+    if (trimmed.length <= MAX_SELECTION_LENGTH) return trimmed;
+    return `${trimmed.slice(0, MAX_SELECTION_LENGTH)}… (truncated)`;
+}
+
+async function buildContextMenus() {
+    const settings = await settingsStorage.getValue();
+    const selectedTextPrompts = settings?.prompts?.filter(p => p.type === PromptType.SELECTED_TEXT) || [];
+
+    return new Promise<void>((resolve) => {
+        chrome.contextMenus.removeAll(() => {
+            chrome.contextMenus.create({
+                id: CONTEXT_PARENT_ID,
+                title: 'Send to LLM Companion',
+                contexts: ['selection'],
+            });
+
+            if (selectedTextPrompts.length === 0) {
+                chrome.contextMenus.create({
+                    id: `${CONTEXT_PARENT_ID}-empty`,
+                    parentId: CONTEXT_PARENT_ID,
+                    title: 'No selected-text prompts configured',
+                    contexts: ['selection'],
+                    enabled: false,
+                });
+            } else {
+                selectedTextPrompts.forEach(prompt => {
+                    chrome.contextMenus.create({
+                        id: `${CONTEXT_ITEM_PREFIX}${prompt.id}`,
+                        parentId: CONTEXT_PARENT_ID,
+                        title: prompt.name,
+                        contexts: ['selection'],
+                    });
+                });
+            }
+            resolve();
+        });
+    });
+}
+
+function wait(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function handleContextMenuClick(info: chrome.contextMenus.OnClickData, _tab?: chrome.tabs.Tab) {
+    if (!info.menuItemId || typeof info.menuItemId !== 'string' || !info.menuItemId.startsWith(CONTEXT_ITEM_PREFIX)) return;
+    const promptId = info.menuItemId.replace(CONTEXT_ITEM_PREFIX, '');
+    const selection = info.selectionText ? truncateSelection(info.selectionText) : '';
+    if (!selection) {
+        console.warn('[Background] No selection text provided');
+        return;
+    }
+
+    const settings = await settingsStorage.getValue();
+    const prompt = settings?.prompts?.find(p => p.id === promptId && p.type === PromptType.SELECTED_TEXT);
+    if (!prompt) {
+        console.warn('[Background] Selected-text prompt not found:', promptId);
+        return;
+    }
+
+    try {
+        await chrome.action.openPopup();
+        // Give the popup a moment to mount listeners
+        await wait(150);
+    } catch (e) {
+        console.warn('[Background] Could not open popup from context menu:', e);
+    }
+
+    try {
+        await chrome.runtime.sendMessage({
+            type: 'EXECUTE_SELECTED_TEXT_PROMPT',
+            payload: { promptId, text: selection },
+        });
+    } catch (e) {
+        console.error('[Background] Failed to send EXECUTE_SELECTED_TEXT_PROMPT:', e);
+    }
+}
+
 export default defineBackground(() => {
     console.debug('[Background] Service worker initialized');
+
+    // Build context menus on startup
+    buildContextMenus();
+    chrome.contextMenus.onClicked.addListener(handleContextMenuClick);
 
     // Migrate old prompts to have type field
     settingsStorage.getValue().then(settings => {
@@ -21,8 +108,20 @@ export default defineBackground(() => {
             return prompt;
         });
 
+        const hasSelectedText = updatedPrompts.some(p => p.type === PromptType.SELECTED_TEXT);
+        if (!hasSelectedText) {
+            needsUpdate = true;
+            updatedPrompts.push({
+                id: 'default-selected-explain',
+                name: 'Explain selected paragraph',
+                text: 'Explain the following paragraph in simple, clear terms:',
+                type: PromptType.SELECTED_TEXT,
+                isDefault: true
+            });
+        }
+
         if (needsUpdate) {
-            console.debug('[Background] Migrating prompts to include type field');
+            console.debug('[Background] Migrating prompts to include type field and selected-text default');
             settingsStorage.setValue({
                 ...settings,
                 prompts: updatedPrompts
@@ -39,6 +138,12 @@ export default defineBackground(() => {
         if (providersChanged) {
             console.debug('[Background] Settings changed, refreshing models...');
             refreshDiscoveredModels();
+        }
+
+        const promptsChanged = JSON.stringify(newSettings?.prompts) !== JSON.stringify(oldSettings?.prompts);
+        if (promptsChanged) {
+            console.debug('[Background] Prompts changed, rebuilding context menu...');
+            buildContextMenus();
         }
     });
 

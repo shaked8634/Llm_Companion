@@ -4,7 +4,8 @@ import {ChatMessage, Model, ProviderConfig} from './providers/types';
 
 export enum PromptType {
     WITH_WEBPAGE = 'with-webpage',
-    FREE_TEXT = 'free-text'
+    FREE_TEXT = 'free-text',
+    SELECTED_TEXT = 'selected-text'
 }
 
 export interface Prompt {
@@ -69,6 +70,13 @@ export const defaultSettings: AppSettings = {
             name: 'Check Grammar',
             text: 'Fix any grammar mistakes, spelling errors, and abbreviations in the following text. Respond ONLY with the corrected text, without any explanations or comments.',
             type: PromptType.FREE_TEXT,
+            isDefault: true
+        },
+        {
+            id: 'default-selected-explain',
+            name: 'Explain selected paragraph',
+            text: 'Explain the following paragraph in simple, clear terms:',
+            type: PromptType.SELECTED_TEXT,
             isDefault: true
         }
     ]

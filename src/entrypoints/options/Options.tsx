@@ -358,6 +358,7 @@ export default function Options() {
                                                     >
                                                         <option value={PromptType.WITH_WEBPAGE}>With Webpage</option>
                                                         <option value={PromptType.FREE_TEXT}>Free Text</option>
+                                                        <option value={PromptType.SELECTED_TEXT}>Selected Text</option>
                                                     </select>
                                                 </td>
                                                 <td class="align-top">

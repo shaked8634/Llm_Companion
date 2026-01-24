@@ -25,7 +25,8 @@ export default defineConfig({
                 resources: ['logo.svg']
             },
         ],
-        permissions: ['storage', 'activeTab', 'scripting', 'sidePanel'],
+        permissions: ['storage', 'activeTab', 'scripting', 'sidePanel', 'contextMenus'],
+
         commands: {
             'execute-prompt': {
                 suggested_key: {

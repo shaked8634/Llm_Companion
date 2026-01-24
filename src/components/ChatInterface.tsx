@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import {getTabSession, PromptType, settingsStorage, TabSession} from '@/lib/store';
 import {useStorage} from '@/hooks/useStorage';
 import {
@@ -91,23 +91,27 @@ export default function ChatInterface({ mode = 'popup' }: ChatInterfaceProps) {
         }
     };
 
-    const handleExecute = async () => {
+    const handleExecute = useCallback(async (overrideInput?: string, overridePromptId?: string) => {
         console.debug(`[${mode}] Execute button clicked`);
 
-        if (!currentTabId || !settings?.selectedModelId || !selectedPrompt) {
-            console.warn(`[${mode}] Missing required data:`, { currentTabId, selectedModelId: settings?.selectedModelId, selectedPrompt });
+        const promptIdToUse = overridePromptId ?? selectedPrompt;
+
+        if (!currentTabId || !settings?.selectedModelId || !promptIdToUse) {
+            console.warn(`[${mode}] Missing required data:`, { currentTabId, selectedModelId: settings?.selectedModelId, selectedPrompt: promptIdToUse });
             return;
         }
 
-        const prompt = settings.prompts?.find(p => p.id === selectedPrompt);
+        const prompt = settings.prompts?.find(p => p.id === promptIdToUse);
         if (!prompt) {
-            console.error(`[${mode}] Prompt not found:`, selectedPrompt);
+            console.error(`[${mode}] Prompt not found:`, promptIdToUse);
             return;
         }
 
-        // For FREE_TEXT prompts, check if freeTextInput is provided
-        if (prompt.type === PromptType.FREE_TEXT && !freeTextInput.trim()) {
-            console.warn(`[${mode}] Free text input is required for FREE_TEXT prompts`);
+        const inputText = overrideInput ?? freeTextInput;
+
+        // For FREE_TEXT / SELECTED_TEXT prompts, require input
+        if ((prompt.type === PromptType.FREE_TEXT || prompt.type === PromptType.SELECTED_TEXT) && !inputText.trim()) {
+            console.warn(`[${mode}] Text input is required for prompt type`, prompt.type);
             return;
         }
 
@@ -134,12 +138,12 @@ export default function ChatInterface({ mode = 'popup' }: ChatInterfaceProps) {
                 console.error(`[${mode}] Failed to scrape page:`, e);
             }
         } else {
-            console.debug(`[${mode}] Skipping page scrape for FREE_TEXT prompt`);
+            console.debug(`[${mode}] Skipping page scrape for non-page prompt`);
         }
 
-        // For FREE_TEXT prompts, combine prompt text with user input
-        const userPrompt = prompt.type === PromptType.FREE_TEXT
-            ? `${prompt.text}\n\n${freeTextInput.trim()}`
+        // For FREE_TEXT or SELECTED_TEXT prompts, combine prompt text with input
+        const userPrompt = (prompt.type === PromptType.FREE_TEXT || prompt.type === PromptType.SELECTED_TEXT)
+            ? `${prompt.text}\n\n${inputText.trim()}`
             : prompt.text;
 
         console.debug(`[${mode}] Sending EXECUTE_PROMPT to background`);
@@ -152,11 +156,11 @@ export default function ChatInterface({ mode = 'popup' }: ChatInterfaceProps) {
             }
         });
 
-        // Clear free text input after sending
+        // Clear free text input after sending for free-text prompts (keep for selected-text to allow reuse)
         if (prompt.type === PromptType.FREE_TEXT) {
             setFreeTextInput('');
         }
-    };
+    }, [currentTabId, freeTextInput, mode, selectedPrompt, settings?.prompts, settings?.selectedModelId]);
 
     const handleFollowUp = async () => {
         console.debug(`[${mode}] Follow-up button clicked`);
@@ -197,6 +201,22 @@ export default function ChatInterface({ mode = 'popup' }: ChatInterfaceProps) {
             handleExecute();
         }
     };
+
+    useEffect(() => {
+        const listener = (message: any) => {
+            if (message?.type === 'EXECUTE_SELECTED_TEXT_PROMPT') {
+                const { promptId, text } = message.payload || {};
+                if (!promptId || !text) return;
+                setSelectedPrompt(promptId);
+                setFreeTextInput(text);
+                setTimeout(() => handleExecute(text, promptId), 50);
+            }
+        };
+        chrome.runtime.onMessage.addListener(listener);
+        return () => {
+            chrome.runtime.onMessage.removeListener(listener);
+        };
+    }, [handleExecute]);
 
     const handleStop = () => {
         chrome.runtime.sendMessage({ type: 'STOP_EXECUTION', payload: { tabId: currentTabId } });
@@ -383,7 +403,7 @@ export default function ChatInterface({ mode = 'popup' }: ChatInterfaceProps) {
                         </select>
                     </div>
                     <button
-                        onClick={session.isLoading ? handleStop : handleExecute}
+                        onClick={session.isLoading ? handleStop : () => handleExecute()}
                         disabled={!settings.selectedModelId || (!session.isLoading && !selectedPrompt)}
                         title={session.isLoading ? 'Stop' : 'Execute prompt'}
                         class={session.isLoading
@@ -397,7 +417,7 @@ export default function ChatInterface({ mode = 'popup' }: ChatInterfaceProps) {
                 {/* Free Text Input - shown only for FREE_TEXT prompts */}
                 {(() => {
                     const currentPrompt = prompts.find(p => p.id === selectedPrompt);
-                    return currentPrompt?.type === PromptType.FREE_TEXT && (
+                    return (currentPrompt?.type === PromptType.FREE_TEXT || currentPrompt?.type === PromptType.SELECTED_TEXT) && (
                         <div class="mt-2">
                             <textarea
                                 value={freeTextInput}
@@ -453,7 +473,7 @@ export default function ChatInterface({ mode = 'popup' }: ChatInterfaceProps) {
                             onKeyPress={handleFollowUpKeyPress}
                             placeholder="Continue the conversation..."
                             disabled={session.isLoading}
-                            class="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs resize-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all disabled:opacity-50 min-h-[2.5rem] max-h-32"
+                            class="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs resize-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all disabled:opacity-50 min-h-10 max-h-32"
                             rows={1}
                         />
                         <button
