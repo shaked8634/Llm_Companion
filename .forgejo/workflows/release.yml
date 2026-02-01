@@ -9,7 +9,7 @@ jobs:
   build-release:
     runs-on: act-latest
     env:
-      EXTENSION_ARTIFACT_NAME: llm_companion
+      ARTIFACT_NAME: llm_companion
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
@@ -20,7 +20,7 @@ jobs:
           node-version: 24
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
       - name: Update version in package.json
         run: pnpm pkg set version=${{ github.ref_name }}
       - run: pnpm run zip
@@ -36,3 +36,33 @@ jobs:
           release-dir: /upload
           release-notes: ""
           override: true
+      - name: Upload to Chrome Web Store
+        env:
+          CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: |
+          ZIP_PATH="/upload/llm-companion-${{ github.ref_name }}-chromium.zip"
+          if [ ! -f "$ZIP_PATH" ]; then
+            echo "Chrome zip not found at $ZIP_PATH" >&2
+            exit 1
+          fi
+          pnpm dlx chrome-webstore-upload-cli upload \
+            --source "$ZIP_PATH" \
+            --extension-id "$CWS_EXTENSION_ID" \
+            --client-id "$CWS_CLIENT_ID" \
+            --client-secret "$CWS_CLIENT_SECRET" \
+            --refresh-token "$CWS_REFRESH_TOKEN"
+      - name: Publish
+        env:
+          CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: |
+          pnpm dlx chrome-webstore-upload-cli publish \
+            --extension-id "$CWS_EXTENSION_ID" \
+            --client-id "$CWS_CLIENT_ID" \
+            --client-secret "$CWS_CLIENT_SECRET" \
+            --refresh-token "$CWS_REFRESH_TOKEN"
