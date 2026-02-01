@@ -36,10 +36,12 @@ export class OllamaProvider extends BaseProvider {
 
                     if (showResponse.ok) {
                         const modelInfo = await showResponse.json();
-                        // Extract num_ctx from model parameters
-                        const contextLength = modelInfo.model_info?.['llama.context_length'] ||
-                                            modelInfo.details?.parameter_size?.context ||
-                                            undefined;
+                        const contextLength =
+                            modelInfo.model_info?.['num_ctx'] ||
+                            modelInfo.model_info?.['context_length'] ||
+                            modelInfo.details?.['num_ctx'] ||
+                            modelInfo.details?.parameter_size?.context ||
+                            undefined;
                         models.push({
                             id: m.name,
                             name: m.name,

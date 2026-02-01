@@ -53,6 +53,25 @@ export async function handleExecutePrompt(tabId: number, userPrompt: string, pag
         }
     }
 
+    // If context is too large for the model, truncate the formatted page context
+    if (formattedPageContext && contextLimit) {
+        const approxCharLimit = contextLimit * 4; // ~4 chars per token
+        const reserveChars = 2000; // leave space for system prompt, conversation, and user prompt
+        const currentChars = settings.systemPrompt.length + formattedPageContext.length;
+        const maxContextChars = Math.max(approxCharLimit - reserveChars, 0);
+
+        if (approxCharLimit > 0 && currentChars > maxContextChars) {
+            const truncated = formattedPageContext.slice(0, Math.max(maxContextChars - settings.systemPrompt.length, 0));
+            console.warn('[Chat Handler] Truncating page context for model limit:', {
+                contextLimit,
+                approxCharLimit,
+                before: formattedPageContext.length,
+                after: truncated.length
+            });
+            formattedPageContext = `${truncated}\n... [truncated]`;
+        }
+    }
+
     // Combine system messages into one (some models ignore multiple system messages)
     const systemContent = formattedPageContext
         ? `${settings.systemPrompt}\n\n---\n\nContext from current page:\n\n${formattedPageContext}`
