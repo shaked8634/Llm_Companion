@@ -2,6 +2,11 @@ import {handleExecutePrompt} from './chat-handler';
 import {refreshDiscoveredModels} from '@/lib/utils/discovery';
 import {PromptType, settingsStorage} from '@/lib/store';
 
+let lastProvidersSignature: string | null = null;
+let lastPromptsSignature: string | null = null;
+let refreshDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+const REFRESH_DEBOUNCE_MS = 300;
+
 const CONTEXT_PARENT_ID = 'llm-companion-selected-text-parent';
 const CONTEXT_ITEM_PREFIX = 'llm-companion-selected-text-';
 const MAX_SELECTION_LENGTH = 4000;
@@ -92,56 +97,35 @@ export default defineBackground(() => {
     buildContextMenus();
     chrome.contextMenus.onClicked.addListener(handleContextMenuClick);
 
-    // Migrate old prompts to have type field
+    // Cache initial signatures to avoid duplicate refreshes/menu rebuilds
     settingsStorage.getValue().then(settings => {
-        if (!settings || !settings.prompts) return;
-
-        let needsUpdate = false;
-        const updatedPrompts = settings.prompts.map(prompt => {
-            if (!prompt.type) {
-                needsUpdate = true;
-                return {
-                    ...prompt,
-                    type: PromptType.WITH_WEBPAGE
-                };
-            }
-            return prompt;
-        });
-
-        const hasSelectedText = updatedPrompts.some(p => p.type === PromptType.SELECTED_TEXT);
-        if (!hasSelectedText) {
-            needsUpdate = true;
-            updatedPrompts.push({
-                id: 'default-selected-explain',
-                name: 'Explain selected paragraph',
-                text: 'Explain the following paragraph in simple, clear terms:',
-                type: PromptType.SELECTED_TEXT,
-                isDefault: true
-            });
-        }
-
-        if (needsUpdate) {
-            console.debug('[Background] Migrating prompts to include type field and selected-text default');
-            settingsStorage.setValue({
-                ...settings,
-                prompts: updatedPrompts
-            });
-        }
+        lastProvidersSignature = JSON.stringify(settings?.providers ?? {});
+        lastPromptsSignature = JSON.stringify(settings?.prompts ?? []);
     });
 
     // Initial discovery on startup
     refreshDiscoveredModels();
 
-    // Re-discover when settings change (e.g. provider enabled/disabled or URL changed)
-    settingsStorage.watch((newSettings, oldSettings) => {
-        const providersChanged = JSON.stringify(newSettings?.providers) !== JSON.stringify(oldSettings?.providers);
-        if (providersChanged) {
-            console.debug('[Background] Settings changed, refreshing models...');
-            refreshDiscoveredModels();
+    // Re-discover when provider settings change (e.g. enabled/disabled or URL/key changed)
+    settingsStorage.watch((newSettings) => {
+        const currentSignature = JSON.stringify(newSettings?.providers ?? {});
+        if (currentSignature !== lastProvidersSignature) {
+            lastProvidersSignature = currentSignature;
+
+            // Debounce refresh to handle rapid changes
+            if (refreshDebounceTimer) {
+                clearTimeout(refreshDebounceTimer);
+            }
+            refreshDebounceTimer = setTimeout(() => {
+                console.debug('[Background] Provider settings changed, refreshing models...');
+                refreshDiscoveredModels();
+                refreshDebounceTimer = null;
+            }, REFRESH_DEBOUNCE_MS);
         }
 
-        const promptsChanged = JSON.stringify(newSettings?.prompts) !== JSON.stringify(oldSettings?.prompts);
-        if (promptsChanged) {
+        const currentPromptsSignature = JSON.stringify(newSettings?.prompts ?? []);
+        if (currentPromptsSignature !== lastPromptsSignature) {
+            lastPromptsSignature = currentPromptsSignature;
             console.debug('[Background] Prompts changed, rebuilding context menu...');
             buildContextMenus();
         }

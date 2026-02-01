@@ -19,7 +19,7 @@ A browser extension that allows interaction with web pages using local or cloud-
 
 **Repository:** https://forgejo.o-st.dev/ozzt/Llm_companion
 
-**GitHub Mirror:** Read-only mirror for convenience. Please report issues and submit contributions on Forgejo.
+**GitHub Mirror:** Read-only mirror for convenience. Please report issues and submit contributions to Forgejo.
 
 ## Donations
 

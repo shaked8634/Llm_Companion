@@ -28,6 +28,16 @@ export async function refreshDiscoveredModels() {
         }
     }
 
+    const previous = settings.discoveredModels || [];
+    const unchanged = previous.length === allModels.length && previous.every((m, idx) => {
+        const n = allModels[idx];
+        return m.id === n.id && m.providerId === n.providerId && m.name === n.name;
+    });
+
+    if (unchanged) {
+        return;
+    }
+
     await settingsStorage.setValue({
         ...settings,
         discoveredModels: allModels
