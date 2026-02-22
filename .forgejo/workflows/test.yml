@@ -35,7 +35,6 @@ jobs:
         env:
           RENOVATE_PLATFORM: forgejo
           RENOVATE_ENDPOINT:  https://forgejo.o-st.dev/api/v1
-          RENOVATE_AUTODISCOVER: true
           GIT_AUTHOR_NAME: Renovate Bot
           GIT_AUTHOR_EMAIL: renovate-bot@o-st.dev
           GIT_COMMITTER_NAME: Renovate Bot
