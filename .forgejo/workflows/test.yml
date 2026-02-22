@@ -35,5 +35,5 @@ jobs:
         env:
           LOG_LEVEL: debug
           RENOVATE_PLATFORM: forgejo
-          RENOVATE_ENDPOINT:  https://${{ vars.REGISTRY_URL }}/api/v1
+          RENOVATE_ENDPOINT:  https://forgejo.o-st.dev/api/v1
           RENOVATE_AUTODISCOVER: true
