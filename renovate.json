@@ -11,5 +11,8 @@
       "groupName": "non-major dependencies"
     }
   ],
-  "gitAuthor": "Renovate Bot <renovate@o-st.dev>"
+  "username": "renovate-bot",
+  "gitAuthor": "Renovate Bot <renovate-bot@o-st.dev>",
+  "onboarding": false,
+  "requireConfig": "optional"
 }
