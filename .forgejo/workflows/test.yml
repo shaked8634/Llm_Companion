@@ -42,3 +42,4 @@ jobs:
           GIT_COMMITTER_NAME: Renovate Bot
           GIT_COMMITTER_EMAIL: renovate-bot@o-st.dev
           RENOVATE_GIT_AUTHOR: Renovate Bot <renovate-bot@o-st.dev>
+          RENOVATE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
