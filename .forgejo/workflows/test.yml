@@ -34,5 +34,5 @@ jobs:
           token: ${{ secrets.RENOVATE_TOKEN }}
         env:
           RENOVATE_PLATFORM: forgejo
-          RENOVATE_ENDPOINT: ${{ gitea.server_url }}/api/v1
+          RENOVATE_ENDPOINT:  ${{ vars.REGISTRY_URL }}/api/v1
           RENOVATE_AUTODISCOVER: true
