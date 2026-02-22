@@ -28,10 +28,9 @@ jobs:
       - run: pnpm test
       - run: pnpm run zip
       - run: pnpm run zip:firefox
-      - name: Self-hosted Renovate
+      - name: Renovate
         uses: https://github.com/renovatebot/github-action@v46.1.1
         with:
-#          configurationFile: renovate-config.js
           token: ${{ secrets.RENOVATE_TOKEN }}
         env:
           RENOVATE_PLATFORM: forgejo
