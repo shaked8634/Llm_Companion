@@ -1,10 +1,10 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {render} from '@testing-library/preact';
-import App from '../src/entrypoints/sidepanel/App';
-import * as useStorageModule from '../src/hooks/useStorage';
-import {defaultSettings} from '@/lib/store';
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render } from "@testing-library/preact";
+import App from "../src/entrypoints/sidepanel/App";
+import * as useStorageModule from "../src/hooks/useStorage";
+import { defaultSettings } from "@/lib/store";
 
-describe('Sidepanel UI', () => {
+describe("Sidepanel UI", () => {
   beforeEach(() => {
     // Mock chrome APIs
     globalThis.chrome = {
@@ -31,24 +31,26 @@ describe('Sidepanel UI', () => {
     } as any;
 
     // Mock useStorage hook to return mock data
-    vi.spyOn(useStorageModule, 'useStorage').mockImplementation((storageItem) => {
-      if (storageItem === null) {
-        return [null, vi.fn()] as const;
-      }
+    vi.spyOn(useStorageModule, "useStorage").mockImplementation(
+      (storageItem) => {
+        if (storageItem === null) {
+          return [null, vi.fn()] as const;
+        }
 
-      const isSetting = storageItem?.key?.includes?.('settings');
+        const isSetting = storageItem?.key?.includes?.("settings");
 
-      if (isSetting) {
-        return [defaultSettings, vi.fn()] as const;
-      }
+        if (isSetting) {
+          return [defaultSettings, vi.fn()] as const;
+        }
 
-      // Session storage
-      return [{ messages: [], isLoading: false }, vi.fn()] as const;
-    });
+        // Session storage
+        return [{ messages: [], isLoading: false }, vi.fn()] as const;
+      },
+    );
   });
 
-  it('should render sidepanel', () => {
-    const {container} = render(<App />);
+  it("should render sidepanel", () => {
+    const { container } = render(<App />);
     expect(container).toBeTruthy();
   });
 });

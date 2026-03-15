@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - '*.*.*'
+      - "*.*.*"
 
 jobs:
   build-release:
@@ -18,9 +18,8 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: 'pnpm'
+          cache: "pnpm"
           cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
       - name: Update version in package.json
         run: pnpm pkg set version=${{ github.ref_name }}
       - run: pnpm run zip
@@ -29,14 +28,18 @@ jobs:
         run: |
           mkdir /upload
           mv .output/*.zip /upload
-      - uses: actions/forgejo-release@v2.8.0
+      - uses: actions/forgejo-release@v2
         with:
           direction: upload
+          url: https://forgejo.o-st.dev
+          repo: ST_Consultancy/Llm_companion
+          token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           release-dir: /upload
-          release-notes: ""
+          release-notes-file: release-notes/${{ forge.ref_name }}.md
           override: true
       - name: Upload to Chrome Web Store
+        continue-on-error: true
         env:
           CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
           CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
@@ -55,6 +58,7 @@ jobs:
             --client-secret "$CWS_CLIENT_SECRET" \
             --refresh-token "$CWS_REFRESH_TOKEN"
       - name: Publish
+        continue-on-error: true
         env:
           CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
           CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}

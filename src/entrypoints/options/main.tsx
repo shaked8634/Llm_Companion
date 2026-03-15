@@ -1,4 +1,4 @@
-import {render} from 'preact';
-import Options from './Options';
+import { render } from "preact";
+import Options from "./Options";
 
-render(<Options />, document.getElementById('app')!);
+render(<Options />, document.getElementById("app")!);

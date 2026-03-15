@@ -33,4 +33,3 @@ If you find this extension useful and would like to support development, donatio
 ## License
 
 This project is licensed under the [MIT License](LICENSE.txt).
-
