@@ -16,6 +16,13 @@ repos:
         pass_filenames: false
         always_run: true
 
+      - id: format
+        name: format
+        entry: pnpm run format
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: compile
         name: compile
         entry: pnpm run compile
