@@ -29,7 +29,7 @@ jobs:
       - run: pnpm test
       - name: Renovate
         continue-on-error: true
-        uses: https://github.com/renovatebot/github-action@v47
+        uses: https://github.com/renovatebot/github-action@v46
         with:
           token: ${{ secrets.RENOVATE_TOKEN }}
           mount-docker-socket: false
