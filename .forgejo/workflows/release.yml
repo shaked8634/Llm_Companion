@@ -20,6 +20,7 @@ jobs:
           node-version: 24
           cache: "pnpm"
           cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install
       - name: Update version in package.json
         run: pnpm pkg set version=${{ github.ref_name }}
       - run: pnpm run zip
