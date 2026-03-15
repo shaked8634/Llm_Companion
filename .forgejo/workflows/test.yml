@@ -24,7 +24,8 @@ jobs:
           cache: "pnpm"
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install
-      - run: pnpm exec eslint src --ext .ts,.tsx
+      - run: pnpm lint
+      - run: pnpm format:check
       - run: pnpm test
       - run: pnpm run zip
       - run: pnpm run zip:firefox
@@ -33,6 +34,7 @@ jobs:
         with:
           token: ${{ secrets.RENOVATE_TOKEN }}
         env:
+          RENOVATE_USE_DOCKER: false
           RENOVATE_AUTODISCOVER: false
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_PLATFORM: forgejo

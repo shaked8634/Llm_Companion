@@ -10,6 +10,7 @@
     "dev:firefox": "wxt -b firefox",
     "test": "vitest run",
     "lint": "eslint . --ext .ts,.tsx",
+    "format:check": "prettier --check .",
     "format": "prettier --write .",
     "test:watch": "vitest",
     "build": "wxt build",
