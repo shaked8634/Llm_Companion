@@ -27,12 +27,12 @@ jobs:
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm test
-      - run: pnpm run zip
-      - run: pnpm run zip:firefox
       - name: Renovate
-        uses: https://github.com/renovatebot/github-action@v46.1.1
+        continue-on-error: true
+        uses: https://github.com/renovatebot/github-action@v47
         with:
           token: ${{ secrets.RENOVATE_TOKEN }}
+          mount-docker-socket: false
         env:
           RENOVATE_AUTODISCOVER: false
           RENOVATE_REPOSITORIES: ${{ github.repository }}
@@ -45,3 +45,5 @@ jobs:
           GIT_COMMITTER_EMAIL: renovate-bot@o-st.dev
           RENOVATE_GIT_AUTHOR: Renovate Bot <renovate-bot@o-st.dev>
           RENOVATE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: pnpm run zip
+      - run: pnpm run zip:firefox
