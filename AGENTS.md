@@ -4,7 +4,7 @@ Guidelines for AI agents (e.g. Junie, Copilot, Codex) working on the **LLM Compa
 
 ## Project Overview
 
-LLM Companion is a browser extension that lets users interact with any web page using local or cloud-based AI models. It supports Ollama, Google Gemini, OpenAI, OpenRouter, and Custom OpenAI-compatible providers and exposes both a popup and a sidepanel UI.
+LLM Companion is a browser extension that lets users interact with any web page using local or cloud-based AI models. It supports Ollama, Google Gemini, OpenAI, OpenRouter, and Custom providers and exposes both a popup and a sidepanel UI.
 
 **Repository:** https://forgejo.o-st.dev/ozzt/Llm_companion
 **License:** MIT
@@ -51,7 +51,7 @@ src/
       gemini.ts    # Google Gemini provider
       openai.ts    # OpenAI provider
       openrouter.ts # OpenRouter provider
-      custom-openai.ts # Custom OpenAI-compatible provider
+      custom-openai.ts # Custom provider
     utils/
       scraper.ts   # Page content extraction (Readability + Turndown)
       discovery.ts # Model discovery helpers
@@ -133,6 +133,7 @@ The background service worker (`src/entrypoints/background/`) handles all LLM AP
 - Keep entrypoints thin — business logic belongs in `src/lib/`.
 - Follow existing file naming conventions: kebab-case for files, PascalCase for components.
 - Do not add comments unless they clarify non-obvious logic; the existing codebase is mostly comment-free.
+- **Agent specific**: Use `/usr/bin/cat` instead of `cat` when reading files via terminal commands.
 
 ---
 

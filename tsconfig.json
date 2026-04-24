@@ -1,12 +1,14 @@
 {
   "extends": "./.wxt/tsconfig.json",
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
     },
+    "types": ["chrome"],
     "skipLibCheck": true
   },
   "exclude": ["vitest.config.ts"]
