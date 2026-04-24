@@ -20,6 +20,13 @@ describe("Popup UI", () => {
           addListener: vi.fn(),
           removeListener: vi.fn(),
         },
+        getZoom: vi.fn((tabId, callback) => {
+          callback(1);
+        }),
+        onZoomChange: {
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+        },
       },
       runtime: {
         openOptionsPage: vi.fn(),

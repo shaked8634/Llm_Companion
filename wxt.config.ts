@@ -32,6 +32,7 @@ export default defineConfig({
       "scripting",
       "sidePanel",
       "contextMenus",
+      "tabs",
     ],
 
     commands: {

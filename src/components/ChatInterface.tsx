@@ -89,6 +89,50 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
   }, [currentTabId]);
 
   const [session] = useStorage<TabSession>(sessionItem);
+  const [zoomLevel, setZoomLevel] = useState(1);
+
+  useEffect(() => {
+    if (!currentTabId) return;
+
+    // Get initial zoom level
+    chrome.tabs.getZoom(currentTabId, (zoom) => {
+      if (chrome.runtime.lastError) {
+        console.debug(
+          `[${mode}] Error getting zoom:`,
+          chrome.runtime.lastError,
+        );
+        return;
+      }
+      setZoomLevel(zoom);
+    });
+
+    // Listen for zoom changes
+    const handleZoomChange = (zoomChangeInfo: chrome.tabs.OnZoomChangeInfo) => {
+      if (zoomChangeInfo.tabId === currentTabId) {
+        console.debug(
+          `[${mode}] Zoom changed for tab ${currentTabId}:`,
+          zoomChangeInfo.newZoomFactor,
+        );
+        setZoomLevel(zoomChangeInfo.newZoomFactor);
+      }
+    };
+
+    chrome.tabs.onZoomChange.addListener(handleZoomChange);
+    return () => {
+      chrome.tabs.onZoomChange.removeListener(handleZoomChange);
+    };
+  }, [currentTabId, mode]);
+
+  useEffect(() => {
+    // Apply zoom to the root element's font size
+    // This allows all rem-based units to scale with the tab zoom
+    document.documentElement.style.fontSize = `${zoomLevel * 100}%`;
+
+    return () => {
+      // Reset font size on unmount (important for shared contexts if any)
+      document.documentElement.style.fontSize = "";
+    };
+  }, [zoomLevel]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
