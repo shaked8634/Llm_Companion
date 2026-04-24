@@ -97,6 +97,10 @@ export default function Options() {
       patchedProviders.openrouter = { enabled: false, apiKey: "" };
       changed = true;
     }
+    if (!patchedProviders.custom_openai) {
+      patchedProviders.custom_openai = { enabled: false, url: "", apiKey: "" };
+      changed = true;
+    }
     if (changed) {
       setLocalProviders(patchedProviders);
       setSettings({ ...settings, providers: patchedProviders });
@@ -151,7 +155,7 @@ export default function Options() {
         error = "API Key is required.";
       }
       if (
-        id === "ollama" &&
+        (id === "ollama" || id === "custom_openai") &&
         (!config.url || !/^https?:\/\/.+/.test(config.url))
       ) {
         error = "Valid URL is required.";
@@ -267,7 +271,13 @@ export default function Options() {
                   <tbody>
                     {localProviders &&
                       (
-                        ["ollama", "gemini", "openai", "openrouter"] as const
+                        [
+                          "ollama",
+                          "gemini",
+                          "openai",
+                          "openrouter",
+                          "custom_openai",
+                        ] as const
                       ).map((id) => {
                         const config = localProviders[id];
                         if (!config) return null;
@@ -326,16 +336,18 @@ export default function Options() {
                                   })
                                 }
                                 placeholder="API Key"
-                                class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? "opacity-40 grayscale" : "shadow-sm focus:ring-2 focus:ring-indigo-500/20"} ${id !== "ollama" && !config.apiKey && !isDisabled ? "border-amber-300" : "border-slate-200 dark:border-slate-800"} ${providerErrors[id] ? "border-red-500" : ""}`}
+                                class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? "opacity-40 grayscale" : "shadow-sm focus:ring-2 focus:ring-indigo-500/20"} ${id !== "ollama" && id !== "custom_openai" && !config.apiKey && !isDisabled ? "border-amber-300" : "border-slate-200 dark:border-slate-800"} ${providerErrors[id] ? "border-red-500" : ""}`}
                               />
-                              {providerErrors[id] && id !== "ollama" && (
-                                <div class="text-xs text-red-500 mt-1">
-                                  {providerErrors[id]}
-                                </div>
-                              )}
+                              {providerErrors[id] &&
+                                id !== "ollama" &&
+                                id !== "custom_openai" && (
+                                  <div class="text-xs text-red-500 mt-1">
+                                    {providerErrors[id]}
+                                  </div>
+                                )}
                             </td>
                             <td>
-                              {id === "ollama" ? (
+                              {id === "ollama" || id === "custom_openai" ? (
                                 <div>
                                   <input
                                     type="text"
@@ -348,6 +360,11 @@ export default function Options() {
                                       })
                                     }
                                     class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? "opacity-40 grayscale" : "shadow-sm focus:ring-2 focus:ring-indigo-500/20"} border-slate-200 dark:border-slate-800 ${providerErrors[id] ? "border-red-500" : ""}`}
+                                    placeholder={
+                                      id === "ollama"
+                                        ? "http://localhost:11434"
+                                        : "https://api.example.com/v1"
+                                    }
                                   />
                                   {providerErrors[id] && (
                                     <div class="text-xs text-red-500 mt-1">

@@ -15,6 +15,11 @@ export async function refreshDiscoveredModels() {
       name: "OpenRouter",
       config: settings.providers.openrouter,
     },
+    {
+      id: "custom_openai",
+      name: "Custom OpenAI",
+      config: settings.providers.custom_openai,
+    },
   ];
 
   for (const p of providers) {

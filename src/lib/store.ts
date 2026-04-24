@@ -22,18 +22,25 @@ export interface DiscoveredModel extends Model {
 }
 
 export interface AppSettings {
-  activeProvider: "ollama" | "gemini" | "openai" | "openrouter";
+  activeProvider:
+    | "ollama"
+    | "gemini"
+    | "openai"
+    | "openrouter"
+    | "custom_openai";
   providers: {
     ollama: ProviderConfig;
     gemini: ProviderConfig;
     openai: ProviderConfig;
     openrouter: ProviderConfig;
+    custom_openai: ProviderConfig;
   };
   activeModel: {
     ollama?: string;
     gemini?: string;
     openai?: string;
     openrouter?: string;
+    custom_openai?: string;
   };
   selectedModelId?: string; // Format: "providerId:modelId"
   discoveredModels: DiscoveredModel[];
@@ -55,6 +62,7 @@ export const defaultSettings: AppSettings = {
     gemini: { enabled: false, apiKey: "" },
     openai: { enabled: false, apiKey: "" },
     openrouter: { enabled: false, apiKey: "" },
+    custom_openai: { enabled: false, url: "", apiKey: "" },
   },
   activeModel: {},
   selectedModelId: undefined,

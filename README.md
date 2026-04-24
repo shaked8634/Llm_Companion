@@ -9,6 +9,7 @@ A browser extension that allows interaction with web pages using local or cloud-
   - Google Gemini
   - OpenAI
   - OpenRouter
+  - Custom OpenAI-compatible providers
 
 - Smart Web Page Interaction
 - Free Text Mode
