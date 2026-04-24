@@ -1,6 +1,8 @@
 import { defineConfig } from "wxt";
 import preact from "@preact/preset-vite";
 
+const releaseVersion = globalThis.process?.env?.WXT_RELEASE_VERSION ?? "0.0.0";
+
 export default defineConfig({
   srcDir: "src",
   publicDir: "src/public",
@@ -11,6 +13,7 @@ export default defineConfig({
   manifestVersion: 3,
   manifest: {
     name: "LLM Companion",
+    version_name: releaseVersion,
     icons: {
       96: "icon-96.png",
     },

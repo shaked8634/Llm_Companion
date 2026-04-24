@@ -1,6 +1,10 @@
 import { handleExecutePrompt } from "./chat-handler";
 import { refreshDiscoveredModels } from "@/lib/utils/discovery";
-import { PromptType, settingsStorage } from "@/lib/store";
+import {
+  getPromptsWithDefaults,
+  PromptType,
+  settingsStorage,
+} from "@/lib/store";
 
 let lastProvidersSignature: string | null = null;
 let lastPromptsSignature: string | null = null;
@@ -19,8 +23,9 @@ function truncateSelection(text: string): string {
 
 async function buildContextMenus() {
   const settings = await settingsStorage.getValue();
-  const selectedTextPrompts =
-    settings?.prompts?.filter((p) => p.type === PromptType.SELECTED_TEXT) || [];
+  const selectedTextPrompts = getPromptsWithDefaults(settings?.prompts).filter(
+    (prompt) => prompt.type === PromptType.SELECTED_TEXT,
+  );
 
   return new Promise<void>((resolve) => {
     chrome.contextMenus.removeAll(() => {
@@ -77,7 +82,7 @@ async function handleContextMenuClick(
   }
 
   const settings = await settingsStorage.getValue();
-  const prompt = settings?.prompts?.find(
+  const prompt = getPromptsWithDefaults(settings?.prompts).find(
     (p) => p.id === promptId && p.type === PromptType.SELECTED_TEXT,
   );
   if (!prompt) {
@@ -178,6 +183,9 @@ export default defineBackground(() => {
 
         // Get current settings
         const settings = await settingsStorage.getValue();
+        const prompts = getPromptsWithDefaults(settings.prompts).filter(
+          (prompt) => prompt.type !== PromptType.SELECTED_TEXT,
+        );
         if (!settings.selectedModelId) {
           console.warn("[Background] No model selected");
           return;
@@ -185,8 +193,8 @@ export default defineBackground(() => {
 
         // Get the last selected prompt or first prompt
         let promptId = settings.lastSelectedPromptId;
-        if (!promptId || !settings.prompts?.find((p) => p.id === promptId)) {
-          promptId = settings.prompts?.[0]?.id;
+        if (!promptId || !prompts.find((prompt) => prompt.id === promptId)) {
+          promptId = prompts[0]?.id;
         }
 
         if (!promptId) {
@@ -194,7 +202,7 @@ export default defineBackground(() => {
           return;
         }
 
-        const prompt = settings.prompts.find((p) => p.id === promptId);
+        const prompt = prompts.find((p) => p.id === promptId);
         if (!prompt) {
           console.error("[Background] Prompt not found:", promptId);
           return;

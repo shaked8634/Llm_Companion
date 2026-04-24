@@ -1,4 +1,8 @@
-import { getTabSession, settingsStorage } from "@/lib/store";
+import {
+  getProviderSettingsWithDefaults,
+  getTabSession,
+  settingsStorage,
+} from "@/lib/store";
 import { ProviderFactory } from "@/lib/providers/factory";
 import { ChatMessage, ProviderType } from "@/lib/providers/types";
 import { formatPageContextForLLM, PageContent } from "@/lib/utils/scraper";
@@ -28,7 +32,9 @@ export async function handleExecutePrompt(
     colonIndex,
   ) as ProviderType;
   const modelId = settings.selectedModelId.substring(colonIndex + 1);
-  const providerConfig = settings.providers[providerType];
+  const providerConfig = getProviderSettingsWithDefaults(settings.providers)[
+    providerType
+  ];
   console.debug("[Chat Handler] Provider:", providerType, "Model:", modelId);
 
   const provider = ProviderFactory.create(providerType, providerConfig);

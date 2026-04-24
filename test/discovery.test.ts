@@ -76,4 +76,56 @@ describe("refreshDiscoveredModels", () => {
       ],
     });
   });
+
+  it("fills in missing provider entries before checking enabled flags", async () => {
+    const settings = {
+      ...defaultSettings,
+      providers: {
+        openrouter: { enabled: true, apiKey: "or-token" },
+      } as typeof defaultSettings.providers,
+      discoveredModels: [],
+    };
+
+    const getModels = vi.fn().mockResolvedValue([
+      {
+        id: "openrouter/model-1",
+        name: "OpenRouter Model 1",
+      },
+    ]);
+
+    const createSpy = vi
+      .spyOn(ProviderFactory, "create")
+      .mockImplementation((type) => {
+        if (type !== "openrouter") {
+          throw new Error(`Unexpected provider creation for ${type}`);
+        }
+
+        return {
+          getModels,
+        } as never;
+      });
+
+    vi.spyOn(settingsStorage, "getValue").mockResolvedValue(settings);
+    const setValueSpy = vi
+      .spyOn(settingsStorage, "setValue")
+      .mockResolvedValue(undefined as never);
+
+    await expect(refreshDiscoveredModels()).resolves.toBeUndefined();
+
+    expect(createSpy).toHaveBeenCalledWith("openrouter", {
+      enabled: true,
+      apiKey: "or-token",
+    });
+    expect(setValueSpy).toHaveBeenCalledWith({
+      ...settings,
+      discoveredModels: [
+        {
+          id: "openrouter/model-1",
+          name: "OpenRouter Model 1",
+          providerId: "openrouter",
+          providerName: "OpenRouter",
+        },
+      ],
+    });
+  });
 });

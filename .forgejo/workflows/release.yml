@@ -23,8 +23,8 @@ jobs:
       - run: pnpm install
       - name: Update version in package.json
         run: pnpm pkg set version=${{ github.ref_name }}
-      - run: pnpm run zip
-      - run: pnpm run zip:firefox
+      - run: WXT_RELEASE_VERSION=${{ github.ref_name }} pnpm run zip
+      - run: WXT_RELEASE_VERSION=${{ github.ref_name }} pnpm run zip:firefox
       - name: Copy artifacts
         run: |
           mkdir /upload

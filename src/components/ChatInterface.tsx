@@ -6,7 +6,9 @@ import {
   useState,
 } from "preact/hooks";
 import {
+  getPromptsWithDefaults,
   getTabSession,
+  getProviderSettingsWithDefaults,
   PromptType,
   settingsStorage,
   TabSession,
@@ -90,6 +92,15 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
 
   const [session] = useStorage<TabSession>(sessionItem);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const allPrompts = useMemo(
+    () => getPromptsWithDefaults(settings?.prompts),
+    [settings?.prompts],
+  );
+  const prompts = useMemo(
+    () =>
+      allPrompts.filter((prompt) => prompt.type !== PromptType.SELECTED_TEXT),
+    [allPrompts],
+  );
 
   useEffect(() => {
     if (!currentTabId) return;
@@ -168,7 +179,7 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
         return;
       }
 
-      const prompt = settings.prompts?.find((p) => p.id === promptIdToUse);
+      const prompt = allPrompts.find((p) => p.id === promptIdToUse);
       if (!prompt) {
         console.error(`[${mode}] Prompt not found:`, promptIdToUse);
         return;
@@ -176,12 +187,12 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
 
       const inputText = overrideInput ?? freeTextInput;
 
-      // For FREE_TEXT / SELECTED_TEXT prompts, require input
-      if (
-        (prompt.type === PromptType.FREE_TEXT ||
-          prompt.type === PromptType.SELECTED_TEXT) &&
-        !inputText.trim()
-      ) {
+      const promptRequiresInput =
+        prompt.type === PromptType.FREE_TEXT ||
+        prompt.type === PromptType.SELECTED_TEXT ||
+        prompt.allowInput;
+
+      if (promptRequiresInput && !inputText.trim()) {
         console.warn(
           `[${mode}] Text input is required for prompt type`,
           prompt.type,
@@ -225,10 +236,11 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
         console.debug(`[${mode}] Skipping page scrape for non-page prompt`);
       }
 
-      // For FREE_TEXT or SELECTED_TEXT prompts, combine prompt text with input
+      // For prompts that accept direct input, combine prompt text with input
       const userPrompt =
         prompt.type === PromptType.FREE_TEXT ||
-        prompt.type === PromptType.SELECTED_TEXT
+        prompt.type === PromptType.SELECTED_TEXT ||
+        prompt.allowInput
           ? `${prompt.text}\n\n${inputText.trim()}`
           : prompt.text;
 
@@ -242,8 +254,8 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
         },
       });
 
-      // Clear free text input after sending for free-text prompts (keep for selected-text to allow reuse)
-      if (prompt.type === PromptType.FREE_TEXT) {
+      // Clear direct input prompts after sending (keep selected-text to allow reuse)
+      if (prompt.type === PromptType.FREE_TEXT || prompt.allowInput) {
         setFreeTextInput("");
       }
     },
@@ -252,7 +264,7 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
       freeTextInput,
       mode,
       selectedPrompt,
-      settings?.prompts,
+      allPrompts,
       settings?.selectedModelId,
     ],
   );
@@ -355,13 +367,13 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
       </div>
     );
 
+  const providerSettings = getProviderSettingsWithDefaults(settings.providers);
   const hasEnabledProviders =
-    settings.providers.ollama.enabled ||
-    settings.providers.gemini.enabled ||
-    settings.providers.openai.enabled ||
-    settings.providers.openrouter.enabled ||
-    settings.providers.custom.enabled;
-  const prompts = settings.prompts || [];
+    providerSettings.ollama.enabled ||
+    providerSettings.gemini.enabled ||
+    providerSettings.openai.enabled ||
+    providerSettings.openrouter.enabled ||
+    providerSettings.custom.enabled;
   const models = settings.discoveredModels || [];
 
   useEffect(() => {
@@ -570,10 +582,11 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
 
         {/* Free Text Input - shown only for FREE_TEXT prompts */}
         {(() => {
-          const currentPrompt = prompts.find((p) => p.id === selectedPrompt);
+          const currentPrompt = allPrompts.find((p) => p.id === selectedPrompt);
           return (
             (currentPrompt?.type === PromptType.FREE_TEXT ||
-              currentPrompt?.type === PromptType.SELECTED_TEXT) && (
+              currentPrompt?.type === PromptType.SELECTED_TEXT ||
+              currentPrompt?.allowInput) && (
               <div class="mt-2">
                 <textarea
                   value={freeTextInput}
@@ -581,7 +594,9 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
                     setFreeTextInput((e.target as HTMLTextAreaElement).value)
                   }
                   onKeyPress={handleFreeTextKeyPress}
-                  placeholder="Enter your text here..."
+                  placeholder={
+                    currentPrompt?.inputPlaceholder || "Enter your text here..."
+                  }
                   disabled={session.isLoading}
                   class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs resize-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all disabled:opacity-50 min-h-24"
                   rows={4}
