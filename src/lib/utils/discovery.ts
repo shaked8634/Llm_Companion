@@ -10,6 +10,11 @@ export async function refreshDiscoveredModels() {
     { id: "ollama", name: "Ollama", config: settings.providers.ollama },
     { id: "gemini", name: "Gemini", config: settings.providers.gemini },
     { id: "openai", name: "OpenAI", config: settings.providers.openai },
+    {
+      id: "openrouter",
+      name: "OpenRouter",
+      config: settings.providers.openrouter,
+    },
   ];
 
   for (const p of providers) {

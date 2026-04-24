@@ -93,6 +93,10 @@ export default function Options() {
       patchedProviders.openai = { enabled: false, apiKey: "" };
       changed = true;
     }
+    if (!patchedProviders.openrouter) {
+      patchedProviders.openrouter = { enabled: false, apiKey: "" };
+      changed = true;
+    }
     if (changed) {
       setLocalProviders(patchedProviders);
       setSettings({ ...settings, providers: patchedProviders });
@@ -140,7 +144,10 @@ export default function Options() {
   function validateProvider(id: keyof AppSettings["providers"], config: any) {
     let error = "";
     if (config.enabled) {
-      if ((id === "gemini" || id === "openai") && !config.apiKey) {
+      if (
+        (id === "gemini" || id === "openai" || id === "openrouter") &&
+        !config.apiKey
+      ) {
         error = "API Key is required.";
       }
       if (
@@ -259,7 +266,9 @@ export default function Options() {
                   </thead>
                   <tbody>
                     {localProviders &&
-                      (["ollama", "gemini", "openai"] as const).map((id) => {
+                      (
+                        ["ollama", "gemini", "openai", "openrouter"] as const
+                      ).map((id) => {
                         const config = localProviders[id];
                         if (!config) return null;
                         const isDisabled = !config.enabled;

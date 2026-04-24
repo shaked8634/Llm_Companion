@@ -25,3 +25,5 @@
 - [x] Handle txt files
 - [ ] Check why reasoning models print the thinking but do not generate the text
   - [ ] Validate large websites works
+- [x] Add support to Openrouter
+- [ ] Add support to llma.cpp

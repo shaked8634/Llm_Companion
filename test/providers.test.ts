@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { OllamaProvider } from "@/lib/providers/ollama";
 import { GeminiProvider } from "@/lib/providers/gemini";
 import { OpenAIProvider } from "@/lib/providers/openai";
+import { OpenRouterProvider } from "@/lib/providers/openrouter";
 
 // These are basic structure tests, not live API tests
 
@@ -25,5 +26,11 @@ describe("Provider classes", () => {
     const provider = new OpenAIProvider({ apiKey: "dummy", enabled: true });
     expect(provider.id).toBe("openai");
     expect(provider.name).toBe("OpenAI");
+  });
+
+  it("OpenRouterProvider should have id and name", () => {
+    const provider = new OpenRouterProvider({ apiKey: "dummy", enabled: true });
+    expect(provider.id).toBe("openrouter");
+    expect(provider.name).toBe("OpenRouter");
   });
 });
