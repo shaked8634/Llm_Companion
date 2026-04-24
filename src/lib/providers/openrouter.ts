@@ -59,9 +59,14 @@ export class OpenRouterProvider extends BaseProvider {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(
-        `OpenRouter error: ${error.error?.message || response.statusText}`,
-      );
+      let errorMessage = error.error?.message || response.statusText;
+      if (errorMessage.includes("Provider returned")) {
+        errorMessage = errorMessage.replace(
+          "Provider returned",
+          "The provider returned:",
+        );
+      }
+      throw new Error(`OpenRouter error: ${errorMessage}`);
     }
 
     const reader = response.body?.getReader();

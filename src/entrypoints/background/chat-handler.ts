@@ -130,12 +130,35 @@ export async function handleExecutePrompt(
 
   // Update session state
   console.debug("[Chat Handler] Updating session state to loading");
+
+  // Filter out any trailing error messages from previous attempts
+  const sessionMessages = [...currentSession.messages];
+  if (
+    sessionMessages.length > 0 &&
+    sessionMessages[sessionMessages.length - 1].role === "assistant" &&
+    sessionMessages[sessionMessages.length - 1].content.startsWith("⚠️")
+  ) {
+    console.debug(
+      "[Chat Handler] Removing previous error message from history",
+    );
+    sessionMessages.pop();
+
+    // If the error message was immediately after the same user prompt, remove that user prompt too to "replace" it
+    if (
+      sessionMessages.length > 0 &&
+      sessionMessages[sessionMessages.length - 1].role === "user" &&
+      sessionMessages[sessionMessages.length - 1].content === userPrompt
+    ) {
+      console.debug(
+        "[Chat Handler] Removing duplicate user prompt before retry",
+      );
+      sessionMessages.pop();
+    }
+  }
+
   await session.setValue({
     ...currentSession,
-    messages: [
-      ...currentSession.messages,
-      { role: "user", content: userPrompt },
-    ],
+    messages: [...sessionMessages, { role: "user", content: userPrompt }],
     isLoading: true,
     lastError: undefined,
   });
@@ -241,7 +264,16 @@ export async function handleExecutePrompt(
     console.error("[Chat Handler] Error during chat execution:", error);
     console.error("[Chat Handler] Error stack:", error.stack);
 
-    const errorMessage = error.message || "Unknown error occurred";
+    let errorMessage = error.message || "Unknown error occurred";
+
+    // Fix English for provider errors
+    if (errorMessage.includes("Provider returned")) {
+      errorMessage = errorMessage.replace(
+        "Provider returned",
+        "The provider returned:",
+      );
+    }
+
     const userFriendlyError = `Error: ${errorMessage}. Please check your provider connection and try again.`;
 
     try {
