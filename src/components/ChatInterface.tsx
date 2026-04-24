@@ -358,7 +358,9 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
   const hasEnabledProviders =
     settings.providers.ollama.enabled ||
     settings.providers.gemini.enabled ||
-    settings.providers.openai.enabled;
+    settings.providers.openai.enabled ||
+    settings.providers.openrouter.enabled ||
+    settings.providers.custom.enabled;
   const prompts = settings.prompts || [];
   const models = settings.discoveredModels || [];
 

@@ -16,9 +16,9 @@ export async function refreshDiscoveredModels() {
       config: settings.providers.openrouter,
     },
     {
-      id: "custom_openai",
-      name: "Custom OpenAI",
-      config: settings.providers.custom_openai,
+      id: "custom",
+      name: "Custom",
+      config: settings.providers.custom,
     },
   ];
 

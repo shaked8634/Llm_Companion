@@ -29,4 +29,4 @@ export type ProviderType =
   | "gemini"
   | "openai"
   | "openrouter"
-  | "custom_openai";
+  | "custom";

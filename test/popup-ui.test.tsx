@@ -82,4 +82,35 @@ describe("Popup UI", () => {
     render(<App />);
     expect(screen.getByText(/LLM Companion/i)).toBeDefined();
   });
+
+  it("applies zoom level to document font size", () => {
+    // Mock zoom level 1.5
+    (globalThis.chrome.tabs.getZoom as any).mockImplementation(
+      (_tabId: number, callback: (zoom: number) => void) => {
+        callback(1.5);
+      },
+    );
+
+    render(<App />);
+
+    expect(document.documentElement.style.fontSize).toBe("150%");
+  });
+
+  it("updates font size on zoom change", async () => {
+    let zoomListener: any;
+    (globalThis.chrome.tabs.onZoomChange.addListener as any).mockImplementation(
+      (listener: any) => {
+        zoomListener = listener;
+      },
+    );
+
+    render(<App />);
+
+    // Trigger zoom change to 1.2 for the active tab (id: 1)
+    zoomListener({ tabId: 1, newZoomFactor: 1.2 });
+
+    await vi.waitFor(() => {
+      expect(document.documentElement.style.fontSize).toBe("120%");
+    });
+  });
 });

@@ -1,9 +1,9 @@
 import { BaseProvider } from "./base";
 import { ChatMessage, GenerationOptions, Model } from "./types";
 
-export class CustomOpenAIProvider extends BaseProvider {
-  readonly id = "custom_openai";
-  readonly name = "Custom OpenAI";
+export class CustomProvider extends BaseProvider {
+  readonly id = "custom";
+  readonly name = "Custom";
 
   async isConnected(): Promise<boolean> {
     return !!this.config.url;

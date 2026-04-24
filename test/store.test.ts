@@ -6,6 +6,7 @@ describe("Store", () => {
     expect(defaultSettings).toHaveProperty("providers");
     expect(defaultSettings).toHaveProperty("prompts");
     expect(defaultSettings).toHaveProperty("discoveredModels");
+    expect(defaultSettings.providers.ollama.enabled).toBe(false);
   });
 
   it("getTabSessionKey should return correct key", () => {

@@ -8,8 +8,8 @@ export default defineConfig({
     plugins: [preact()],
   }),
 
+  manifestVersion: 3,
   manifest: {
-    manifest_version: 3,
     name: "LLM Companion",
     icons: {
       96: "icon-96.png",

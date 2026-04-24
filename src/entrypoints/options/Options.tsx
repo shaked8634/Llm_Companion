@@ -80,7 +80,7 @@ export default function Options() {
     const patchedProviders = { ...localProviders };
     if (!patchedProviders.ollama) {
       patchedProviders.ollama = {
-        enabled: true,
+        enabled: false,
         url: "http://localhost:11434",
       };
       changed = true;
@@ -97,8 +97,8 @@ export default function Options() {
       patchedProviders.openrouter = { enabled: false, apiKey: "" };
       changed = true;
     }
-    if (!patchedProviders.custom_openai) {
-      patchedProviders.custom_openai = { enabled: false, url: "", apiKey: "" };
+    if (!patchedProviders.custom) {
+      patchedProviders.custom = { enabled: false, url: "", apiKey: "" };
       changed = true;
     }
     if (changed) {
@@ -145,6 +145,14 @@ export default function Options() {
     );
   }
 
+  const providerLabels: Record<string, string> = {
+    ollama: "Ollama",
+    gemini: "Gemini",
+    openai: "OpenAI",
+    openrouter: "OpenRouter",
+    custom: "Custom",
+  };
+
   function validateProvider(id: keyof AppSettings["providers"], config: any) {
     let error = "";
     if (config.enabled) {
@@ -155,14 +163,14 @@ export default function Options() {
         error = "API Key is required.";
       }
       if (
-        (id === "ollama" || id === "custom_openai") &&
+        (id === "ollama" || id === "custom") &&
         (!config.url || !/^https?:\/\/.+/.test(config.url))
       ) {
         error = "Valid URL is required.";
       }
     }
     setProviderErrors((prev) => ({ ...prev, [id]: error }));
-    return !error;
+    return true;
   }
 
   const updateProvider = (id: keyof AppSettings["providers"], updates: any) => {
@@ -276,7 +284,7 @@ export default function Options() {
                           "gemini",
                           "openai",
                           "openrouter",
-                          "custom_openai",
+                          "custom",
                         ] as const
                       ).map((id) => {
                         const config = localProviders[id];
@@ -318,9 +326,9 @@ export default function Options() {
                             <td>
                               <div class="flex items-center h-10 px-4">
                                 <span
-                                  class={`font-bold capitalize text-base ${isDisabled ? "text-slate-400 dark:text-slate-600" : "text-slate-900 dark:text-slate-100"}`}
+                                  class={`font-bold text-base ${isDisabled ? "text-slate-400 dark:text-slate-600" : "text-slate-900 dark:text-slate-100"}`}
                                 >
-                                  {id}
+                                  {providerLabels[id] || id}
                                 </span>
                               </div>
                             </td>
@@ -336,18 +344,18 @@ export default function Options() {
                                   })
                                 }
                                 placeholder="API Key"
-                                class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? "opacity-40 grayscale" : "shadow-sm focus:ring-2 focus:ring-indigo-500/20"} ${id !== "ollama" && id !== "custom_openai" && !config.apiKey && !isDisabled ? "border-amber-300" : "border-slate-200 dark:border-slate-800"} ${providerErrors[id] ? "border-red-500" : ""}`}
+                                class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? "opacity-40 grayscale" : "shadow-sm focus:ring-2 focus:ring-indigo-500/20"} ${id !== "ollama" && id !== "custom" && !config.apiKey && !isDisabled ? "border-amber-300" : "border-slate-200 dark:border-slate-800"} ${providerErrors[id] ? "border-red-500" : ""}`}
                               />
                               {providerErrors[id] &&
                                 id !== "ollama" &&
-                                id !== "custom_openai" && (
+                                id !== "custom" && (
                                   <div class="text-xs text-red-500 mt-1">
                                     {providerErrors[id]}
                                   </div>
                                 )}
                             </td>
                             <td>
-                              {id === "ollama" || id === "custom_openai" ? (
+                              {id === "ollama" || id === "custom" ? (
                                 <div>
                                   <input
                                     type="text"

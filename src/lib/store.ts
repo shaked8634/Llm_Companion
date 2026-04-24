@@ -22,25 +22,20 @@ export interface DiscoveredModel extends Model {
 }
 
 export interface AppSettings {
-  activeProvider:
-    | "ollama"
-    | "gemini"
-    | "openai"
-    | "openrouter"
-    | "custom_openai";
+  activeProvider: "ollama" | "gemini" | "openai" | "openrouter" | "custom";
   providers: {
     ollama: ProviderConfig;
     gemini: ProviderConfig;
     openai: ProviderConfig;
     openrouter: ProviderConfig;
-    custom_openai: ProviderConfig;
+    custom: ProviderConfig;
   };
   activeModel: {
     ollama?: string;
     gemini?: string;
     openai?: string;
     openrouter?: string;
-    custom_openai?: string;
+    custom?: string;
   };
   selectedModelId?: string; // Format: "providerId:modelId"
   discoveredModels: DiscoveredModel[];
@@ -58,11 +53,11 @@ export interface TabSession {
 export const defaultSettings: AppSettings = {
   activeProvider: "ollama",
   providers: {
-    ollama: { enabled: true, url: "http://localhost:11434" },
+    ollama: { enabled: false, url: "http://localhost:11434" },
     gemini: { enabled: false, apiKey: "" },
     openai: { enabled: false, apiKey: "" },
     openrouter: { enabled: false, apiKey: "" },
-    custom_openai: { enabled: false, url: "", apiKey: "" },
+    custom: { enabled: false, url: "", apiKey: "" },
   },
   activeModel: {},
   selectedModelId: undefined,

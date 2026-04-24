@@ -205,27 +205,38 @@ export async function handleExecutePrompt(
     };
 
     try {
-      let lastChunkTime = Date.now();
       const CHUNK_TIMEOUT_MS = 30000; // 30 seconds without chunks = timeout
+      const it = generator[Symbol.asyncIterator]();
 
-      for await (const chunk of generator) {
+      while (true) {
+        const nextPromise = it.next();
+
+        // Create a timeout promise for this chunk
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          const timeoutId = setTimeout(() => {
+            reject(new Error("Request timeout - no response from provider"));
+          }, CHUNK_TIMEOUT_MS);
+
+          // Clear the timeout if the next chunk arrives
+          nextPromise.finally(() => clearTimeout(timeoutId));
+        });
+
+        // Race between the next chunk and the timeout
+        const { value, done } = await Promise.race([
+          nextPromise,
+          timeoutPromise,
+        ]);
+
+        if (done) break;
+
+        const chunk = value as string;
         chunkCount++;
         fullResponse += chunk;
-        lastChunkTime = Date.now();
 
         if (chunkCount === 1) {
           console.debug(
             "[Chat Handler] First chunk received, starting response",
           );
-        }
-
-        // Check for timeout
-        const timeSinceLastChunk = Date.now() - lastChunkTime;
-        if (timeSinceLastChunk > CHUNK_TIMEOUT_MS) {
-          console.warn(
-            "[Chat Handler] Chunk timeout - no data received for 30 seconds",
-          );
-          throw new Error("Request timeout - no response from provider");
         }
 
         // Throttled update
@@ -262,9 +273,18 @@ export async function handleExecutePrompt(
     });
   } catch (error: any) {
     console.error("[Chat Handler] Error during chat execution:", error);
-    console.error("[Chat Handler] Error stack:", error.stack);
+    if (error && error.stack) {
+      console.error("[Chat Handler] Error stack:", error.stack);
+    }
 
-    let errorMessage = error.message || "Unknown error occurred";
+    let errorMessage = "Unknown error occurred";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    } else if (error && typeof error === "object" && "message" in error) {
+      errorMessage = String(error.message);
+    }
 
     // Fix English for provider errors
     if (errorMessage.includes("Provider returned")) {

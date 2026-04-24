@@ -12,8 +12,28 @@ describe("Options UI", () => {
     });
   });
 
-  it("renders Providers tab by default", () => {
+  it("renders Providers tab with all supported providers", () => {
     render(<Options />);
-    expect(screen.getByText(/Providers/i)).toBeDefined();
+    expect(screen.getAllByText(/Ollama/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Gemini/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/OpenAI/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/OpenRouter/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Custom/i).length).toBeGreaterThan(0);
+  });
+
+  it("renders API Key and URL inputs for Custom provider", () => {
+    render(<Options />);
+    // Use getAllByText and pick one, or use a more specific selector
+    const customSpans = screen.getAllByText("Custom");
+    const customRow = customSpans[0].closest("tr");
+    expect(customRow).toBeDefined();
+
+    // Check for API Key and URL inputs within that row
+    const inputs = customRow?.querySelectorAll("input");
+    // Checkbox, API Key (password), URL (text)
+    expect(inputs?.length).toBe(3);
+    expect(inputs?.[1].getAttribute("placeholder")).toBe("API Key");
+    expect(inputs?.[1].getAttribute("type")).toBe("password");
+    expect(inputs?.[2].getAttribute("type")).toBe("text");
   });
 });

@@ -266,8 +266,10 @@ export default defineBackground(() => {
         })
         .catch((error) => {
           console.error("[Background] Execute prompt failed:", error);
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
           try {
-            sendResponse({ success: false, error: error.message });
+            sendResponse({ success: false, error: errorMessage });
           } catch (e) {
             console.warn("[Background] Could not send error response:", e);
           }
@@ -279,9 +281,11 @@ export default defineBackground(() => {
     if (message.type === "REFRESH_MODELS") {
       refreshDiscoveredModels()
         .then(() => sendResponse({ success: true }))
-        .catch((error) =>
-          sendResponse({ success: false, error: error.message }),
-        );
+        .catch((error) => {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          sendResponse({ success: false, error: errorMessage });
+        });
       return true;
     }
 

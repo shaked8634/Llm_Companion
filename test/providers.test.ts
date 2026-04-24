@@ -3,7 +3,7 @@ import { OllamaProvider } from "@/lib/providers/ollama";
 import { GeminiProvider } from "@/lib/providers/gemini";
 import { OpenAIProvider } from "@/lib/providers/openai";
 import { OpenRouterProvider } from "@/lib/providers/openrouter";
-import { CustomOpenAIProvider } from "@/lib/providers/custom-openai";
+import { CustomProvider } from "../src/lib/providers/custom";
 
 // These are basic structure tests, not live API tests
 
@@ -35,13 +35,13 @@ describe("Provider classes", () => {
     expect(provider.name).toBe("OpenRouter");
   });
 
-  it("CustomOpenAIProvider should have id and name", () => {
-    const provider = new CustomOpenAIProvider({
+  it("CustomProvider should have id and name", () => {
+    const provider = new CustomProvider({
       url: "http://dummy",
       apiKey: "dummy",
       enabled: true,
     });
-    expect(provider.id).toBe("custom_openai");
-    expect(provider.name).toBe("Custom OpenAI");
+    expect(provider.id).toBe("custom");
+    expect(provider.name).toBe("Custom");
   });
 });

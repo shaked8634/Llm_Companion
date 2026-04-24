@@ -51,7 +51,7 @@ src/
       gemini.ts    # Google Gemini provider
       openai.ts    # OpenAI provider
       openrouter.ts # OpenRouter provider
-      custom-openai.ts # Custom provider
+      custom.ts # Custom OpenAI compatible provider
     utils/
       scraper.ts   # Page content extraction (Readability + Turndown)
       discovery.ts # Model discovery helpers
@@ -101,6 +101,28 @@ pnpm format:check
 
 # Auto-fix formatting
 pnpm format
+```
+
+## How to develop
+
+Follow this minimal workflow when making changes:
+
+1. Plan
+   - Briefly outline what you'll change and why before editing code.
+2. Develop
+   - Implement the change in small, focused commits.
+3. Write tests
+   - Add unit/UI tests that cover the behavior you changed or added.
+4. Run linting, formatting and tests
+   - Use the project's pre-commit config or run the commands directly. See `.pre-commit-config.yaml` for configured hooks.
+
+Example commands (run from repository root):
+
+```bash
+pnpm compile
+pnpm lint
+pnpm format
+pnpm test
 ```
 
 ---
@@ -153,3 +175,17 @@ The background service worker (`src/entrypoints/background/`) handles all LLM AP
 - The canonical repository is on Forgejo (see above). The GitHub repository is a read-only mirror.
 - Keep pull requests focused on a single concern.
 - Ensure `pnpm lint`, `pnpm compile`, and `pnpm test` all pass before opening a PR.
+
+## How to release a version
+
+1. Create release notes
+   - Add a new markdown file under the `release-notes/` directory describing the changes (a concise list of recent commits or highlights). Commit and push the file.
+2. Tag the release
+   - Create a git tag and push it:
+
+```bash
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+Replace `vX.Y.Z` with the version you want to publish.

@@ -3,7 +3,7 @@ import { OllamaProvider } from "./ollama";
 import { GeminiProvider } from "./gemini";
 import { OpenAIProvider } from "./openai";
 import { OpenRouterProvider } from "./openrouter";
-import { CustomOpenAIProvider } from "./custom-openai";
+import { CustomProvider } from "./custom";
 import { ProviderConfig, ProviderType } from "./types";
 
 export class ProviderFactory {
@@ -17,8 +17,8 @@ export class ProviderFactory {
         return new OpenAIProvider(config);
       case "openrouter":
         return new OpenRouterProvider(config);
-      case "custom_openai":
-        return new CustomOpenAIProvider(config);
+      case "custom":
+        return new CustomProvider(config);
       default:
         throw new Error(`Unknown provider type: ${type}`);
     }
