@@ -66,6 +66,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install
       - run: pnpm run zip
+      - run: pnpm run zip:firefox
       - name: Create/update release via API
         run: |
           set -euo pipefail
