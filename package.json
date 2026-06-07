@@ -3,12 +3,13 @@
   "description": "A browser extension for LLM interaction with web pages",
   "license": "MIT",
   "private": true,
-  "version": "0.0.10",
+  "version": "0.0.11-rc.1",
   "type": "module",
   "scripts": {
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",
     "test": "vitest run",
+    "test:playwright": "playwright test",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --ext .ts,.tsx",
     "format:check": "prettier --check .",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.60.0",
     "@preact/preset-vite": "^2.10.5",
     "@tailwindcss/postcss": "^4.2.4",
     "@testing-library/preact": "^3.2.4",

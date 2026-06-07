@@ -92,6 +92,15 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
 
   const [session] = useStorage<TabSession>(sessionItem);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const toRem = (value: number) => `${Math.round(value * 100000) / 100000}rem`;
+  const promptTextStyle = useMemo(
+    () => ({ fontSize: toRem(zoomLevel * 0.75), lineHeight: toRem(zoomLevel) }),
+    [zoomLevel],
+  );
+  const transcriptTextStyle = useMemo(
+    () => ({ fontSize: toRem(zoomLevel * 0.8125) }),
+    [zoomLevel],
+  );
   const allPrompts = useMemo(
     () => getPromptsWithDefaults(settings?.prompts),
     [settings?.prompts],
@@ -133,17 +142,6 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
       chrome.tabs.onZoomChange.removeListener(handleZoomChange);
     };
   }, [currentTabId, mode]);
-
-  useEffect(() => {
-    // Apply zoom to the root element's font size
-    // This allows all rem-based units to scale with the tab zoom
-    document.documentElement.style.fontSize = `${zoomLevel * 100}%`;
-
-    return () => {
-      // Reset font size on unmount (important for shared contexts if any)
-      document.documentElement.style.fontSize = "";
-    };
-  }, [zoomLevel]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -598,6 +596,7 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
                     currentPrompt?.inputPlaceholder || "Enter your text here..."
                   }
                   disabled={session.isLoading}
+                  style={promptTextStyle}
                   class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs resize-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all disabled:opacity-50 min-h-24"
                   rows={4}
                 />
@@ -616,7 +615,8 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
               class={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                class={`w-full px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm transition-colors ${
+                style={transcriptTextStyle}
+                class={`w-full px-4 py-2.5 rounded-2xl leading-relaxed shadow-sm transition-colors ${
                   m.role === "user"
                     ? "bg-indigo-600 text-white rounded-tr-none"
                     : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none"
@@ -654,6 +654,7 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
               onKeyPress={handleFollowUpKeyPress}
               placeholder="Continue the conversation..."
               disabled={session.isLoading}
+              style={promptTextStyle}
               class="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs resize-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all disabled:opacity-50 min-h-10 max-h-32"
               rows={1}
             />

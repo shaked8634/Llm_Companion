@@ -4,32 +4,42 @@ on:
   push:
     tags:
       - "*.*.*"
+      - "*.*.*-*"
 
 jobs:
   build-release:
+    permissions:
+      contents: write
     runs-on: act-latest
     env:
       ARTIFACT_NAME: llm_companion
     steps:
-      - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v4
+      - uses: https://github.com/actions/checkout@v6
+      - uses: https://github.com/pnpm/action-setup@v4
         with:
           version: 10
-      - uses: actions/setup-node@v6
+      - uses: https://github.com/actions/setup-node@v6
         with:
           node-version: 24
           cache: "pnpm"
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install
       - name: Update version in package.json
-        run: pnpm pkg set version=${{ github.ref_name }}
+        run: |
+          if [[ "${{ github.ref_name }}" == *"-"* ]]; then
+            pnpm pkg set version=0.0.0
+          else
+            pnpm pkg set version=${{ github.ref_name }}
+          fi
+      - run: pnpm build
+      - run: pnpm build:firefox
       - run: WXT_RELEASE_VERSION=${{ github.ref_name }} pnpm run zip
       - run: WXT_RELEASE_VERSION=${{ github.ref_name }} pnpm run zip:firefox
       - name: Copy artifacts
         run: |
           mkdir /upload
           mv .output/*.zip /upload
-      - uses: actions/forgejo-release@v2
+      - uses: https://github.com/actions/forgejo-release@v2.11.1
         with:
           direction: upload
           url: https://forgejo.o-st.dev
@@ -37,7 +47,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           release-dir: /upload
-          release-notes-file: release-notes/${{ forge.ref_name }}.md
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          release-notes-file: release-notes/${{ github.ref_name }}.md
           override: true
       - name: Upload to Chrome Web Store
         continue-on-error: true

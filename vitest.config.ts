@@ -6,5 +6,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     testTimeout: 60000,
+    include: ["test/**/*.test.ts", "test/**/*.test.tsx"],
+    exclude: ["playwright/**"],
   },
 });
