@@ -45,44 +45,5 @@ jobs:
           GIT_COMMITTER_EMAIL: renovate-bot@o-st.dev
           RENOVATE_GIT_AUTHOR: Renovate Bot <renovate-bot@o-st.dev>
           RENOVATE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build-prerelease:
-    if: ${{ github.event_name == 'push' }}
-    needs: test
-    runs-on: act-latest
-    permissions:
-      contents: write
-    env:
-      EXTENSION_ARTIFACT_NAME: llm_companion
-    steps:
-      - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: "pnpm"
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install
-      - name: Set numeric package version
-        run: pnpm pkg set version=0.0.0
-      - run: pnpm build
-      - run: pnpm build:firefox
-      - run: WXT_RELEASE_VERSION=latest pnpm run zip
-      - run: WXT_RELEASE_VERSION=latest pnpm run zip:firefox
-      - name: Copy artifacts
-        run: |
-          mkdir -p /upload
-          mv .output/*.zip /upload
-      - uses: actions/forgejo-release@v2.11.1
-        with:
-          direction: upload
-          url: https://forgejo.o-st.dev
-          repo: ST_Consultancy/Llm_companion
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag: latest
-          release-dir: /upload
-          prerelease: true
-          release-notes: Development build from CI
-          override: true
+      - run: pnpm run zip
+      - run: pnpm run zip:firefox

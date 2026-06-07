@@ -29,15 +29,13 @@ jobs:
           else
             pnpm pkg set version=${{ github.ref_name }}
           fi
-      - run: pnpm build
-      - run: pnpm build:firefox
       - run: WXT_RELEASE_VERSION=${{ github.ref_name }} pnpm run zip
       - run: WXT_RELEASE_VERSION=${{ github.ref_name }} pnpm run zip:firefox
       - name: Copy artifacts
         run: |
           mkdir -p /upload
           mv .output/*.zip /upload
-      - uses: actions/forgejo-release@v2.11.1
+      - uses: actions/forgejo-release@v2
         with:
           direction: upload
           url: https://forgejo.o-st.dev
@@ -45,7 +43,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           release-dir: /upload
-          prerelease: true
           release-notes-file: release-notes/${{ github.ref_name }}.md
           override: true
       - name: Upload to Chrome Web Store
