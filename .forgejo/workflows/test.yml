@@ -56,9 +56,41 @@ jobs:
       ARTIFACT_NAME: llm_companion
     steps:
       - uses: actions/checkout@v6
-      - run: echo "Step 1 complete"
-      - run: echo "Step 2 complete"
-      - run: echo "Step 3 complete"
-      - run: echo "Step 4 complete"
-      - run: echo "Step 5 complete - adding 10s delay" && sleep 10 && echo "Done sleeping"
-      - run: echo "All steps passed"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install
+      - run: pnpm run zip
+      - name: Create/update release via API
+        run: |
+          set -euo pipefail
+          API="https://forgejo.o-st.dev/api/v1"
+          REPO="ST_Consultancy/Llm_companion"
+          TAG="latest"
+          AUTH="Authorization: token ${{ secrets.GITHUB_TOKEN }}"
+
+          # Delete existing release (ignore 404)
+          EXISTING=$(curl -sf "$API/repos/$REPO/releases/tags/$TAG" \
+            -H "$AUTH") || EXISTING=""
+          if [ -n "$EXISTING" ]; then
+            RELEASE_ID=$(echo "$EXISTING" | grep -o '"id":[0-9]*' | head -1 | cut -d: -f2)
+            echo "Deleting existing release id=$RELEASE_ID"
+            curl -sf -X DELETE "$API/repos/$REPO/releases/$RELEASE_ID" -H "$AUTH" || true
+          fi
+
+          # Delete existing tag (ignore 404)
+          curl -sf -X DELETE "$API/repos/$REPO/tags/$TAG" -H "$AUTH" || true
+
+          # Create new release
+          BODY=$(python3 -c "import json,sys; print(json.dumps({'tag_name': 'latest', 'prerelease': True, 'body': open('release-notes/latest.md').read()}))")
+          RESP=$(curl -sf -X POST "$API/repos/$REPO/releases" \
+            -H "$AUTH" -H "Content-Type: application/json" \
+            -d "$BODY")
+          RELEASE_ID=$(echo "$RESP" | grep -o '"id":[0-9]*' | head -1 | cut -d: -f2)
+          echo "Created release id=$RELEASE_ID"
+          echo "Release $TAG created successfully"
