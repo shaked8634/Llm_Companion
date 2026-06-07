@@ -81,5 +81,5 @@ jobs:
           tag: latest
           release-dir: /upload
           prerelease: true
-          release-notes: Development build from CI
+          release-notes-file: release-notes/latest.md
           override: true
