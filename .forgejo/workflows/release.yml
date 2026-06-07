@@ -45,7 +45,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           release-dir: /upload
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: true
           release-notes-file: release-notes/${{ github.ref_name }}.md
           override: true
       - name: Upload to Chrome Web Store
