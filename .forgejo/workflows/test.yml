@@ -47,3 +47,41 @@ jobs:
           RENOVATE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: pnpm run zip
       - run: pnpm run zip:firefox
+
+  build-release:
+    if: github.event_name == 'push'
+    needs: test
+    runs-on: ubuntu-24-js
+    env:
+      ARTIFACT_NAME: llm_companion
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install
+      - run: pnpm pkg set version=0.0.0
+      - run: WXT_RELEASE_VERSION=latest pnpm run zip
+      - run: WXT_RELEASE_VERSION=latest pnpm run zip:firefox
+      - name: Copy artifacts
+        run: |
+          mkdir -p /upload
+          mv .output/*.zip /upload
+      - name: Write release notes
+        run: printf '%s\n' 'Development build from CI' > /tmp/latest-release-notes.md
+      - uses: actions/forgejo-release@v2
+        with:
+          direction: upload
+          url: https://forgejo.o-st.dev
+          repo: ST_Consultancy/Llm_companion
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: latest
+          release-dir: /upload
+          prerelease: true
+          release-notes-file: /tmp/latest-release-notes.md
+          override: true

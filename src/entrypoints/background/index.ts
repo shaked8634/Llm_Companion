@@ -9,6 +9,8 @@ import {
 let lastProvidersSignature: string | null = null;
 let lastPromptsSignature: string | null = null;
 let refreshDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let contextMenuBuildInProgress = false;
+let contextMenuBuildQueued = false;
 const REFRESH_DEBOUNCE_MS = 300;
 
 const CONTEXT_PARENT_ID = "llm-companion-selected-text-parent";
@@ -21,7 +23,7 @@ function truncateSelection(text: string): string {
   return `${trimmed.slice(0, MAX_SELECTION_LENGTH)}… (truncated)`;
 }
 
-async function buildContextMenus() {
+async function rebuildContextMenus() {
   const settings = await settingsStorage.getValue();
   const selectedTextPrompts = getPromptsWithDefaults(settings?.prompts).filter(
     (prompt) => prompt.type === PromptType.SELECTED_TEXT,
@@ -56,6 +58,24 @@ async function buildContextMenus() {
       resolve();
     });
   });
+}
+
+async function buildContextMenus() {
+  if (contextMenuBuildInProgress) {
+    contextMenuBuildQueued = true;
+    return;
+  }
+
+  contextMenuBuildInProgress = true;
+
+  try {
+    do {
+      contextMenuBuildQueued = false;
+      await rebuildContextMenus();
+    } while (contextMenuBuildQueued);
+  } finally {
+    contextMenuBuildInProgress = false;
+  }
 }
 
 function wait(ms: number) {
