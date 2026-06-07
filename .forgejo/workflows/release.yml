@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - "*.*.*"
-      - "*.*.*-*"
 
 jobs:
   build-release:
@@ -23,12 +22,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install
       - name: Update version in package.json
-        run: |
-          if [[ "${{ github.ref_name }}" == *"-"* ]]; then
-            pnpm pkg set version=0.0.0
-          else
-            pnpm pkg set version=${{ github.ref_name }}
-          fi
+        run: pnpm pkg set version=${{ github.ref_name }}
       - run: WXT_RELEASE_VERSION=${{ github.ref_name }} pnpm run zip
       - run: WXT_RELEASE_VERSION=${{ github.ref_name }} pnpm run zip:firefox
       - name: Copy artifacts
