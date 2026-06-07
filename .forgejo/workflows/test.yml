@@ -93,4 +93,15 @@ jobs:
             -d "$BODY")
           RELEASE_ID=$(echo "$RESP" | grep -o '"id":[0-9]*' | head -1 | cut -d: -f2)
           echo "Created release id=$RELEASE_ID"
-          echo "Release $TAG created successfully"
+
+          # Upload zip artifacts as assets
+          for zip_path in .output/*.zip; do
+            [ -f "$zip_path" ] || continue
+            filename=$(basename "$zip_path")
+            echo "Uploading $filename..."
+            curl -sf -X POST "$API/repos/$REPO/releases/$RELEASE_ID/assets" \
+              -H "$AUTH" \
+              -F "attachment=@$zip_path;filename=$filename" \
+              || echo "Failed to upload $filename"
+          done
+          echo "Release $TAG created and assets uploaded"
