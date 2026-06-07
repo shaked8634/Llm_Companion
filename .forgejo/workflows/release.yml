@@ -1,7 +1,6 @@
 name: Build and Release
 
 on:
-  workflow_dispatch:
   push:
     tags:
       - "*.*.*"
@@ -9,17 +8,15 @@ on:
 
 jobs:
   build-release:
-    permissions:
-      contents: write
     runs-on: act-latest
     env:
       ARTIFACT_NAME: llm_companion
     steps:
-      - uses: https://github.com/actions/checkout@v6
-      - uses: https://github.com/pnpm/action-setup@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
         with:
           version: 10
-      - uses: https://github.com/actions/setup-node@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: "pnpm"
@@ -38,9 +35,9 @@ jobs:
       - run: WXT_RELEASE_VERSION=${{ github.ref_name }} pnpm run zip:firefox
       - name: Copy artifacts
         run: |
-          mkdir /upload
+          mkdir -p /upload
           mv .output/*.zip /upload
-      - uses: https://github.com/actions/forgejo-release@v2.11.1
+      - uses: actions/forgejo-release@v2.11.1
         with:
           direction: upload
           url: https://forgejo.o-st.dev

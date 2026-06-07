@@ -1,7 +1,6 @@
 name: Test CI
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - "*"
@@ -15,11 +14,11 @@ jobs:
     env:
       EXTENSION_ARTIFACT_NAME: llm_companion
     steps:
-      - uses: https://github.com/actions/checkout@v6
-      - uses: https://github.com/pnpm/action-setup@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
         with:
           version: 10
-      - uses: https://github.com/actions/setup-node@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: "pnpm"
@@ -56,11 +55,11 @@ jobs:
     env:
       EXTENSION_ARTIFACT_NAME: llm_companion
     steps:
-      - uses: https://github.com/actions/checkout@v6
-      - uses: https://github.com/pnpm/action-setup@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
         with:
           version: 10
-      - uses: https://github.com/actions/setup-node@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: "pnpm"
@@ -76,7 +75,7 @@ jobs:
         run: |
           mkdir -p /upload
           mv .output/*.zip /upload
-      - uses: https://github.com/actions/forgejo-release@v2.11.1
+      - uses: actions/forgejo-release@v2.11.1
         with:
           direction: upload
           url: https://forgejo.o-st.dev
