@@ -72,8 +72,6 @@ jobs:
         run: |
           mkdir -p /upload
           mv .output/*.zip /upload
-      - name: Write release notes
-        run: printf '%s\n' 'Development build from CI' > /tmp/latest-release-notes.md
       - uses: actions/forgejo-release@v2
         with:
           direction: upload
@@ -83,5 +81,5 @@ jobs:
           tag: latest
           release-dir: /upload
           prerelease: true
-          release-notes-file: /tmp/latest-release-notes.md
+          release-notes: Development build from CI
           override: true
