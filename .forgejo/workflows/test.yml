@@ -51,6 +51,8 @@ jobs:
   build-release:
     if: github.event_name == 'push'
     needs: test
+    permissions:
+      contents: write
     runs-on: ubuntu-24-js
     env:
       ARTIFACT_NAME: llm_companion
