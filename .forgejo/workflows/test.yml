@@ -10,7 +10,7 @@ on:
 
 jobs:
   test:
-    runs-on: act-latest
+    runs-on: ubuntu-24-js
     env:
       EXTENSION_ARTIFACT_NAME: llm_companion
     steps:

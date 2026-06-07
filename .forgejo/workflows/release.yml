@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-release:
-    runs-on: act-latest
+    runs-on: ubuntu-24-js
     env:
       ARTIFACT_NAME: llm_companion
     steps:
