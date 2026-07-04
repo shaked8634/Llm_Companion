@@ -14,6 +14,7 @@ import {
   TabSession,
 } from "@/lib/store";
 import { useStorage } from "@/hooks/useStorage";
+import { renderMarkdown } from "@/lib/utils/markdown";
 import {
   ChevronDown,
   Cpu,
@@ -622,7 +623,12 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
                     : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none"
                 }`}
               >
-                <div class="whitespace-pre-wrap">{m.content}</div>
+                <div
+                  class="markdown-content"
+                  dangerouslySetInnerHTML={{
+                    __html: renderMarkdown(m.content),
+                  }}
+                />
               </div>
             </div>
           ))}

@@ -76,8 +76,13 @@ describe("Popup UI", () => {
             {
               messages: [
                 {
+                  role: "user",
+                  content:
+                    "User **question**\n\n- first\n\n<script>alert(1)</script>",
+                },
+                {
                   role: "assistant",
-                  content: "Generated answer",
+                  content: "Generated *answer*",
                 },
               ],
               isLoading: false,
@@ -114,7 +119,7 @@ describe("Popup UI", () => {
     ) as HTMLElement;
     expect(headerText.style.fontSize).toBe("");
 
-    const messageBubble = container.querySelector(".whitespace-pre-wrap")
+    const messageBubble = container.querySelector(".markdown-content")
       ?.parentElement as HTMLElement;
     expect(messageBubble.style.fontSize).toBe("1.21875rem");
 
@@ -138,5 +143,18 @@ describe("Popup UI", () => {
       expect(promptTextArea.style.fontSize).toBe("0.9rem");
       expect(promptTextArea.style.lineHeight).toBe("1.2rem");
     });
+  });
+
+  it("renders user and assistant messages as safe markdown", () => {
+    const { container } = render(<App />);
+    const markdownBlocks = container.querySelectorAll(".markdown-content");
+
+    expect(markdownBlocks[0].querySelector("strong")?.textContent).toBe(
+      "question",
+    );
+    expect(markdownBlocks[0].querySelector("li")?.textContent).toBe("first");
+    expect(markdownBlocks[1].querySelector("em")?.textContent).toBe("answer");
+    expect(container.querySelector("script")).toBeNull();
+    expect(markdownBlocks[0].innerHTML).toContain("&lt;script&gt;alert(1)");
   });
 });

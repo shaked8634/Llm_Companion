@@ -26,6 +26,7 @@
     "@mozilla/readability": "^0.6.0",
     "@preact/signals": "^2.9.0",
     "lucide-preact": "^1.9.0",
+    "micromark": "^4.0.2",
     "preact": "^10.29.1",
     "turndown": "7.2.4"
   },
