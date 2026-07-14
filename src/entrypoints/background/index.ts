@@ -23,41 +23,60 @@ function truncateSelection(text: string): string {
   return `${trimmed.slice(0, MAX_SELECTION_LENGTH)}… (truncated)`;
 }
 
+function removeAllContextMenus(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    chrome.contextMenus.removeAll(() => {
+      const error = chrome.runtime.lastError;
+      if (error) reject(new Error(error.message));
+      else resolve();
+    });
+  });
+}
+
+function createContextMenu(
+  properties: chrome.contextMenus.CreateProperties,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    chrome.contextMenus.create(properties, () => {
+      const error = chrome.runtime.lastError;
+      if (error) reject(new Error(error.message));
+      else resolve();
+    });
+  });
+}
+
 async function rebuildContextMenus() {
   const settings = await settingsStorage.getValue();
   const selectedTextPrompts = getPromptsWithDefaults(settings?.prompts).filter(
     (prompt) => prompt.type === PromptType.SELECTED_TEXT,
   );
 
-  return new Promise<void>((resolve) => {
-    chrome.contextMenus.removeAll(() => {
-      chrome.contextMenus.create({
-        id: CONTEXT_PARENT_ID,
-        title: "Send to LLM Companion",
-        contexts: ["selection"],
-      });
-
-      if (selectedTextPrompts.length === 0) {
-        chrome.contextMenus.create({
-          id: `${CONTEXT_PARENT_ID}-empty`,
-          parentId: CONTEXT_PARENT_ID,
-          title: "No selected-text prompts configured",
-          contexts: ["selection"],
-          enabled: false,
-        });
-      } else {
-        selectedTextPrompts.forEach((prompt) => {
-          chrome.contextMenus.create({
-            id: `${CONTEXT_ITEM_PREFIX}${prompt.id}`,
-            parentId: CONTEXT_PARENT_ID,
-            title: prompt.name,
-            contexts: ["selection"],
-          });
-        });
-      }
-      resolve();
-    });
+  await removeAllContextMenus();
+  await createContextMenu({
+    id: CONTEXT_PARENT_ID,
+    title: "Send to LLM Companion",
+    contexts: ["selection"],
   });
+
+  if (selectedTextPrompts.length === 0) {
+    await createContextMenu({
+      id: `${CONTEXT_PARENT_ID}-empty`,
+      parentId: CONTEXT_PARENT_ID,
+      title: "No selected-text prompts configured",
+      contexts: ["selection"],
+      enabled: false,
+    });
+    return;
+  }
+
+  for (const prompt of selectedTextPrompts) {
+    await createContextMenu({
+      id: `${CONTEXT_ITEM_PREFIX}${prompt.id}`,
+      parentId: CONTEXT_PARENT_ID,
+      title: prompt.name,
+      contexts: ["selection"],
+    });
+  }
 }
 
 async function buildContextMenus() {
@@ -73,6 +92,8 @@ async function buildContextMenus() {
       contextMenuBuildQueued = false;
       await rebuildContextMenus();
     } while (contextMenuBuildQueued);
+  } catch (error) {
+    console.error("[Background] Failed to rebuild context menus:", error);
   } finally {
     contextMenuBuildInProgress = false;
   }

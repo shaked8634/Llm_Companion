@@ -139,7 +139,7 @@ export function getPromptsWithDefaults(prompts?: Prompt[]): Prompt[] {
     ...(promptsById.get(defaultPrompt.id) ?? {}),
   }));
 
-  const customPrompts = existingPrompts.filter(
+  const customPrompts = [...promptsById.values()].filter(
     (prompt) =>
       !DEFAULT_PROMPTS.some((defaultPrompt) => defaultPrompt.id === prompt.id),
   );

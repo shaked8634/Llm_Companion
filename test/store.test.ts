@@ -70,4 +70,16 @@ describe("Store", () => {
     ).toBe(true);
     expect(prompts.some((prompt) => prompt.id === "custom-prompt")).toBe(true);
   });
+
+  it("getPromptsWithDefaults should remove duplicate prompt ids", () => {
+    const prompt = {
+      id: "duplicate-prompt",
+      name: "Duplicate Prompt",
+      text: "Custom text",
+      type: PromptType.SELECTED_TEXT,
+    };
+    const prompts = getPromptsWithDefaults([prompt, prompt]);
+
+    expect(prompts.filter(({ id }) => id === prompt.id)).toHaveLength(1);
+  });
 });

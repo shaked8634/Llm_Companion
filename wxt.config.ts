@@ -48,8 +48,8 @@ export default defineConfig({
       },
       "open-sidepanel": {
         suggested_key: {
-          default: "Ctrl+Shift+S",
-          mac: "Command+Shift+S",
+          default: "Alt+Shift+S",
+          mac: "Alt+Shift+S",
         },
         description: "Open LLM Companion sidebar",
       },
