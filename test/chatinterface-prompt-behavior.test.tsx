@@ -13,10 +13,20 @@ import { defaultSettings } from "@/lib/store";
 describe("ChatInterface prompt behavior", () => {
   const sendMessage = vi.fn();
   const sendTabMessage = vi.fn();
+  let messages: Array<{ role: "user" | "assistant"; content: string }> = [];
+  let scrollIntoView: typeof Element.prototype.scrollIntoView;
+  let clipboard: PropertyDescriptor | undefined;
 
   beforeEach(() => {
+    clipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+    scrollIntoView = Element.prototype.scrollIntoView;
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      value: vi.fn(),
+    });
     sendMessage.mockReset();
     sendTabMessage.mockReset();
+    messages = [];
     sendTabMessage.mockResolvedValue({
       success: true,
       payload: {
@@ -74,7 +84,7 @@ describe("ChatInterface prompt behavior", () => {
 
         return [
           {
-            messages: [],
+            messages,
             isLoading: false,
           },
           vi.fn(),
@@ -86,6 +96,15 @@ describe("ChatInterface prompt behavior", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    if (clipboard) {
+      Object.defineProperty(navigator, "clipboard", clipboard);
+    } else {
+      delete (navigator as { clipboard?: Clipboard }).clipboard;
+    }
   });
 
   it("hides selected-text prompts from the main prompt dropdown", () => {
@@ -141,5 +160,27 @@ describe("ChatInterface prompt behavior", () => {
       (sendMessage.mock.calls[0]?.[0] as { payload?: { pageContext?: string } })
         .payload?.pageContext,
     ).toContain("example.com");
+  });
+
+  it("copies the original Markdown from assistant responses only", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    messages = [
+      { role: "user", content: "What changed?" },
+      { role: "assistant", content: "**Original Markdown**" },
+    ];
+
+    render(<ChatInterface mode="popup" />);
+
+    const copyButtons = screen.getAllByTitle("Copy response");
+    expect(copyButtons).toHaveLength(1);
+    fireEvent.click(copyButtons[0]);
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith("**Original Markdown**");
+    });
   });
 });

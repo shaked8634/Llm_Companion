@@ -17,6 +17,7 @@ import { useStorage } from "@/hooks/useStorage";
 import { renderMarkdown } from "@/lib/utils/markdown";
 import {
   ChevronDown,
+  Copy,
   Cpu,
   Eraser,
   MessageSquareText,
@@ -629,6 +630,21 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
                     __html: renderMarkdown(m.content),
                   }}
                 />
+                {m.role === "assistant" && (
+                  <div class="flex justify-end mt-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void navigator.clipboard.writeText(m.content)
+                      }
+                      aria-label="Copy response"
+                      title="Copy response"
+                      class="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-all"
+                    >
+                      <Copy class="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
