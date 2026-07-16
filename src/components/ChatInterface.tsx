@@ -6,14 +6,18 @@ import {
   useState,
 } from "preact/hooks";
 import {
+  getPromptsWithDefaults,
   getTabSession,
+  getProviderSettingsWithDefaults,
   PromptType,
   settingsStorage,
   TabSession,
 } from "@/lib/store";
 import { useStorage } from "@/hooks/useStorage";
+import { renderMarkdown } from "@/lib/utils/markdown";
 import {
   ChevronDown,
+  Copy,
   Cpu,
   Eraser,
   MessageSquareText,
@@ -89,6 +93,57 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
   }, [currentTabId]);
 
   const [session] = useStorage<TabSession>(sessionItem);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const toRem = (value: number) => `${Math.round(value * 100000) / 100000}rem`;
+  const promptTextStyle = useMemo(
+    () => ({ fontSize: toRem(zoomLevel * 0.75), lineHeight: toRem(zoomLevel) }),
+    [zoomLevel],
+  );
+  const transcriptTextStyle = useMemo(
+    () => ({ fontSize: toRem(zoomLevel * 0.8125) }),
+    [zoomLevel],
+  );
+  const allPrompts = useMemo(
+    () => getPromptsWithDefaults(settings?.prompts),
+    [settings?.prompts],
+  );
+  const prompts = useMemo(
+    () =>
+      allPrompts.filter((prompt) => prompt.type !== PromptType.SELECTED_TEXT),
+    [allPrompts],
+  );
+
+  useEffect(() => {
+    if (!currentTabId) return;
+
+    // Get initial zoom level
+    chrome.tabs.getZoom(currentTabId, (zoom) => {
+      if (chrome.runtime.lastError) {
+        console.debug(
+          `[${mode}] Error getting zoom:`,
+          chrome.runtime.lastError,
+        );
+        return;
+      }
+      setZoomLevel(zoom);
+    });
+
+    // Listen for zoom changes
+    const handleZoomChange = (zoomChangeInfo: chrome.tabs.OnZoomChangeInfo) => {
+      if (zoomChangeInfo.tabId === currentTabId) {
+        console.debug(
+          `[${mode}] Zoom changed for tab ${currentTabId}:`,
+          zoomChangeInfo.newZoomFactor,
+        );
+        setZoomLevel(zoomChangeInfo.newZoomFactor);
+      }
+    };
+
+    chrome.tabs.onZoomChange.addListener(handleZoomChange);
+    return () => {
+      chrome.tabs.onZoomChange.removeListener(handleZoomChange);
+    };
+  }, [currentTabId, mode]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -124,7 +179,7 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
         return;
       }
 
-      const prompt = settings.prompts?.find((p) => p.id === promptIdToUse);
+      const prompt = allPrompts.find((p) => p.id === promptIdToUse);
       if (!prompt) {
         console.error(`[${mode}] Prompt not found:`, promptIdToUse);
         return;
@@ -132,12 +187,12 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
 
       const inputText = overrideInput ?? freeTextInput;
 
-      // For FREE_TEXT / SELECTED_TEXT prompts, require input
-      if (
-        (prompt.type === PromptType.FREE_TEXT ||
-          prompt.type === PromptType.SELECTED_TEXT) &&
-        !inputText.trim()
-      ) {
+      const promptRequiresInput =
+        prompt.type === PromptType.FREE_TEXT ||
+        prompt.type === PromptType.SELECTED_TEXT ||
+        prompt.allowInput;
+
+      if (promptRequiresInput && !inputText.trim()) {
         console.warn(
           `[${mode}] Text input is required for prompt type`,
           prompt.type,
@@ -181,10 +236,11 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
         console.debug(`[${mode}] Skipping page scrape for non-page prompt`);
       }
 
-      // For FREE_TEXT or SELECTED_TEXT prompts, combine prompt text with input
+      // For prompts that accept direct input, combine prompt text with input
       const userPrompt =
         prompt.type === PromptType.FREE_TEXT ||
-        prompt.type === PromptType.SELECTED_TEXT
+        prompt.type === PromptType.SELECTED_TEXT ||
+        prompt.allowInput
           ? `${prompt.text}\n\n${inputText.trim()}`
           : prompt.text;
 
@@ -198,8 +254,8 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
         },
       });
 
-      // Clear free text input after sending for free-text prompts (keep for selected-text to allow reuse)
-      if (prompt.type === PromptType.FREE_TEXT) {
+      // Clear direct input prompts after sending (keep selected-text to allow reuse)
+      if (prompt.type === PromptType.FREE_TEXT || prompt.allowInput) {
         setFreeTextInput("");
       }
     },
@@ -208,7 +264,7 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
       freeTextInput,
       mode,
       selectedPrompt,
-      settings?.prompts,
+      allPrompts,
       settings?.selectedModelId,
     ],
   );
@@ -311,11 +367,13 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
       </div>
     );
 
+  const providerSettings = getProviderSettingsWithDefaults(settings.providers);
   const hasEnabledProviders =
-    settings.providers.ollama.enabled ||
-    settings.providers.gemini.enabled ||
-    settings.providers.openai.enabled;
-  const prompts = settings.prompts || [];
+    providerSettings.ollama.enabled ||
+    providerSettings.gemini.enabled ||
+    providerSettings.openai.enabled ||
+    providerSettings.openrouter.enabled ||
+    providerSettings.custom.enabled;
   const models = settings.discoveredModels || [];
 
   useEffect(() => {
@@ -524,10 +582,11 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
 
         {/* Free Text Input - shown only for FREE_TEXT prompts */}
         {(() => {
-          const currentPrompt = prompts.find((p) => p.id === selectedPrompt);
+          const currentPrompt = allPrompts.find((p) => p.id === selectedPrompt);
           return (
             (currentPrompt?.type === PromptType.FREE_TEXT ||
-              currentPrompt?.type === PromptType.SELECTED_TEXT) && (
+              currentPrompt?.type === PromptType.SELECTED_TEXT ||
+              currentPrompt?.allowInput) && (
               <div class="mt-2">
                 <textarea
                   value={freeTextInput}
@@ -535,8 +594,11 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
                     setFreeTextInput((e.target as HTMLTextAreaElement).value)
                   }
                   onKeyPress={handleFreeTextKeyPress}
-                  placeholder="Enter your text here..."
+                  placeholder={
+                    currentPrompt?.inputPlaceholder || "Enter your text here..."
+                  }
                   disabled={session.isLoading}
+                  style={promptTextStyle}
                   class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs resize-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all disabled:opacity-50 min-h-24"
                   rows={4}
                 />
@@ -555,13 +617,34 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
               class={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                class={`w-full px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm transition-colors ${
+                style={transcriptTextStyle}
+                class={`w-full px-4 py-2.5 rounded-2xl leading-relaxed shadow-sm transition-colors ${
                   m.role === "user"
                     ? "bg-indigo-600 text-white rounded-tr-none"
                     : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none"
                 }`}
               >
-                <div class="whitespace-pre-wrap">{m.content}</div>
+                <div
+                  class="markdown-content"
+                  dangerouslySetInnerHTML={{
+                    __html: renderMarkdown(m.content),
+                  }}
+                />
+                {m.role === "assistant" && (
+                  <div class="flex justify-end mt-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void navigator.clipboard.writeText(m.content)
+                      }
+                      aria-label="Copy response"
+                      title="Copy response"
+                      class="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-all"
+                    >
+                      <Copy class="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -593,6 +676,7 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
               onKeyPress={handleFollowUpKeyPress}
               placeholder="Continue the conversation..."
               disabled={session.isLoading}
+              style={promptTextStyle}
               class="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs resize-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all disabled:opacity-50 min-h-10 max-h-32"
               rows={1}
             />

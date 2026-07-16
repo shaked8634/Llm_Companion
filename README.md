@@ -8,6 +8,8 @@ A browser extension that allows interaction with web pages using local or cloud-
   - Ollama
   - Google Gemini
   - OpenAI
+  - OpenRouter
+  - Custom OpenAI-compatible providers (Custom)
 
 - Smart Web Page Interaction
 - Free Text Mode

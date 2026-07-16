@@ -1,15 +1,30 @@
 import { ProviderFactory } from "../providers/factory";
-import { DiscoveredModel, settingsStorage } from "../store";
+import {
+  DiscoveredModel,
+  getProviderSettingsWithDefaults,
+  settingsStorage,
+} from "../store";
 
 export async function refreshDiscoveredModels() {
   console.log("[Discovery] Refreshing models...");
   const settings = await settingsStorage.getValue();
+  const providerSettings = getProviderSettingsWithDefaults(settings.providers);
   const allModels: DiscoveredModel[] = [];
 
   const providers = [
-    { id: "ollama", name: "Ollama", config: settings.providers.ollama },
-    { id: "gemini", name: "Gemini", config: settings.providers.gemini },
-    { id: "openai", name: "OpenAI", config: settings.providers.openai },
+    { id: "ollama", name: "Ollama", config: providerSettings.ollama },
+    { id: "gemini", name: "Gemini", config: providerSettings.gemini },
+    { id: "openai", name: "OpenAI", config: providerSettings.openai },
+    {
+      id: "openrouter",
+      name: "OpenRouter",
+      config: providerSettings.openrouter,
+    },
+    {
+      id: "custom",
+      name: "Custom",
+      config: providerSettings.custom,
+    },
   ];
 
   for (const p of providers) {

@@ -4,17 +4,18 @@ on:
   push:
     tags:
       - "*.*.*"
+      - "*.*.*-*"
 
 jobs:
   build-release:
-    runs-on: act-latest
+    runs-on: ubuntu-24-js
     env:
       ARTIFACT_NAME: llm_companion
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 11
       - uses: actions/setup-node@v6
         with:
           node-version: 24
@@ -22,12 +23,17 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install
       - name: Update version in package.json
-        run: pnpm pkg set version=${{ github.ref_name }}
-      - run: pnpm run zip
-      - run: pnpm run zip:firefox
+        run: |
+          if [[ "${{ github.ref_name }}" == *"-"* ]]; then
+            pnpm pkg set version=0.0.0
+          else
+            pnpm pkg set version=${{ github.ref_name }}
+          fi
+      - run: WXT_RELEASE_VERSION=${{ github.ref_name }} pnpm run zip
+      - run: WXT_RELEASE_VERSION=${{ github.ref_name }} pnpm run zip:firefox
       - name: Copy artifacts
         run: |
-          mkdir /upload
+          mkdir -p /upload
           mv .output/*.zip /upload
       - uses: actions/forgejo-release@v2
         with:
@@ -37,9 +43,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           release-dir: /upload
-          release-notes-file: release-notes/${{ forge.ref_name }}.md
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          release-notes-file: release-notes/${{ github.ref_name }}.md
           override: true
       - name: Upload to Chrome Web Store
+        if: ${{ !contains(github.ref_name, '-') }}
         continue-on-error: true
         env:
           CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
@@ -59,6 +67,7 @@ jobs:
             --client-secret "$CWS_CLIENT_SECRET" \
             --refresh-token "$CWS_REFRESH_TOKEN"
       - name: Publish
+        if: ${{ !contains(github.ref_name, '-') }}
         continue-on-error: true
         env:
           CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}

@@ -23,6 +23,8 @@ describe("ChatInterface selected-text flow", () => {
         query: vi.fn((_query, cb) => cb([{ id: 123 }])),
         onActivated: { addListener: vi.fn(), removeListener: vi.fn() },
         onUpdated: { addListener: vi.fn(), removeListener: vi.fn() },
+        getZoom: vi.fn((_id, cb) => cb(1)),
+        onZoomChange: { addListener: vi.fn(), removeListener: vi.fn() },
       },
       runtime: {
         sendMessage,

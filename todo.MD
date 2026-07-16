@@ -25,3 +25,13 @@
 - [x] Handle txt files
 - [ ] Check why reasoning models print the thinking but do not generate the text
   - [ ] Validate large websites works
+- [x] Add support to Openrouter
+- [x] Add support for Custom providers
+- [x] Add support for custom API endpoints
+- [x] Update dependencies and improve test coverage
+- [x] Add test coverage reporting
+- [x] Release 0.0.8 notes
+- [x] Fix timeout and error handling bugs (v0.0.9)
+- [ ] Notify on update / update
+- [ ] Add support for custom question from the popup
+- [ ] Experiment with popup transperency

@@ -1,10 +1,16 @@
 import { handleExecutePrompt } from "./chat-handler";
 import { refreshDiscoveredModels } from "@/lib/utils/discovery";
-import { PromptType, settingsStorage } from "@/lib/store";
+import {
+  getPromptsWithDefaults,
+  PromptType,
+  settingsStorage,
+} from "@/lib/store";
 
 let lastProvidersSignature: string | null = null;
 let lastPromptsSignature: string | null = null;
 let refreshDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let contextMenuBuildInProgress = false;
+let contextMenuBuildQueued = false;
 const REFRESH_DEBOUNCE_MS = 300;
 
 const CONTEXT_PARENT_ID = "llm-companion-selected-text-parent";
@@ -17,40 +23,80 @@ function truncateSelection(text: string): string {
   return `${trimmed.slice(0, MAX_SELECTION_LENGTH)}… (truncated)`;
 }
 
-async function buildContextMenus() {
-  const settings = await settingsStorage.getValue();
-  const selectedTextPrompts =
-    settings?.prompts?.filter((p) => p.type === PromptType.SELECTED_TEXT) || [];
-
-  return new Promise<void>((resolve) => {
+function removeAllContextMenus(): Promise<void> {
+  return new Promise((resolve, reject) => {
     chrome.contextMenus.removeAll(() => {
-      chrome.contextMenus.create({
-        id: CONTEXT_PARENT_ID,
-        title: "Send to LLM Companion",
-        contexts: ["selection"],
-      });
-
-      if (selectedTextPrompts.length === 0) {
-        chrome.contextMenus.create({
-          id: `${CONTEXT_PARENT_ID}-empty`,
-          parentId: CONTEXT_PARENT_ID,
-          title: "No selected-text prompts configured",
-          contexts: ["selection"],
-          enabled: false,
-        });
-      } else {
-        selectedTextPrompts.forEach((prompt) => {
-          chrome.contextMenus.create({
-            id: `${CONTEXT_ITEM_PREFIX}${prompt.id}`,
-            parentId: CONTEXT_PARENT_ID,
-            title: prompt.name,
-            contexts: ["selection"],
-          });
-        });
-      }
-      resolve();
+      const error = chrome.runtime.lastError;
+      if (error) reject(new Error(error.message));
+      else resolve();
     });
   });
+}
+
+function createContextMenu(
+  properties: chrome.contextMenus.CreateProperties,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    chrome.contextMenus.create(properties, () => {
+      const error = chrome.runtime.lastError;
+      if (error) reject(new Error(error.message));
+      else resolve();
+    });
+  });
+}
+
+async function rebuildContextMenus() {
+  const settings = await settingsStorage.getValue();
+  const selectedTextPrompts = getPromptsWithDefaults(settings?.prompts).filter(
+    (prompt) => prompt.type === PromptType.SELECTED_TEXT,
+  );
+
+  await removeAllContextMenus();
+  await createContextMenu({
+    id: CONTEXT_PARENT_ID,
+    title: "Send to LLM Companion",
+    contexts: ["selection"],
+  });
+
+  if (selectedTextPrompts.length === 0) {
+    await createContextMenu({
+      id: `${CONTEXT_PARENT_ID}-empty`,
+      parentId: CONTEXT_PARENT_ID,
+      title: "No selected-text prompts configured",
+      contexts: ["selection"],
+      enabled: false,
+    });
+    return;
+  }
+
+  for (const prompt of selectedTextPrompts) {
+    await createContextMenu({
+      id: `${CONTEXT_ITEM_PREFIX}${prompt.id}`,
+      parentId: CONTEXT_PARENT_ID,
+      title: prompt.name,
+      contexts: ["selection"],
+    });
+  }
+}
+
+async function buildContextMenus() {
+  if (contextMenuBuildInProgress) {
+    contextMenuBuildQueued = true;
+    return;
+  }
+
+  contextMenuBuildInProgress = true;
+
+  try {
+    do {
+      contextMenuBuildQueued = false;
+      await rebuildContextMenus();
+    } while (contextMenuBuildQueued);
+  } catch (error) {
+    console.error("[Background] Failed to rebuild context menus:", error);
+  } finally {
+    contextMenuBuildInProgress = false;
+  }
 }
 
 function wait(ms: number) {
@@ -77,7 +123,7 @@ async function handleContextMenuClick(
   }
 
   const settings = await settingsStorage.getValue();
-  const prompt = settings?.prompts?.find(
+  const prompt = getPromptsWithDefaults(settings?.prompts).find(
     (p) => p.id === promptId && p.type === PromptType.SELECTED_TEXT,
   );
   if (!prompt) {
@@ -178,6 +224,9 @@ export default defineBackground(() => {
 
         // Get current settings
         const settings = await settingsStorage.getValue();
+        const prompts = getPromptsWithDefaults(settings.prompts).filter(
+          (prompt) => prompt.type !== PromptType.SELECTED_TEXT,
+        );
         if (!settings.selectedModelId) {
           console.warn("[Background] No model selected");
           return;
@@ -185,8 +234,8 @@ export default defineBackground(() => {
 
         // Get the last selected prompt or first prompt
         let promptId = settings.lastSelectedPromptId;
-        if (!promptId || !settings.prompts?.find((p) => p.id === promptId)) {
-          promptId = settings.prompts?.[0]?.id;
+        if (!promptId || !prompts.find((prompt) => prompt.id === promptId)) {
+          promptId = prompts[0]?.id;
         }
 
         if (!promptId) {
@@ -194,7 +243,7 @@ export default defineBackground(() => {
           return;
         }
 
-        const prompt = settings.prompts.find((p) => p.id === promptId);
+        const prompt = prompts.find((p) => p.id === promptId);
         if (!prompt) {
           console.error("[Background] Prompt not found:", promptId);
           return;
@@ -266,8 +315,10 @@ export default defineBackground(() => {
         })
         .catch((error) => {
           console.error("[Background] Execute prompt failed:", error);
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
           try {
-            sendResponse({ success: false, error: error.message });
+            sendResponse({ success: false, error: errorMessage });
           } catch (e) {
             console.warn("[Background] Could not send error response:", e);
           }
@@ -279,9 +330,11 @@ export default defineBackground(() => {
     if (message.type === "REFRESH_MODELS") {
       refreshDiscoveredModels()
         .then(() => sendResponse({ success: true }))
-        .catch((error) =>
-          sendResponse({ success: false, error: error.message }),
-        );
+        .catch((error) => {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          sendResponse({ success: false, error: errorMessage });
+        });
       return true;
     }
 

@@ -1,4 +1,8 @@
-import { getTabSession, settingsStorage } from "@/lib/store";
+import {
+  getProviderSettingsWithDefaults,
+  getTabSession,
+  settingsStorage,
+} from "@/lib/store";
 import { ProviderFactory } from "@/lib/providers/factory";
 import { ChatMessage, ProviderType } from "@/lib/providers/types";
 import { formatPageContextForLLM, PageContent } from "@/lib/utils/scraper";
@@ -28,7 +32,9 @@ export async function handleExecutePrompt(
     colonIndex,
   ) as ProviderType;
   const modelId = settings.selectedModelId.substring(colonIndex + 1);
-  const providerConfig = settings.providers[providerType];
+  const providerConfig = getProviderSettingsWithDefaults(settings.providers)[
+    providerType
+  ];
   console.debug("[Chat Handler] Provider:", providerType, "Model:", modelId);
 
   const provider = ProviderFactory.create(providerType, providerConfig);
@@ -130,12 +136,35 @@ export async function handleExecutePrompt(
 
   // Update session state
   console.debug("[Chat Handler] Updating session state to loading");
+
+  // Filter out any trailing error messages from previous attempts
+  const sessionMessages = [...currentSession.messages];
+  if (
+    sessionMessages.length > 0 &&
+    sessionMessages[sessionMessages.length - 1].role === "assistant" &&
+    sessionMessages[sessionMessages.length - 1].content.startsWith("⚠️")
+  ) {
+    console.debug(
+      "[Chat Handler] Removing previous error message from history",
+    );
+    sessionMessages.pop();
+
+    // If the error message was immediately after the same user prompt, remove that user prompt too to "replace" it
+    if (
+      sessionMessages.length > 0 &&
+      sessionMessages[sessionMessages.length - 1].role === "user" &&
+      sessionMessages[sessionMessages.length - 1].content === userPrompt
+    ) {
+      console.debug(
+        "[Chat Handler] Removing duplicate user prompt before retry",
+      );
+      sessionMessages.pop();
+    }
+  }
+
   await session.setValue({
     ...currentSession,
-    messages: [
-      ...currentSession.messages,
-      { role: "user", content: userPrompt },
-    ],
+    messages: [...sessionMessages, { role: "user", content: userPrompt }],
     isLoading: true,
     lastError: undefined,
   });
@@ -182,27 +211,38 @@ export async function handleExecutePrompt(
     };
 
     try {
-      let lastChunkTime = Date.now();
       const CHUNK_TIMEOUT_MS = 30000; // 30 seconds without chunks = timeout
+      const it = generator[Symbol.asyncIterator]();
 
-      for await (const chunk of generator) {
+      while (true) {
+        const nextPromise = it.next();
+
+        // Create a timeout promise for this chunk
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          const timeoutId = setTimeout(() => {
+            reject(new Error("Request timeout - no response from provider"));
+          }, CHUNK_TIMEOUT_MS);
+
+          // Clear the timeout if the next chunk arrives
+          nextPromise.finally(() => clearTimeout(timeoutId));
+        });
+
+        // Race between the next chunk and the timeout
+        const { value, done } = await Promise.race([
+          nextPromise,
+          timeoutPromise,
+        ]);
+
+        if (done) break;
+
+        const chunk = value as string;
         chunkCount++;
         fullResponse += chunk;
-        lastChunkTime = Date.now();
 
         if (chunkCount === 1) {
           console.debug(
             "[Chat Handler] First chunk received, starting response",
           );
-        }
-
-        // Check for timeout
-        const timeSinceLastChunk = Date.now() - lastChunkTime;
-        if (timeSinceLastChunk > CHUNK_TIMEOUT_MS) {
-          console.warn(
-            "[Chat Handler] Chunk timeout - no data received for 30 seconds",
-          );
-          throw new Error("Request timeout - no response from provider");
         }
 
         // Throttled update
@@ -239,9 +279,27 @@ export async function handleExecutePrompt(
     });
   } catch (error: any) {
     console.error("[Chat Handler] Error during chat execution:", error);
-    console.error("[Chat Handler] Error stack:", error.stack);
+    if (error && error.stack) {
+      console.error("[Chat Handler] Error stack:", error.stack);
+    }
 
-    const errorMessage = error.message || "Unknown error occurred";
+    let errorMessage = "Unknown error occurred";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    } else if (error && typeof error === "object" && "message" in error) {
+      errorMessage = String(error.message);
+    }
+
+    // Fix English for provider errors
+    if (errorMessage.includes("Provider returned")) {
+      errorMessage = errorMessage.replace(
+        "Provider returned",
+        "The provider returned:",
+      );
+    }
+
     const userFriendlyError = `Error: ${errorMessage}. Please check your provider connection and try again.`;
 
     try {

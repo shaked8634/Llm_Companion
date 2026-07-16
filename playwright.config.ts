@@ -1,0 +1,9 @@
+import { defineConfig } from "@playwright/test";
+
+export default defineConfig({
+  testDir: "./playwright",
+  timeout: 120000,
+  use: {
+    viewport: { width: 1280, height: 900 },
+  },
+});

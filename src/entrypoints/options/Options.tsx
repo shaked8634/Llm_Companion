@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import { AppSettings, Prompt, PromptType, settingsStorage } from "@/lib/store";
+import { getExtensionVersion, REPOSITORY_LINKS } from "@/lib/constants";
+import {
+  AppSettings,
+  DEFAULT_PROVIDER_SETTINGS,
+  getPromptsWithDefaults,
+  getProviderSettingsWithDefaults,
+  Prompt,
+  PromptType,
+  settingsStorage,
+} from "@/lib/store";
 import { useStorage } from "@/hooks/useStorage";
 import {
   Bot,
@@ -18,6 +27,7 @@ type TabId = "models" | "prompts" | "about";
 export default function Options() {
   const [settings, setSettings] = useStorage(settingsStorage);
   const [activeTab, setActiveTab] = useState<TabId>("models");
+  const appVersion = getExtensionVersion();
 
   // Local state for providers to prevent flickering from storage updates
   const [localProviders, setLocalProviders] = useState<
@@ -28,7 +38,7 @@ export default function Options() {
   // Initialize local providers once from settings
   useEffect(() => {
     if (settings?.providers && !providersInitialized.current) {
-      setLocalProviders(settings.providers);
+      setLocalProviders(getProviderSettingsWithDefaults(settings.providers));
       providersInitialized.current = true;
     }
   }, [settings?.providers]);
@@ -40,7 +50,7 @@ export default function Options() {
   // Sync local prompts with settings
   useEffect(() => {
     if (settings?.prompts) {
-      setLocalPrompts(settings.prompts);
+      setLocalPrompts(getPromptsWithDefaults(settings.prompts));
     }
   }, [settings?.prompts]);
 
@@ -79,18 +89,23 @@ export default function Options() {
     let changed = false;
     const patchedProviders = { ...localProviders };
     if (!patchedProviders.ollama) {
-      patchedProviders.ollama = {
-        enabled: true,
-        url: "http://localhost:11434",
-      };
+      patchedProviders.ollama = DEFAULT_PROVIDER_SETTINGS.ollama;
       changed = true;
     }
     if (!patchedProviders.gemini) {
-      patchedProviders.gemini = { enabled: false, apiKey: "" };
+      patchedProviders.gemini = DEFAULT_PROVIDER_SETTINGS.gemini;
       changed = true;
     }
     if (!patchedProviders.openai) {
-      patchedProviders.openai = { enabled: false, apiKey: "" };
+      patchedProviders.openai = DEFAULT_PROVIDER_SETTINGS.openai;
+      changed = true;
+    }
+    if (!patchedProviders.openrouter) {
+      patchedProviders.openrouter = DEFAULT_PROVIDER_SETTINGS.openrouter;
+      changed = true;
+    }
+    if (!patchedProviders.custom) {
+      patchedProviders.custom = DEFAULT_PROVIDER_SETTINGS.custom;
       changed = true;
     }
     if (changed) {
@@ -98,6 +113,27 @@ export default function Options() {
       setSettings({ ...settings, providers: patchedProviders });
     }
   }, [localProviders]);
+
+  useEffect(() => {
+    if (!settings) return;
+
+    const existingPrompts = settings.prompts ?? [];
+    const normalizedPrompts = getPromptsWithDefaults(existingPrompts);
+    const hasPromptChanges =
+      normalizedPrompts.length !== existingPrompts.length ||
+      normalizedPrompts.some((prompt, index) => {
+        const currentPrompt = existingPrompts[index];
+        return currentPrompt?.id !== prompt.id;
+      });
+
+    if (hasPromptChanges) {
+      setLocalPrompts(normalizedPrompts);
+      setSettings({
+        ...settings,
+        prompts: normalizedPrompts,
+      });
+    }
+  }, [settings]);
 
   // Derive provider status from discoveredModels (set by background)
   const getProviderStatus = (
@@ -122,36 +158,39 @@ export default function Options() {
   if (!settings.prompts) {
     setSettings({
       ...settings,
-      prompts: [
-        {
-          id: "default-summarize",
-          name: "Summarize this page",
-          text: "Summarize this page with less than 500 words",
-          type: PromptType.WITH_WEBPAGE,
-          isDefault: true,
-        },
-      ],
+      prompts: getPromptsWithDefaults(),
     });
     return (
       <div class="p-8 text-slate-500 font-medium">Loading settings...</div>
     );
   }
 
+  const providerLabels: Record<string, string> = {
+    ollama: "Ollama",
+    gemini: "Gemini",
+    openai: "OpenAI",
+    openrouter: "OpenRouter",
+    custom: "Custom",
+  };
+
   function validateProvider(id: keyof AppSettings["providers"], config: any) {
     let error = "";
     if (config.enabled) {
-      if ((id === "gemini" || id === "openai") && !config.apiKey) {
+      if (
+        (id === "gemini" || id === "openai" || id === "openrouter") &&
+        !config.apiKey
+      ) {
         error = "API Key is required.";
       }
       if (
-        id === "ollama" &&
+        (id === "ollama" || id === "custom") &&
         (!config.url || !/^https?:\/\/.+/.test(config.url))
       ) {
         error = "Valid URL is required.";
       }
     }
     setProviderErrors((prev) => ({ ...prev, [id]: error }));
-    return !error;
+    return true;
   }
 
   const updateProvider = (id: keyof AppSettings["providers"], updates: any) => {
@@ -259,7 +298,15 @@ export default function Options() {
                   </thead>
                   <tbody>
                     {localProviders &&
-                      (["ollama", "gemini", "openai"] as const).map((id) => {
+                      (
+                        [
+                          "ollama",
+                          "gemini",
+                          "openai",
+                          "openrouter",
+                          "custom",
+                        ] as const
+                      ).map((id) => {
                         const config = localProviders[id];
                         if (!config) return null;
                         const isDisabled = !config.enabled;
@@ -299,9 +346,9 @@ export default function Options() {
                             <td>
                               <div class="flex items-center h-10 px-4">
                                 <span
-                                  class={`font-bold capitalize text-base ${isDisabled ? "text-slate-400 dark:text-slate-600" : "text-slate-900 dark:text-slate-100"}`}
+                                  class={`font-bold text-base ${isDisabled ? "text-slate-400 dark:text-slate-600" : "text-slate-900 dark:text-slate-100"}`}
                                 >
-                                  {id}
+                                  {providerLabels[id] || id}
                                 </span>
                               </div>
                             </td>
@@ -317,16 +364,18 @@ export default function Options() {
                                   })
                                 }
                                 placeholder="API Key"
-                                class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? "opacity-40 grayscale" : "shadow-sm focus:ring-2 focus:ring-indigo-500/20"} ${id !== "ollama" && !config.apiKey && !isDisabled ? "border-amber-300" : "border-slate-200 dark:border-slate-800"} ${providerErrors[id] ? "border-red-500" : ""}`}
+                                class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? "opacity-40 grayscale" : "shadow-sm focus:ring-2 focus:ring-indigo-500/20"} ${id !== "ollama" && id !== "custom" && !config.apiKey && !isDisabled ? "border-amber-300" : "border-slate-200 dark:border-slate-800"} ${providerErrors[id] ? "border-red-500" : ""}`}
                               />
-                              {providerErrors[id] && id !== "ollama" && (
-                                <div class="text-xs text-red-500 mt-1">
-                                  {providerErrors[id]}
-                                </div>
-                              )}
+                              {providerErrors[id] &&
+                                id !== "ollama" &&
+                                id !== "custom" && (
+                                  <div class="text-xs text-red-500 mt-1">
+                                    {providerErrors[id]}
+                                  </div>
+                                )}
                             </td>
                             <td>
-                              {id === "ollama" ? (
+                              {id === "ollama" || id === "custom" ? (
                                 <div>
                                   <input
                                     type="text"
@@ -339,6 +388,11 @@ export default function Options() {
                                       })
                                     }
                                     class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? "opacity-40 grayscale" : "shadow-sm focus:ring-2 focus:ring-indigo-500/20"} border-slate-200 dark:border-slate-800 ${providerErrors[id] ? "border-red-500" : ""}`}
+                                    placeholder={
+                                      id === "ollama"
+                                        ? "http://localhost:11434"
+                                        : "https://api.example.com/v1"
+                                    }
                                   />
                                   {providerErrors[id] && (
                                     <div class="text-xs text-red-500 mt-1">
@@ -565,23 +619,29 @@ export default function Options() {
                     <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">
                       Repository
                     </h3>
-                    <p class="text-sm text-slate-600 dark:text-slate-300">
-                      <a
-                        href="https://forgejo.o-st.dev/ozzt/Llm_companion"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="text-indigo-600 dark:text-indigo-400 hover:underline"
-                      >
-                        Forgejo
-                      </a>
-                    </p>
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600 dark:text-slate-300">
+                      {REPOSITORY_LINKS.map((repositoryLink) => (
+                        <a
+                          key={repositoryLink.label}
+                          href={repositoryLink.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="text-indigo-600 dark:text-indigo-400 hover:underline"
+                        >
+                          {repositoryLink.label}
+                        </a>
+                      ))}
+                    </div>
                   </div>
 
                   <div>
                     <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">
                       Support Development
                     </h3>
-                    <div class="space-y-2">
+                    <div
+                      aria-label="Support development addresses"
+                      class="rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3"
+                    >
                       {[
                         {
                           name: "Bitcoin",
@@ -610,7 +670,7 @@ export default function Options() {
                       ].map((crypto) => (
                         <div
                           key={crypto.symbol}
-                          class="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+                          class="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
                         >
                           <div class="flex-1 min-w-0">
                             <a
@@ -637,7 +697,7 @@ export default function Options() {
 
                   <div class="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
                     <p class="text-xs text-slate-400 dark:text-slate-600 text-right">
-                      v0.0.0
+                      v{appVersion}
                     </p>
                   </div>
                 </div>
