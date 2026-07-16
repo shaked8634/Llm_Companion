@@ -178,14 +178,17 @@ The background service worker (`src/entrypoints/background/`) handles all LLM AP
 
 ## How to release a version
 
-1. Create release notes
-   - Add a new markdown file under the `release-notes/` directory describing the changes (a concise list of recent commits or highlights). Commit and push the file.
-2. Tag the release
-   - Create a git tag and push it:
+1. Update `package.json` to the release version.
+2. Add `release-notes/X.Y.Z.md` with the release highlights.
+3. Commit the release files on `dev`, push `dev`, and open a pull request into `main`.
+4. Merge the pull request after `pnpm lint`, `pnpm compile`, and `pnpm test` pass.
+5. Update local `main`, create an annotated tag without a `v` prefix, and push it:
 
 ```bash
-git tag -a vX.Y.Z -m "Release vX.Y.Z"
-git push origin vX.Y.Z
+git switch main
+git pull --ff-only origin main
+git tag -a X.Y.Z -m "Release X.Y.Z"
+git push origin X.Y.Z
 ```
 
-Replace `vX.Y.Z` with the version you want to publish.
+The tag triggers `.forgejo/workflows/release.yml`, which builds browser packages, creates the Forgejo release from `release-notes/X.Y.Z.md`, and attempts Chrome Web Store publication. Verify the workflow and release assets after pushing the tag.
