@@ -196,7 +196,7 @@ export default defineBackground(() => {
   });
 
   // Handle keyboard shortcut command - opens popup and executes prompt
-  chrome.commands.onCommand.addListener(async (command) => {
+  chrome.commands.onCommand.addListener(async (command, tab) => {
     console.debug("[Background] Command received:", command);
 
     if (command === "execute-prompt") {
@@ -280,10 +280,6 @@ export default defineBackground(() => {
 
     if (command === "open-sidepanel") {
       try {
-        const [tab] = await chrome.tabs.query({
-          active: true,
-          currentWindow: true,
-        });
         if (tab?.id) {
           await chrome.sidePanel.open({ tabId: tab.id });
           console.debug("[Background] Sidepanel opened via keyboard shortcut");
