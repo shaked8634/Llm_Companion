@@ -254,7 +254,6 @@ export async function handleExecutePrompt(
         await updateSession(true);
       }
     } catch (streamError) {
-      console.error("[Chat Handler] Stream error:", streamError);
       // Ensure we save what we have before re-throwing
       if (fullResponse) {
         await updateSession(true);
@@ -278,10 +277,7 @@ export async function handleExecutePrompt(
       isLoading: false,
     });
   } catch (error: any) {
-    console.error("[Chat Handler] Error during chat execution:", error);
-    if (error && error.stack) {
-      console.error("[Chat Handler] Error stack:", error.stack);
-    }
+    console.warn("[Chat Handler] Chat execution failed:", error);
 
     let errorMessage = "Unknown error occurred";
     if (error instanceof Error) {
