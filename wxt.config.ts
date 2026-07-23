@@ -41,16 +41,12 @@ export default defineConfig({
     commands: {
       "execute-prompt": {
         suggested_key: {
-          default: "Ctrl+Shift+L",
-          mac: "Command+Shift+L",
+          default: "Ctrl+Shift+S",
+          mac: "Command+Shift+S",
         },
         description: "Execute the current selected prompt",
       },
       "open-sidepanel": {
-        suggested_key: {
-          default: "Ctrl+Shift+S",
-          mac: "Command+Shift+S",
-        },
         description: "Open LLM Companion sidebar",
       },
     },

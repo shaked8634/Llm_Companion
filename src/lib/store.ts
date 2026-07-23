@@ -65,7 +65,7 @@ export const DEFAULT_PROMPTS: Prompt[] = [
   {
     id: "default-summarize",
     name: "Summarize this page",
-    text: "Summarize this page with less than 500 words",
+    text: "Summarize this page with less than 300 words",
     type: PromptType.WITH_WEBPAGE,
     isDefault: true,
   },
