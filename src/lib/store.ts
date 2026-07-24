@@ -51,6 +51,7 @@ export interface TabSession {
   messages: ChatMessage[];
   isLoading: boolean;
   lastError?: string;
+  lastRequestFingerprint?: string;
 }
 
 export const DEFAULT_PROVIDER_SETTINGS: ProviderSettings = {

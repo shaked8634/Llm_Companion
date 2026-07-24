@@ -5,6 +5,7 @@ import {
 } from "@/lib/store";
 import { ProviderFactory } from "@/lib/providers/factory";
 import { ChatMessage, ProviderType } from "@/lib/providers/types";
+import { createRequestFingerprint } from "@/lib/utils/request-fingerprint";
 import { formatPageContextForLLM, PageContent } from "@/lib/utils/scraper";
 
 export async function handleExecutePrompt(
@@ -21,6 +22,22 @@ export async function handleExecutePrompt(
   if (!settings.selectedModelId) {
     console.error("[Chat Handler] No model selected");
     throw new Error("No model selected");
+  }
+
+  const currentSession = await session.getValue();
+  const requestFingerprint = await createRequestFingerprint({
+    userPrompt,
+    pageContext,
+    selectedModelId: settings.selectedModelId,
+    systemPrompt: settings.systemPrompt,
+  });
+
+  if (
+    !currentSession.isLoading &&
+    currentSession.lastRequestFingerprint === requestFingerprint
+  ) {
+    console.debug("[Chat Handler] Reusing the last response");
+    return;
   }
 
   console.debug("[Chat Handler] Selected model:", settings.selectedModelId);
@@ -46,8 +63,6 @@ export async function handleExecutePrompt(
   const contextLimit = activeModel?.contextLength;
 
   // Prepare messages
-  const currentSession = await session.getValue();
-
   // Format page context if available
   let formattedPageContext = "";
   if (pageContext) {
@@ -275,6 +290,7 @@ export async function handleExecutePrompt(
     await session.setValue({
       ...finalSession,
       isLoading: false,
+      lastRequestFingerprint: requestFingerprint,
     });
   } catch (error: any) {
     console.warn("[Chat Handler] Chat execution failed:", error);
