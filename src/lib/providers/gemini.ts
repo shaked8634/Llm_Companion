@@ -33,6 +33,10 @@ export class GeminiProvider extends BaseProvider {
     }
   }
 
+  supportsPdf(model: Model): boolean {
+    return /^(gemini-2\.0|gemini-2\.5|gemini-3)/.test(model.id);
+  }
+
   async *stream(
     model: string,
     messages: ChatMessage[],
@@ -40,10 +44,28 @@ export class GeminiProvider extends BaseProvider {
   ): AsyncGenerator<string, void, unknown> {
     if (!this.config.apiKey) throw new Error("Gemini API Key is missing");
 
-    const contents = messages.map((m) => ({
+    const contents: Array<{
+      role: string;
+      parts: Array<Record<string, unknown>>;
+    }> = messages.map((m) => ({
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }],
     }));
+
+    if (options?.pdfAttachment) {
+      const lastUserMessage = [...contents]
+        .reverse()
+        .find((content) => content.role === "user");
+      if (!lastUserMessage) {
+        throw new Error("PDF requests require a user prompt");
+      }
+      lastUserMessage.parts.push({
+        inlineData: {
+          mimeType: options.pdfAttachment.mimeType,
+          data: options.pdfAttachment.base64,
+        },
+      });
+    }
 
     // Use ?alt=sse to get Server-Sent Events format
     const response = await fetch(

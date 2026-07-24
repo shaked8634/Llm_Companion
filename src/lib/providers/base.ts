@@ -22,6 +22,10 @@ export abstract class BaseProvider {
     options?: GenerationOptions,
   ): AsyncGenerator<string, void, unknown>;
 
+  supportsPdf(model: Model): boolean {
+    return model.supportsPdf === true;
+  }
+
   updateConfig(config: Partial<ProviderConfig>) {
     this.config = { ...this.config, ...config };
   }

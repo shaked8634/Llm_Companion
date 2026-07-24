@@ -3,6 +3,7 @@ import {
   getPromptsWithDefaults,
   defaultSettings,
   getProviderSettingsWithDefaults,
+  getSearchEnginesWithDefaults,
   getTabSessionKey,
   PromptType,
 } from "@/lib/store";
@@ -12,6 +13,15 @@ describe("Store", () => {
     expect(defaultSettings).toHaveProperty("providers");
     expect(defaultSettings).toHaveProperty("prompts");
     expect(defaultSettings).toHaveProperty("discoveredModels");
+    expect(defaultSettings.searchEngines).toEqual([
+      {
+        id: "duckduckgo",
+        name: "DuckDuckGo",
+        queryUrl: "https://html.duckduckgo.com/html/?q=%s",
+        isDefault: true,
+      },
+    ]);
+    expect(defaultSettings.selectedSearchEngineId).toBe("duckduckgo");
     expect(defaultSettings.providers.ollama.enabled).toBe(false);
   });
 
@@ -81,5 +91,20 @@ describe("Store", () => {
     const prompts = getPromptsWithDefaults([prompt, prompt]);
 
     expect(prompts.filter(({ id }) => id === prompt.id)).toHaveLength(1);
+  });
+
+  it("getSearchEnginesWithDefaults should restore the fixed DuckDuckGo engine", () => {
+    const searchEngines = getSearchEnginesWithDefaults([
+      {
+        id: "brave",
+        name: "Brave Search",
+        queryUrl: "https://search.brave.com/search?q=%s",
+      },
+    ]);
+
+    expect(searchEngines.map((engine) => engine.id)).toEqual([
+      "duckduckgo",
+      "brave",
+    ]);
   });
 });

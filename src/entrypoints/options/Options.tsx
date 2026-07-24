@@ -5,8 +5,10 @@ import {
   DEFAULT_PROVIDER_SETTINGS,
   getPromptsWithDefaults,
   getProviderSettingsWithDefaults,
+  getSearchEnginesWithDefaults,
   Prompt,
   PromptType,
+  SearchEngine,
   settingsStorage,
 } from "@/lib/store";
 import { useStorage } from "@/hooks/useStorage";
@@ -17,12 +19,13 @@ import {
   FileText,
   Info,
   Plus,
+  Search,
   Trash2,
   XCircle,
 } from "lucide-preact";
 import "@/assets/main.css";
 
-type TabId = "models" | "prompts" | "about";
+type TabId = "models" | "search-engines" | "prompts" | "about";
 
 export default function Options() {
   const [settings, setSettings] = useStorage(settingsStorage);
@@ -232,8 +235,47 @@ export default function Options() {
     setSettings(newSettings);
   };
 
+  const searchEngines = getSearchEnginesWithDefaults(settings.searchEngines);
+  const selectedSearchEngineId = searchEngines.some(
+    (engine) => engine.id === settings.selectedSearchEngineId,
+  )
+    ? settings.selectedSearchEngineId
+    : "duckduckgo";
+
+  const updateSearchEngines = (
+    updatedSearchEngines: SearchEngine[],
+    selectedEngineId = selectedSearchEngineId,
+  ) => {
+    setSettings({
+      ...settings,
+      searchEngines: updatedSearchEngines,
+      selectedSearchEngineId: selectedEngineId,
+    });
+  };
+
+  const isValidSearchEngine = (engine: SearchEngine) => {
+    if (
+      !engine.name.trim() ||
+      (engine.queryUrl.match(/%s/g) ?? []).length !== 1
+    ) {
+      return false;
+    }
+
+    try {
+      const url = new URL(engine.queryUrl);
+      return (
+        (url.protocol === "http:" || url.protocol === "https:") &&
+        !url.username &&
+        !url.password
+      );
+    } catch {
+      return false;
+    }
+  };
+
   const tabs = [
     { id: "models", label: "Providers", icon: Bot },
+    { id: "search-engines", label: "Search Engines", icon: Search },
     { id: "prompts", label: "Prompts", icon: FileText },
     { id: "about", label: "About", icon: Info },
   ] as const;
@@ -597,6 +639,155 @@ export default function Options() {
                 >
                   <Plus class="w-4 h-4" />
                   <span>Add Prompt</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "search-engines" && (
+            <div class="space-y-4">
+              <table
+                class="w-full border-separate border-spacing-y-4 border-spacing-x-2 -ml-2"
+                style="table-layout: fixed;"
+              >
+                <colgroup>
+                  <col style="width: 180px;" />
+                  <col style="width: auto;" />
+                  <col style="width: 80px;" />
+                  <col style="width: 60px;" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-left">
+                      Name
+                    </th>
+                    <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-left">
+                      Query URL
+                    </th>
+                    <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-center">
+                      Use
+                    </th>
+                    <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-center">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {searchEngines.map((engine) => {
+                    const isDefault = engine.id === "duckduckgo";
+                    const isSelected = engine.id === selectedSearchEngineId;
+                    const isValid = isValidSearchEngine(engine);
+
+                    return (
+                      <tr key={engine.id}>
+                        <td class="align-top">
+                          {isDefault ? (
+                            <div class="flex items-center h-10 px-4 font-bold text-base text-slate-900 dark:text-slate-100">
+                              {engine.name}
+                            </div>
+                          ) : (
+                            <input
+                              type="text"
+                              value={engine.name}
+                              maxLength={50}
+                              onInput={(event) =>
+                                updateSearchEngines(
+                                  searchEngines.map((currentEngine) =>
+                                    currentEngine.id === engine.id
+                                      ? {
+                                          ...currentEngine,
+                                          name: (
+                                            event.target as HTMLInputElement
+                                          ).value,
+                                        }
+                                      : currentEngine,
+                                  ),
+                                )
+                              }
+                              class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all shadow-sm focus:ring-2 focus:ring-indigo-500/20 ${isValid ? "border-slate-200 dark:border-slate-800" : "border-red-500"}`}
+                            />
+                          )}
+                        </td>
+                        <td class="align-top">
+                          <input
+                            type="url"
+                            value={engine.queryUrl}
+                            disabled={isDefault}
+                            onInput={(event) =>
+                              updateSearchEngines(
+                                searchEngines.map((currentEngine) =>
+                                  currentEngine.id === engine.id
+                                    ? {
+                                        ...currentEngine,
+                                        queryUrl: (
+                                          event.target as HTMLInputElement
+                                        ).value,
+                                      }
+                                    : currentEngine,
+                                ),
+                              )
+                            }
+                            class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDefault ? "opacity-40 grayscale cursor-not-allowed" : "shadow-sm focus:ring-2 focus:ring-indigo-500/20"} ${isValid ? "border-slate-200 dark:border-slate-800" : "border-red-500"}`}
+                          />
+                        </td>
+                        <td class="text-center align-top">
+                          <div class="flex items-start justify-center pt-1">
+                            <button
+                              onClick={() =>
+                                updateSearchEngines(searchEngines, engine.id)
+                              }
+                              disabled={!isValid || isSelected}
+                              class={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${isSelected ? "text-green-500" : "text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 active:scale-95"} disabled:cursor-not-allowed`}
+                            >
+                              {isSelected ? "Selected" : "Use"}
+                            </button>
+                          </div>
+                        </td>
+                        <td class="text-center align-top">
+                          {!isDefault && (
+                            <div class="flex items-start justify-center pt-1">
+                              <button
+                                onClick={() =>
+                                  updateSearchEngines(
+                                    searchEngines.filter(
+                                      (currentEngine) =>
+                                        currentEngine.id !== engine.id,
+                                    ),
+                                    isSelected
+                                      ? "duckduckgo"
+                                      : selectedSearchEngineId,
+                                  )
+                                }
+                                class="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 active:scale-95 cursor-pointer"
+                                aria-label={`Delete ${engine.name}`}
+                              >
+                                <Trash2 class="w-5 h-5" />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              <div class="flex justify-end">
+                <button
+                  onClick={() =>
+                    updateSearchEngines([
+                      ...searchEngines,
+                      {
+                        id: `search-engine-${Date.now()}`,
+                        name: "New Search Engine",
+                        queryUrl: "https://example.com/search?q=%s",
+                      },
+                    ])
+                  }
+                  class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 shadow-sm"
+                >
+                  <Plus class="w-4 h-4" />
+                  <span>Add Search Engine</span>
                 </button>
               </div>
             </div>

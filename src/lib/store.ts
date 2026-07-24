@@ -30,6 +30,13 @@ export interface DiscoveredModel extends Model {
 
 export type ProviderSettings = Record<ProviderType, ProviderConfig>;
 
+export interface SearchEngine {
+  id: string;
+  name: string;
+  queryUrl: string;
+  isDefault?: boolean;
+}
+
 export interface AppSettings {
   activeProvider: "ollama" | "gemini" | "openai" | "openrouter" | "custom";
   providers: ProviderSettings;
@@ -44,6 +51,8 @@ export interface AppSettings {
   discoveredModels: DiscoveredModel[];
   systemPrompt: string;
   prompts: Prompt[];
+  searchEngines: SearchEngine[];
+  selectedSearchEngineId: string;
   lastSelectedPromptId?: string; // Last selected prompt ID for persistence
 }
 
@@ -61,6 +70,15 @@ export const DEFAULT_PROVIDER_SETTINGS: ProviderSettings = {
   openrouter: { enabled: false, apiKey: "" },
   custom: { enabled: false, url: "", apiKey: "" },
 };
+
+export const DEFAULT_SEARCH_ENGINES: SearchEngine[] = [
+  {
+    id: "duckduckgo",
+    name: "DuckDuckGo",
+    queryUrl: "https://html.duckduckgo.com/html/?q=%s",
+    isDefault: true,
+  },
+];
 
 export const DEFAULT_PROMPTS: Prompt[] = [
   {
@@ -148,6 +166,16 @@ export function getPromptsWithDefaults(prompts?: Prompt[]): Prompt[] {
   return [...mergedDefaultPrompts, ...customPrompts];
 }
 
+export function getSearchEnginesWithDefaults(
+  searchEngines?: SearchEngine[],
+): SearchEngine[] {
+  const customEngines = (searchEngines ?? []).filter(
+    (engine) => engine.id !== "duckduckgo",
+  );
+
+  return [...DEFAULT_SEARCH_ENGINES, ...customEngines];
+}
+
 export const defaultSettings: AppSettings = {
   activeProvider: "ollama",
   providers: getProviderSettingsWithDefaults(),
@@ -157,6 +185,8 @@ export const defaultSettings: AppSettings = {
   systemPrompt:
     "You are a helpful browsing assistant. Summarize or answer questions based on the provided page content.",
   prompts: getPromptsWithDefaults(),
+  searchEngines: getSearchEnginesWithDefaults(),
+  selectedSearchEngineId: "duckduckgo",
 };
 
 export const settingsStorage: WxtStorageItem<

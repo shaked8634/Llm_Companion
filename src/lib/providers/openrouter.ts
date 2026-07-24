@@ -25,6 +25,8 @@ export class OpenRouterProvider extends BaseProvider {
         id: m.id,
         name: m.name || m.id,
         contextLength: m.context_length,
+        supportsPdf:
+          m.architecture?.input_modalities?.includes("file") ?? false,
       }));
     } catch (e) {
       console.error("OpenRouter getModels error:", e);
@@ -39,9 +41,32 @@ export class OpenRouterProvider extends BaseProvider {
   ): AsyncGenerator<string, void, unknown> {
     if (!this.config.apiKey) throw new Error("OpenRouter API Key is missing");
     const url = `${OpenRouterProvider.defaultUrl}/chat/completions`;
+    const requestMessages = messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    }));
+    if (options?.pdfAttachment) {
+      const lastUserMessage = [...requestMessages]
+        .reverse()
+        .find((message) => message.role === "user");
+      if (!lastUserMessage) {
+        throw new Error("PDF requests require a user prompt");
+      }
+      lastUserMessage.content = [
+        { type: "text", text: lastUserMessage.content },
+        {
+          type: "file",
+          file: {
+            filename: options.pdfAttachment.name,
+            file_data: `data:${options.pdfAttachment.mimeType};base64,${options.pdfAttachment.base64}`,
+          },
+        },
+      ] as any;
+    }
+
     const requestBody = {
       model,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      messages: requestMessages,
       stream: true,
       temperature: options?.temperature,
       max_tokens: options?.maxTokens,
