@@ -9,6 +9,7 @@ import {
   getPromptsWithDefaults,
   getTabSession,
   getProviderSettingsWithDefaults,
+  type AppSettings,
   PromptType,
   settingsStorage,
   TabSession,
@@ -24,8 +25,10 @@ import {
   PanelRight,
   Play,
   RefreshCw,
+  Search,
   Settings,
   Square,
+  Star,
 } from "lucide-preact";
 
 interface PageContent {
@@ -43,7 +46,28 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
   const [selectedPrompt, setSelectedPrompt] = useState<string>("");
   const [followUpText, setFollowUpText] = useState<string>("");
   const [freeTextInput, setFreeTextInput] = useState<string>("");
+  const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
+  const [modelSearch, setModelSearch] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const modelPickerRef = useRef<HTMLDivElement>(null);
+  const modelSettingsRef = useRef<AppSettings | null>(null);
+  const modelSettingsWriteRef = useRef<Promise<void>>(Promise.resolve());
+
+  modelSettingsRef.current = settings;
+
+  useEffect(() => {
+    if (!isModelPickerOpen) return;
+
+    const closeModelPicker = (event: MouseEvent) => {
+      if (!modelPickerRef.current?.contains(event.target as Node)) {
+        setIsModelPickerOpen(false);
+        setModelSearch("");
+      }
+    };
+
+    document.addEventListener("mousedown", closeModelPicker);
+    return () => document.removeEventListener("mousedown", closeModelPicker);
+  }, [isModelPickerOpen]);
 
   useEffect(() => {
     // Get initial active tab
@@ -375,6 +399,60 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
     providerSettings.openrouter.enabled ||
     providerSettings.custom.enabled;
   const models = settings.discoveredModels || [];
+  const favoriteModelIds = settings.favoriteModelIds ?? [];
+  const selectedModel =
+    models.find(
+      (model) => `${model.providerId}:${model.id}` === settings.selectedModelId,
+    ) ?? models[0];
+  const visibleModels = [...models]
+    .filter((model) => {
+      const query = modelSearch.trim().toLocaleLowerCase();
+      return (
+        !query ||
+        model.name.toLocaleLowerCase().includes(query) ||
+        model.providerName.toLocaleLowerCase().includes(query)
+      );
+    })
+    .sort((a, b) => {
+      const aFavorite = favoriteModelIds.includes(`${a.providerId}:${a.id}`);
+      const bFavorite = favoriteModelIds.includes(`${b.providerId}:${b.id}`);
+      return (
+        Number(bFavorite) - Number(aFavorite) || a.name.localeCompare(b.name)
+      );
+    });
+
+  const toggleFavoriteModel = (modelId: string) => {
+    const current = modelSettingsRef.current;
+    if (!current) return;
+    const favorites = current.favoriteModelIds ?? [];
+    const next = {
+      ...current,
+      favoriteModelIds: favorites.includes(modelId)
+        ? favorites.filter((id) => id !== modelId)
+        : [...favorites, modelId],
+    };
+    modelSettingsRef.current = next;
+    modelSettingsWriteRef.current = modelSettingsWriteRef.current.then(() =>
+      setSettings(next),
+    );
+  };
+
+  const selectModel = (modelId: string) => {
+    const current = modelSettingsRef.current;
+    if (!current) return;
+    const next = { ...current, selectedModelId: modelId };
+    modelSettingsRef.current = next;
+    modelSettingsWriteRef.current = modelSettingsWriteRef.current.then(() =>
+      setSettings(next),
+    );
+    setIsModelPickerOpen(false);
+    setModelSearch("");
+  };
+
+  const toggleModelPicker = () => {
+    if (isModelPickerOpen) setModelSearch("");
+    setIsModelPickerOpen(!isModelPickerOpen);
+  };
 
   useEffect(() => {
     if (!settings || !models.length) return;
@@ -389,7 +467,7 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
         selectedModelId: `${models[0].providerId}:${models[0].id}`,
       });
     }
-  }, [models.length]);
+  }, [models, settings.selectedModelId]);
 
   useEffect(() => {
     if (!settings || prompts.length === 0) return;
@@ -474,57 +552,97 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
       <div class="p-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 space-y-2 shrink-0">
         {/* Row 1: Models */}
         <div class="flex items-center gap-2">
-          <div class="relative flex-1">
+          <div ref={modelPickerRef} class="relative flex-1">
             <Cpu class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500 pointer-events-none" />
             <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500 pointer-events-none" />
-            <select
+            <button
+              type="button"
               disabled={!hasEnabledProviders || models.length === 0}
-              value={settings.selectedModelId}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  selectedModelId: (e.target as HTMLSelectElement).value,
-                })
-              }
-              class="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs appearance-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer disabled:opacity-50"
+              aria-label="Choose model"
+              aria-expanded={isModelPickerOpen}
+              aria-controls="model-picker"
+              onClick={toggleModelPicker}
+              class="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs text-left focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer disabled:opacity-50"
             >
-              <option value="">
-                {!hasEnabledProviders
-                  ? "No providers"
-                  : models.length === 0
-                    ? "Loading models..."
-                    : "Select model..."}
-              </option>
-              {(() => {
-                const grouped = models.reduce(
-                  (acc, model) => {
-                    if (!acc[model.providerName]) {
-                      acc[model.providerName] = [];
+              {!hasEnabledProviders
+                ? "No providers"
+                : models.length === 0
+                  ? "Loading models..."
+                  : selectedModel?.name}
+            </button>
+            {isModelPickerOpen && (
+              <div
+                id="model-picker"
+                role="group"
+                aria-label="Models"
+                class="absolute z-30 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl"
+              >
+                <div class="relative border-b border-slate-200 dark:border-slate-700 p-2">
+                  <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                  <input
+                    type="search"
+                    value={modelSearch}
+                    onInput={(event) =>
+                      setModelSearch((event.target as HTMLInputElement).value)
                     }
-                    acc[model.providerName].push(model);
-                    return acc;
-                  },
-                  {} as Record<string, typeof models>,
-                );
-
-                return Object.entries(grouped)
-                  .sort(([a], [b]) => a.localeCompare(b))
-                  .map(([providerName, providerModels]) => (
-                    <optgroup key={providerName} label={providerName}>
-                      {providerModels
-                        .sort((a, b) => a.name.localeCompare(b.name))
-                        .map((m) => (
-                          <option
-                            key={`${m.providerId}:${m.id}`}
-                            value={`${m.providerId}:${m.id}`}
-                          >
-                            {m.name}
-                          </option>
-                        ))}
-                    </optgroup>
-                  ));
-              })()}
-            </select>
+                    placeholder="Search models..."
+                    aria-label="Search models"
+                    autoFocus
+                    class="w-full rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 py-1.5 pl-8 pr-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div class="max-h-64 overflow-y-auto py-1">
+                  {visibleModels.map((model) => {
+                    const modelId = `${model.providerId}:${model.id}`;
+                    const isFavorite = favoriteModelIds.includes(modelId);
+                    return (
+                      <div
+                        key={modelId}
+                        class={`flex items-center ${settings.selectedModelId === modelId ? "bg-indigo-50 dark:bg-indigo-950/40" : "hover:bg-slate-50 dark:hover:bg-slate-700/60"}`}
+                      >
+                        <button
+                          type="button"
+                          title={
+                            isFavorite
+                              ? `Remove ${model.name} from favorites`
+                              : `Add ${model.name} to favorites`
+                          }
+                          aria-label={
+                            isFavorite
+                              ? `Remove ${model.name} from favorites`
+                              : `Add ${model.name} to favorites`
+                          }
+                          onClick={() => toggleFavoriteModel(modelId)}
+                          class={`ml-2 rounded p-1 transition-colors ${isFavorite ? "text-blue-600 dark:text-blue-400" : "text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"}`}
+                        >
+                          <Star
+                            class="h-4 w-4"
+                            fill={isFavorite ? "currentColor" : "none"}
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Select ${model.name} (${model.providerName})`}
+                          aria-pressed={settings.selectedModelId === modelId}
+                          onClick={() => selectModel(modelId)}
+                          class="flex min-w-0 flex-1 items-center gap-2 py-2 pl-1 pr-3 text-left text-xs text-slate-900 dark:text-slate-100"
+                        >
+                          <span class="truncate">{model.name}</span>
+                          <span class="ml-auto shrink-0 text-slate-500 dark:text-slate-400">
+                            {model.providerName}
+                          </span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {visibleModels.length === 0 && (
+                    <div class="px-3 py-4 text-center text-xs text-slate-500 dark:text-slate-400">
+                      No matching models
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -565,7 +683,13 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
               !settings.selectedModelId ||
               (!session.isLoading && !selectedPrompt)
             }
-            title={session.isLoading ? "Stop" : "Execute prompt"}
+            title={
+              session.isLoading
+                ? "Stop"
+                : mode === "sidepanel"
+                  ? "Execute prompt (Ctrl+Shift+S)"
+                  : "Execute prompt"
+            }
             class={
               session.isLoading
                 ? "p-2 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg transition-all shrink-0"

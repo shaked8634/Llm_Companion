@@ -2,6 +2,7 @@ export interface Model {
   id: string;
   name: string;
   contextLength?: number; // Context window size in tokens
+  supportsPdf?: boolean;
 }
 
 export interface ProviderConfig {
@@ -20,6 +21,13 @@ export interface GenerationOptions {
   temperature?: number;
   maxTokens?: number;
   systemPrompt?: string;
+  pdfAttachment?: PdfAttachment;
+}
+
+export interface PdfAttachment {
+  name: string;
+  mimeType: "application/pdf";
+  base64: string;
 }
 
 export type StreamHandler = (chunk: string) => void;

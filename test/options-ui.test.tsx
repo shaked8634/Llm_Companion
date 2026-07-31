@@ -5,6 +5,8 @@ import * as useStorageModule from "../src/hooks/useStorage";
 import { defaultSettings } from "@/lib/store";
 
 describe("Options UI", () => {
+  let setSettings: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
     globalThis.chrome = {
       runtime: {
@@ -12,9 +14,12 @@ describe("Options UI", () => {
       },
     } as never;
 
-    // Mock useStorage hook to return mock settings
+    setSettings = vi.fn(async () => undefined);
     vi.spyOn(useStorageModule, "useStorage").mockImplementation(() => {
-      return [defaultSettings, vi.fn()] as const;
+      return [
+        defaultSettings,
+        setSettings as (newValue: unknown) => Promise<void>,
+      ] as const;
     });
   });
 
@@ -87,5 +92,30 @@ describe("Options UI", () => {
     expect(supportContainer.textContent).toContain("ETH:");
     expect(supportContainer.textContent).toContain("SOL:");
     expect(supportContainer.textContent).toContain("XMR:");
+  });
+
+  it("manages search engines in a dedicated tab", () => {
+    render(<Options />);
+
+    fireEvent.click(screen.getByRole("button", { name: /search engines/i }));
+
+    expect(screen.getByText("DuckDuckGo")).toBeDefined();
+    expect(
+      screen.getByDisplayValue("https://html.duckduckgo.com/html/?q=%s"),
+    ).toHaveProperty("disabled", true);
+    expect(screen.queryByLabelText(/delete duckduckgo/i)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /add search engine/i }));
+
+    expect(setSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        searchEngines: expect.arrayContaining([
+          expect.objectContaining({
+            name: "New Search Engine",
+            queryUrl: "https://example.com/search?q=%s",
+          }),
+        ]),
+      }),
+    );
   });
 });

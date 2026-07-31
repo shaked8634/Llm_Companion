@@ -36,6 +36,7 @@ describe("OpenRouterProvider detail", () => {
       id: "model-1",
       name: "Model 1",
       contextLength: 4096,
+      supportsPdf: false,
     });
   });
 

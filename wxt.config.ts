@@ -15,11 +15,17 @@ export default defineConfig({
     name: "LLM Companion",
     version_name: releaseVersion,
     icons: {
+      16: "icon-16.png",
+      32: "icon-32.png",
+      48: "icon-48.png",
       96: "icon-96.png",
     },
     action: {
       default_title: "Your friendly surfing companion",
       default_icon: {
+        16: "icon-16.png",
+        32: "icon-32.png",
+        48: "icon-48.png",
         96: "icon-96.png",
       },
     },
@@ -41,16 +47,12 @@ export default defineConfig({
     commands: {
       "execute-prompt": {
         suggested_key: {
-          default: "Ctrl+Shift+L",
-          mac: "Command+Shift+L",
+          default: "Ctrl+Shift+S",
+          mac: "Command+Shift+S",
         },
         description: "Execute the current selected prompt",
       },
       "open-sidepanel": {
-        suggested_key: {
-          default: "Ctrl+Shift+S",
-          mac: "Command+Shift+S",
-        },
         description: "Open LLM Companion sidebar",
       },
     },

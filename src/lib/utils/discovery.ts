@@ -51,7 +51,10 @@ export async function refreshDiscoveredModels() {
     previous.every((m, idx) => {
       const n = allModels[idx];
       return (
-        m.id === n.id && m.providerId === n.providerId && m.name === n.name
+        m.id === n.id &&
+        m.providerId === n.providerId &&
+        m.name === n.name &&
+        m.supportsPdf === n.supportsPdf
       );
     });
 

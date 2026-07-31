@@ -110,9 +110,7 @@ describe("ChatInterface prompt behavior", () => {
   it("hides selected-text prompts from the main prompt dropdown", () => {
     const { container } = render(<ChatInterface mode="popup" />);
 
-    const promptSelect = container.querySelectorAll(
-      "select",
-    )[1] as HTMLSelectElement;
+    const promptSelect = container.querySelector("select") as HTMLSelectElement;
     const optionTexts = Array.from(promptSelect.options).map(
       (option) => option.text,
     );
@@ -125,9 +123,7 @@ describe("ChatInterface prompt behavior", () => {
   it("shows input for Converse with the page and sends it together with page context", async () => {
     const { container } = render(<ChatInterface mode="popup" />);
 
-    const promptSelect = container.querySelectorAll(
-      "select",
-    )[1] as HTMLSelectElement;
+    const promptSelect = container.querySelector("select") as HTMLSelectElement;
     fireEvent.change(promptSelect, {
       target: { value: "default-converse-with-page" },
     });

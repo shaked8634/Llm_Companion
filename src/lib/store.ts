@@ -30,6 +30,13 @@ export interface DiscoveredModel extends Model {
 
 export type ProviderSettings = Record<ProviderType, ProviderConfig>;
 
+export interface SearchEngine {
+  id: string;
+  name: string;
+  queryUrl: string;
+  isDefault?: boolean;
+}
+
 export interface AppSettings {
   activeProvider: "ollama" | "gemini" | "openai" | "openrouter" | "custom";
   providers: ProviderSettings;
@@ -41,9 +48,12 @@ export interface AppSettings {
     custom?: string;
   };
   selectedModelId?: string; // Format: "providerId:modelId"
+  favoriteModelIds: string[];
   discoveredModels: DiscoveredModel[];
   systemPrompt: string;
   prompts: Prompt[];
+  searchEngines: SearchEngine[];
+  selectedSearchEngineId: string;
   lastSelectedPromptId?: string; // Last selected prompt ID for persistence
 }
 
@@ -51,6 +61,7 @@ export interface TabSession {
   messages: ChatMessage[];
   isLoading: boolean;
   lastError?: string;
+  lastRequestFingerprint?: string;
 }
 
 export const DEFAULT_PROVIDER_SETTINGS: ProviderSettings = {
@@ -61,11 +72,20 @@ export const DEFAULT_PROVIDER_SETTINGS: ProviderSettings = {
   custom: { enabled: false, url: "", apiKey: "" },
 };
 
+export const DEFAULT_SEARCH_ENGINES: SearchEngine[] = [
+  {
+    id: "duckduckgo",
+    name: "DuckDuckGo",
+    queryUrl: "https://html.duckduckgo.com/html/?q=%s",
+    isDefault: true,
+  },
+];
+
 export const DEFAULT_PROMPTS: Prompt[] = [
   {
     id: "default-summarize",
     name: "Summarize this page",
-    text: "Summarize this page with less than 500 words",
+    text: "Summarize this page with less than 300 words",
     type: PromptType.WITH_WEBPAGE,
     isDefault: true,
   },
@@ -147,15 +167,28 @@ export function getPromptsWithDefaults(prompts?: Prompt[]): Prompt[] {
   return [...mergedDefaultPrompts, ...customPrompts];
 }
 
+export function getSearchEnginesWithDefaults(
+  searchEngines?: SearchEngine[],
+): SearchEngine[] {
+  const customEngines = (searchEngines ?? []).filter(
+    (engine) => engine.id !== "duckduckgo",
+  );
+
+  return [...DEFAULT_SEARCH_ENGINES, ...customEngines];
+}
+
 export const defaultSettings: AppSettings = {
   activeProvider: "ollama",
   providers: getProviderSettingsWithDefaults(),
   activeModel: {},
   selectedModelId: undefined,
+  favoriteModelIds: [],
   discoveredModels: [],
   systemPrompt:
     "You are a helpful browsing assistant. Summarize or answer questions based on the provided page content.",
   prompts: getPromptsWithDefaults(),
+  searchEngines: getSearchEnginesWithDefaults(),
+  selectedSearchEngineId: "duckduckgo",
 };
 
 export const settingsStorage: WxtStorageItem<

@@ -4,7 +4,9 @@ import {
   settingsStorage,
 } from "@/lib/store";
 import { ProviderFactory } from "@/lib/providers/factory";
-import { ChatMessage, ProviderType } from "@/lib/providers/types";
+import { ChatMessage, Model, ProviderType } from "@/lib/providers/types";
+import { createRequestFingerprint } from "@/lib/utils/request-fingerprint";
+import { getPdfAttachment } from "@/lib/utils/pdf";
 import { formatPageContextForLLM, PageContent } from "@/lib/utils/scraper";
 
 export async function handleExecutePrompt(
@@ -21,6 +23,22 @@ export async function handleExecutePrompt(
   if (!settings.selectedModelId) {
     console.error("[Chat Handler] No model selected");
     throw new Error("No model selected");
+  }
+
+  const currentSession = await session.getValue();
+  const requestFingerprint = await createRequestFingerprint({
+    userPrompt,
+    pageContext,
+    selectedModelId: settings.selectedModelId,
+    systemPrompt: settings.systemPrompt,
+  });
+
+  if (
+    !currentSession.isLoading &&
+    currentSession.lastRequestFingerprint === requestFingerprint
+  ) {
+    console.debug("[Chat Handler] Reusing the last response");
+    return;
   }
 
   console.debug("[Chat Handler] Selected model:", settings.selectedModelId);
@@ -46,8 +64,6 @@ export async function handleExecutePrompt(
   const contextLimit = activeModel?.contextLength;
 
   // Prepare messages
-  const currentSession = await session.getValue();
-
   // Format page context if available
   let formattedPageContext = "";
   if (pageContext) {
@@ -173,7 +189,14 @@ export async function handleExecutePrompt(
     console.debug("[Chat Handler] Starting streaming from provider...");
     let fullResponse = "";
     let chunkCount = 0;
-    const generator = provider.stream(modelId, messages);
+    const pdfAttachment = await getPdfAttachment(tabId, !!pageContext);
+    const modelForPdf: Model = activeModel ?? { id: modelId, name: modelId };
+    if (pdfAttachment && !provider.supportsPdf(modelForPdf)) {
+      throw new Error(
+        `PDF input is not supported by ${provider.name}/${modelId}.`,
+      );
+    }
+    const generator = provider.stream(modelId, messages, { pdfAttachment });
 
     // Initial assistant message placeholder
     const assistantMessageIndex = (await session.getValue()).messages.length;
@@ -254,7 +277,6 @@ export async function handleExecutePrompt(
         await updateSession(true);
       }
     } catch (streamError) {
-      console.error("[Chat Handler] Stream error:", streamError);
       // Ensure we save what we have before re-throwing
       if (fullResponse) {
         await updateSession(true);
@@ -276,12 +298,10 @@ export async function handleExecutePrompt(
     await session.setValue({
       ...finalSession,
       isLoading: false,
+      lastRequestFingerprint: requestFingerprint,
     });
   } catch (error: any) {
-    console.error("[Chat Handler] Error during chat execution:", error);
-    if (error && error.stack) {
-      console.error("[Chat Handler] Error stack:", error.stack);
-    }
+    console.warn("[Chat Handler] Chat execution failed:", error);
 
     let errorMessage = "Unknown error occurred";
     if (error instanceof Error) {
@@ -300,7 +320,11 @@ export async function handleExecutePrompt(
       );
     }
 
-    const userFriendlyError = `Error: ${errorMessage}. Please check your provider connection and try again.`;
+    const userFriendlyError = errorMessage.startsWith(
+      "PDF input is not supported",
+    )
+      ? errorMessage
+      : `Error: ${errorMessage}. Please check your provider connection and try again.`;
 
     try {
       const currentSessionState = await session.getValue();

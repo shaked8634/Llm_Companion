@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/preact";
+import { fireEvent, render, screen, within } from "@testing-library/preact";
 import ChatInterface from "@/components/ChatInterface";
 import * as useStorageModule from "@/hooks/useStorage";
 import { defaultSettings } from "@/lib/store";
@@ -81,19 +81,23 @@ describe("ChatInterface provider enablement", () => {
     vi.restoreAllMocks();
   });
 
-  it("enables model select when OpenRouter provider is enabled and models discovered", async () => {
-    const { container } = render(<ChatInterface mode="popup" />);
+  it("shows enabled provider models in the model picker", async () => {
+    render(<ChatInterface mode="popup" />);
 
-    // The first select is the models select
-    const select = container.querySelector("select") as HTMLSelectElement;
-    expect(select).toBeTruthy();
-    expect(select.disabled).toBe(false);
+    const picker = screen.getByRole("button", { name: "Choose model" });
+    expect(picker).toBeTruthy();
+    expect(picker.hasAttribute("disabled")).toBe(false);
 
-    // Ensure OpenRouter model option is present
-    const option = Array.from(select.options).find(
-      (o) => o.value === "openrouter:or-1",
-    );
-    expect(option).toBeDefined();
-    expect(option?.text).toContain("OpenRouter Model 1");
+    fireEvent.click(picker);
+    expect(
+      screen.getByRole("searchbox", { name: "Search models" }),
+    ).toBeTruthy();
+    expect(
+      within(screen.getByRole("group", { name: "Models" })).getByRole(
+        "button",
+        { name: "Select OpenRouter Model 1 (OpenRouter)" },
+      ).textContent,
+    ).toContain("OpenRouter Model 1");
+    expect(screen.queryByText("Select model...")).toBeNull();
   });
 });
