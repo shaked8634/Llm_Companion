@@ -48,6 +48,7 @@ export interface AppSettings {
     custom?: string;
   };
   selectedModelId?: string; // Format: "providerId:modelId"
+  favoriteModelIds: string[];
   discoveredModels: DiscoveredModel[];
   systemPrompt: string;
   prompts: Prompt[];
@@ -181,6 +182,7 @@ export const defaultSettings: AppSettings = {
   providers: getProviderSettingsWithDefaults(),
   activeModel: {},
   selectedModelId: undefined,
+  favoriteModelIds: [],
   discoveredModels: [],
   systemPrompt:
     "You are a helpful browsing assistant. Summarize or answer questions based on the provided page content.",

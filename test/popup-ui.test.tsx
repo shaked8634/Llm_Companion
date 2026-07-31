@@ -123,9 +123,7 @@ describe("Popup UI", () => {
       ?.parentElement as HTMLElement;
     expect(messageBubble.style.fontSize).toBe("1.21875rem");
 
-    const promptSelect = container.querySelectorAll(
-      "select",
-    )[1] as HTMLSelectElement;
+    const promptSelect = container.querySelector("select") as HTMLSelectElement;
     fireEvent.change(promptSelect, {
       target: { value: "default-grammar-check" },
     });
