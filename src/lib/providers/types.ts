@@ -15,6 +15,8 @@ export interface ProviderConfig {
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
+  modelName?: string;
+  durationMs?: number;
 }
 
 export interface GenerationOptions {

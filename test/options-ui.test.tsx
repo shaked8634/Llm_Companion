@@ -118,4 +118,17 @@ describe("Options UI", () => {
       }),
     );
   });
+
+  it("saves the response timeout from the Advanced tab", () => {
+    render(<Options />);
+
+    fireEvent.click(screen.getByRole("button", { name: /advanced/i }));
+    const input = screen.getByLabelText(/response timeout/i);
+    expect(input).toHaveProperty("value", "120");
+
+    fireEvent.input(input, { target: { value: "90" } });
+    expect(setSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({ responseTimeoutSeconds: 90 }),
+    );
+  });
 });

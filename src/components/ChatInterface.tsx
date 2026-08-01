@@ -552,7 +552,7 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
       <div class="p-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 space-y-2 shrink-0">
         {/* Row 1: Models */}
         <div class="flex items-center gap-2">
-          <div ref={modelPickerRef} class="relative flex-1">
+          <div ref={modelPickerRef} class="relative min-w-0 flex-1">
             <Cpu class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500 pointer-events-none" />
             <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500 pointer-events-none" />
             <button
@@ -564,18 +564,20 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
               onClick={toggleModelPicker}
               class="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-xs text-left focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer disabled:opacity-50"
             >
-              {!hasEnabledProviders
-                ? "No providers"
-                : models.length === 0
-                  ? "Loading models..."
-                  : selectedModel?.name}
+              <span class="block truncate">
+                {!hasEnabledProviders
+                  ? "No providers"
+                  : models.length === 0
+                    ? "Loading models..."
+                    : selectedModel?.name}
+              </span>
             </button>
             {isModelPickerOpen && (
               <div
                 id="model-picker"
                 role="group"
                 aria-label="Models"
-                class="absolute z-30 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl"
+                class={`${mode === "sidepanel" ? "absolute z-30" : "relative"} mt-1 w-full overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl`}
               >
                 <div class="relative border-b border-slate-200 dark:border-slate-700 p-2">
                   <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
@@ -598,7 +600,7 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
                     return (
                       <div
                         key={modelId}
-                        class={`flex items-center ${settings.selectedModelId === modelId ? "bg-indigo-50 dark:bg-indigo-950/40" : "hover:bg-slate-50 dark:hover:bg-slate-700/60"}`}
+                        class={`flex min-w-0 items-center ${settings.selectedModelId === modelId ? "bg-indigo-50 dark:bg-indigo-950/40" : "hover:bg-slate-50 dark:hover:bg-slate-700/60"}`}
                       >
                         <button
                           type="button"
@@ -627,8 +629,10 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
                           onClick={() => selectModel(modelId)}
                           class="flex min-w-0 flex-1 items-center gap-2 py-2 pl-1 pr-3 text-left text-xs text-slate-900 dark:text-slate-100"
                         >
-                          <span class="truncate">{model.name}</span>
-                          <span class="ml-auto shrink-0 text-slate-500 dark:text-slate-400">
+                          <span class="min-w-0 flex-1 truncate">
+                            {model.name}
+                          </span>
+                          <span class="max-w-[40%] truncate text-slate-500 dark:text-slate-400">
                             {model.providerName}
                           </span>
                         </button>
@@ -755,7 +759,13 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
                   }}
                 />
                 {m.role === "assistant" && (
-                  <div class="flex justify-end mt-1">
+                  <div class="flex items-center mt-1 text-xs text-slate-400">
+                    <span class="min-w-0 flex-1 truncate">{m.modelName}</span>
+                    {m.durationMs !== undefined && (
+                      <span class="ml-2 shrink-0">
+                        {(m.durationMs / 1000).toFixed(1)}s
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={() =>
@@ -763,7 +773,7 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
                       }
                       aria-label="Copy response"
                       title="Copy response"
-                      class="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-all"
+                      class="ml-1 p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-all"
                     >
                       <Copy class="w-4 h-4" />
                     </button>

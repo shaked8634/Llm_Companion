@@ -1,4 +1,5 @@
 import {
+  DEFAULT_RESPONSE_TIMEOUT_SECONDS,
   getProviderSettingsWithDefaults,
   getTabSession,
   settingsStorage,
@@ -112,7 +113,7 @@ export async function handleExecutePrompt(
 
   const messages: ChatMessage[] = [
     { role: "system", content: systemContent },
-    ...currentSession.messages,
+    ...currentSession.messages.map(({ role, content }) => ({ role, content })),
     { role: "user", content: userPrompt },
   ];
 
@@ -196,6 +197,7 @@ export async function handleExecutePrompt(
         `PDF input is not supported by ${provider.name}/${modelId}.`,
       );
     }
+    const responseStartedAt = Date.now();
     const generator = provider.stream(modelId, messages, { pdfAttachment });
 
     // Initial assistant message placeholder
@@ -234,7 +236,11 @@ export async function handleExecutePrompt(
     };
 
     try {
-      const CHUNK_TIMEOUT_MS = 30000; // 30 seconds without chunks = timeout
+      const chunkTimeoutMs =
+        Math.max(
+          1,
+          settings.responseTimeoutSeconds ?? DEFAULT_RESPONSE_TIMEOUT_SECONDS,
+        ) * 1000;
       const it = generator[Symbol.asyncIterator]();
 
       while (true) {
@@ -244,7 +250,7 @@ export async function handleExecutePrompt(
         const timeoutPromise = new Promise<never>((_, reject) => {
           const timeoutId = setTimeout(() => {
             reject(new Error("Request timeout - no response from provider"));
-          }, CHUNK_TIMEOUT_MS);
+          }, chunkTimeoutMs);
 
           // Clear the timeout if the next chunk arrives
           nextPromise.finally(() => clearTimeout(timeoutId));
@@ -293,10 +299,20 @@ export async function handleExecutePrompt(
     );
 
     const finalSession = await session.getValue();
+    const finalMessages = [...finalSession.messages];
+    const finalAssistantMessage = finalMessages[assistantMessageIndex];
+    if (finalAssistantMessage) {
+      finalMessages[assistantMessageIndex] = {
+        ...finalAssistantMessage,
+        modelName: activeModel?.name ?? modelId,
+        durationMs: Date.now() - responseStartedAt,
+      };
+    }
 
     console.debug("[Chat Handler] Setting loading to false");
     await session.setValue({
       ...finalSession,
+      messages: finalMessages,
       isLoading: false,
       lastRequestFingerprint: requestFingerprint,
     });

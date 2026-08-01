@@ -54,6 +54,7 @@ export interface AppSettings {
   prompts: Prompt[];
   searchEngines: SearchEngine[];
   selectedSearchEngineId: string;
+  responseTimeoutSeconds: number;
   lastSelectedPromptId?: string; // Last selected prompt ID for persistence
 }
 
@@ -80,6 +81,8 @@ export const DEFAULT_SEARCH_ENGINES: SearchEngine[] = [
     isDefault: true,
   },
 ];
+
+export const DEFAULT_RESPONSE_TIMEOUT_SECONDS = 120;
 
 export const DEFAULT_PROMPTS: Prompt[] = [
   {
@@ -189,6 +192,7 @@ export const defaultSettings: AppSettings = {
   prompts: getPromptsWithDefaults(),
   searchEngines: getSearchEnginesWithDefaults(),
   selectedSearchEngineId: "duckduckgo",
+  responseTimeoutSeconds: DEFAULT_RESPONSE_TIMEOUT_SECONDS,
 };
 
 export const settingsStorage: WxtStorageItem<

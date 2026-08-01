@@ -3,6 +3,7 @@ import { getExtensionVersion, REPOSITORY_LINKS } from "@/lib/constants";
 import {
   AppSettings,
   DEFAULT_PROVIDER_SETTINGS,
+  DEFAULT_RESPONSE_TIMEOUT_SECONDS,
   getPromptsWithDefaults,
   getProviderSettingsWithDefaults,
   getSearchEnginesWithDefaults,
@@ -20,12 +21,13 @@ import {
   Info,
   Plus,
   Search,
+  SlidersHorizontal,
   Trash2,
   XCircle,
 } from "lucide-preact";
 import "@/assets/main.css";
 
-type TabId = "models" | "search-engines" | "prompts" | "about";
+type TabId = "models" | "search-engines" | "prompts" | "advanced" | "about";
 
 export default function Options() {
   const [settings, setSettings] = useStorage(settingsStorage);
@@ -277,6 +279,7 @@ export default function Options() {
     { id: "models", label: "Providers", icon: Bot },
     { id: "search-engines", label: "Search Engines", icon: Search },
     { id: "prompts", label: "Prompts", icon: FileText },
+    { id: "advanced", label: "Advanced", icon: SlidersHorizontal },
     { id: "about", label: "About", icon: Info },
   ] as const;
 
@@ -789,6 +792,47 @@ export default function Options() {
                   <Plus class="w-4 h-4" />
                   <span>Add Search Engine</span>
                 </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "advanced" && (
+            <div class="max-w-xl space-y-6">
+              <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-2 shadow-sm">
+                <label
+                  for="response-timeout-seconds"
+                  class="block text-sm font-bold text-slate-700 dark:text-slate-200"
+                >
+                  Response timeout (seconds)
+                </label>
+                <input
+                  id="response-timeout-seconds"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={
+                    settings.responseTimeoutSeconds ??
+                    DEFAULT_RESPONSE_TIMEOUT_SECONDS
+                  }
+                  onInput={(event) => {
+                    const responseTimeoutSeconds = Number(
+                      (event.target as HTMLInputElement).value,
+                    );
+                    if (
+                      Number.isFinite(responseTimeoutSeconds) &&
+                      responseTimeoutSeconds >= 1
+                    ) {
+                      setSettings({
+                        ...settings,
+                        responseTimeoutSeconds,
+                      });
+                    }
+                  }}
+                  class="w-32 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm shadow-sm focus:ring-2 focus:ring-indigo-500/20"
+                />
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                  Maximum time to wait for the next streamed response chunk.
+                </p>
               </div>
             </div>
           )}

@@ -13,7 +13,12 @@ import { defaultSettings } from "@/lib/store";
 describe("ChatInterface prompt behavior", () => {
   const sendMessage = vi.fn();
   const sendTabMessage = vi.fn();
-  let messages: Array<{ role: "user" | "assistant"; content: string }> = [];
+  let messages: Array<{
+    role: "user" | "assistant";
+    content: string;
+    modelName?: string;
+    durationMs?: number;
+  }> = [];
   let scrollIntoView: typeof Element.prototype.scrollIntoView;
   let clipboard: PropertyDescriptor | undefined;
 
@@ -166,13 +171,19 @@ describe("ChatInterface prompt behavior", () => {
     });
     messages = [
       { role: "user", content: "What changed?" },
-      { role: "assistant", content: "**Original Markdown**" },
+      {
+        role: "assistant",
+        content: "**Original Markdown**",
+        modelName: "Model 1",
+        durationMs: 12300,
+      },
     ];
 
     render(<ChatInterface mode="popup" />);
 
     const copyButtons = screen.getAllByTitle("Copy response");
     expect(copyButtons).toHaveLength(1);
+    expect(copyButtons[0].parentElement?.textContent).toContain("Model 112.3s");
     fireEvent.click(copyButtons[0]);
 
     await waitFor(() => {

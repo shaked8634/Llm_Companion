@@ -23,6 +23,7 @@ describe("Store", () => {
     ]);
     expect(defaultSettings.selectedSearchEngineId).toBe("duckduckgo");
     expect(defaultSettings.providers.ollama.enabled).toBe(false);
+    expect(defaultSettings.responseTimeoutSeconds).toBe(120);
   });
 
   it("getTabSessionKey should return correct key", () => {

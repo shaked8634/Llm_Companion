@@ -16,6 +16,19 @@ const REFRESH_DEBOUNCE_MS = 300;
 const CONTEXT_PARENT_ID = "llm-companion-selected-text-parent";
 const CONTEXT_ITEM_PREFIX = "llm-companion-selected-text-";
 const MAX_SELECTION_LENGTH = 4000;
+const SIDE_PANEL_PATH = "sidepanel.html";
+
+async function enableSidePanelForTab(tabId: number) {
+  try {
+    await chrome.sidePanel.setOptions({
+      tabId,
+      path: SIDE_PANEL_PATH,
+      enabled: true,
+    });
+  } catch (error) {
+    console.warn("[Background] Failed to enable sidepanel for tab:", error);
+  }
+}
 
 function truncateSelection(text: string): string {
   const trimmed = text.trim();
@@ -154,6 +167,25 @@ async function handleContextMenuClick(
 
 export default defineBackground(() => {
   console.debug("[Background] Service worker initialized");
+
+  chrome.tabs
+    .query({})
+    .then((tabs) =>
+      Promise.all(
+        tabs.flatMap((tab) =>
+          tab.id === undefined ? [] : [enableSidePanelForTab(tab.id)],
+        ),
+      ),
+    )
+    .catch((error) =>
+      console.warn(
+        "[Background] Failed to list tabs for sidepanel setup:",
+        error,
+      ),
+    );
+  chrome.tabs.onCreated.addListener((tab) => {
+    if (tab.id !== undefined) void enableSidePanelForTab(tab.id);
+  });
 
   // Build context menus on startup
   buildContextMenus();

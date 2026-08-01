@@ -39,6 +39,35 @@ const session = {
   isLoading: false,
 };
 
+const manyModelsSettings = {
+  ...settings,
+  providers: {
+    ...settings.providers,
+    openai: { enabled: true, apiKey: "test" },
+  },
+  discoveredModels: Array.from({ length: 20 }, (_, index) => ({
+    id: `model-${index + 1}`,
+    name: `Model ${index + 1}`,
+    providerId: index % 2 === 0 ? "ollama" : "openai",
+    providerName: index % 2 === 0 ? "Ollama" : "OpenAI",
+  })),
+  selectedModelId: "ollama:model-1",
+};
+
+const longModelNamesSettings = {
+  ...manyModelsSettings,
+  discoveredModels: manyModelsSettings.discoveredModels.map((model, index) =>
+    index === 0
+      ? {
+          ...model,
+          name: "A deliberately very long model name that must never widen the picker",
+          providerName:
+            "A deliberately very long provider name that must be truncated",
+        }
+      : model,
+  ),
+};
+
 async function findFile(
   rootDir: string,
   targetName: string,
@@ -64,7 +93,13 @@ async function resolveBuildRoot(): Promise<{
   rootDir: string;
   popupHtml: string;
 }> {
-  const candidates = ["dist", ".output", "build"];
+  const candidates = [
+    "dist",
+    ".output/chrome-mv3",
+    ".output/chromium-mv3",
+    ".output",
+    "build",
+  ];
 
   for (const candidate of candidates) {
     const rootDir = path.resolve(process.cwd(), candidate);
@@ -150,11 +185,17 @@ async function startStaticServer(rootDir: string): Promise<{
   };
 }
 
-async function mockChrome(page: Page): Promise<void> {
+async function mockChrome(
+  page: Page,
+  initialSettings = settings,
+  initialSession = session,
+): Promise<void> {
   await page.addInitScript(
     ({ initialSettings, initialSession }) => {
       const store: Record<string, unknown> = {
+        settings: initialSettings,
         "local:settings": initialSettings,
+        "session:1": initialSession,
         "local:session:1": initialSession,
       };
 
@@ -170,19 +211,27 @@ async function mockChrome(page: Page): Promise<void> {
         return Object.keys(store);
       };
 
+      const getStoredValue = (key: string) =>
+        store[key] ??
+        (key.includes("settings")
+          ? initialSettings
+          : key.includes("session")
+            ? initialSession
+            : undefined);
+
       const resolveGetResult = (keys: unknown) => {
         if (keys && typeof keys === "object" && !Array.isArray(keys)) {
           const result: Record<string, unknown> = {};
           for (const [key, defaultValue] of Object.entries(
             keys as Record<string, unknown>,
           )) {
-            result[key] = key in store ? store[key] : defaultValue;
+            result[key] = getStoredValue(key) ?? defaultValue;
           }
           return result;
         }
 
         return resolveKeys(keys).reduce<Record<string, unknown>>((acc, key) => {
-          acc[key] = store[key];
+          acc[key] = getStoredValue(key);
           return acc;
         }, {});
       };
@@ -229,6 +278,24 @@ async function mockChrome(page: Page): Promise<void> {
           }
           callback?.();
           return Promise.resolve();
+        },
+        onChanged: {
+          addListener: (
+            listener: (
+              changes: Record<string, unknown>,
+              areaName: string,
+            ) => void,
+          ) => {
+            storageListeners.add(listener);
+          },
+          removeListener: (
+            listener: (
+              changes: Record<string, unknown>,
+              areaName: string,
+            ) => void,
+          ) => {
+            storageListeners.delete(listener);
+          },
         },
       };
 
@@ -283,24 +350,6 @@ async function mockChrome(page: Page): Promise<void> {
         },
         storage: {
           local: storageArea,
-          onChanged: {
-            addListener: (
-              listener: (
-                changes: Record<string, unknown>,
-                areaName: string,
-              ) => void,
-            ) => {
-              storageListeners.add(listener);
-            },
-            removeListener: (
-              listener: (
-                changes: Record<string, unknown>,
-                areaName: string,
-              ) => void,
-            ) => {
-              storageListeners.delete(listener);
-            },
-          },
         },
       };
 
@@ -315,8 +364,8 @@ async function mockChrome(page: Page): Promise<void> {
       });
     },
     {
-      initialSettings: settings,
-      initialSession: session,
+      initialSettings,
+      initialSession,
     },
   );
 }
@@ -347,7 +396,7 @@ test.describe("popup zoom-aware text", () => {
       ).toBe("");
 
       const messageBubble = page
-        .locator(".whitespace-pre-wrap")
+        .locator(".markdown-content")
         .locator("xpath=..");
       expect(
         await messageBubble.evaluate(
@@ -355,7 +404,7 @@ test.describe("popup zoom-aware text", () => {
         ),
       ).toBe("1.21875rem");
 
-      const promptSelect = page.locator("select").nth(1);
+      const promptSelect = page.locator("select");
       await promptSelect.selectOption("default-grammar-check");
 
       const promptTextArea = page.getByPlaceholder("Enter your text here...");
@@ -389,6 +438,92 @@ test.describe("popup zoom-aware text", () => {
           (el) => (el as HTMLTextAreaElement).style.lineHeight,
         ),
       ).toBe("1.2rem");
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+
+  test("keeps every model reachable in the popup picker", async ({ page }) => {
+    execFileSync("pnpm", ["build"], { stdio: "inherit" });
+
+    const { rootDir, popupHtml } = await resolveBuildRoot();
+    const { server, baseUrl } = await startStaticServer(rootDir);
+    const relativePopupPath = path
+      .relative(rootDir, popupHtml)
+      .split(path.sep)
+      .join("/");
+
+    try {
+      await mockChrome(page, manyModelsSettings, {
+        messages: [],
+        isLoading: false,
+      });
+      await page.goto(`${baseUrl}/${relativePopupPath}`);
+      await expect(page.getByText("LLM Companion")).toBeVisible();
+      await page.getByRole("button", { name: "Choose model" }).click();
+
+      const finalModel = page.getByRole("button", {
+        name: "Select Model 20 (OpenAI)",
+      });
+      await finalModel.scrollIntoViewIfNeeded();
+      await expect(finalModel).toBeInViewport();
+      await expect(finalModel).toBeVisible();
+      expect(
+        await finalModel.evaluate((element) => {
+          const box = element.getBoundingClientRect();
+          const hit = document.elementFromPoint(
+            box.left + box.width / 2,
+            box.top + box.height / 2,
+          );
+          return hit === element || element.contains(hit);
+        }),
+      ).toBe(true);
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+
+  test("truncates long model and provider names within the popup picker", async ({
+    page,
+  }) => {
+    execFileSync("pnpm", ["build"], { stdio: "inherit" });
+
+    const { rootDir, popupHtml } = await resolveBuildRoot();
+    const { server, baseUrl } = await startStaticServer(rootDir);
+    const relativePopupPath = path
+      .relative(rootDir, popupHtml)
+      .split(path.sep)
+      .join("/");
+
+    try {
+      await mockChrome(page, longModelNamesSettings, {
+        messages: [],
+        isLoading: false,
+      });
+      await page.goto(`${baseUrl}/${relativePopupPath}`);
+      const trigger = page.getByRole("button", { name: "Choose model" });
+      await trigger.click();
+      const modelPicker = page.locator("#model-picker");
+      const longModel = page.getByRole("button", {
+        name: /Select A deliberately very long model name/,
+      });
+
+      await expect(modelPicker).toBeVisible();
+      expect(
+        await modelPicker.evaluate(
+          (element) => element.scrollWidth <= element.clientWidth,
+        ),
+      ).toBe(true);
+      expect(
+        await trigger.evaluate(
+          (element) => element.scrollWidth <= element.clientWidth,
+        ),
+      ).toBe(true);
+      expect(
+        await longModel.evaluate(
+          (element) => element.scrollWidth <= element.clientWidth,
+        ),
+      ).toBe(true);
     } finally {
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }
