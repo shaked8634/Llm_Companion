@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { getExtensionVersion, REPOSITORY_LINKS } from "@/lib/constants";
 import {
   AppSettings,
+  DEFAULT_POPUP_WIDTH,
   DEFAULT_PROVIDER_SETTINGS,
   DEFAULT_RESPONSE_TIMEOUT_SECONDS,
   getPromptsWithDefaults,
@@ -798,41 +799,97 @@ export default function Options() {
 
           {activeTab === "advanced" && (
             <div class="max-w-xl space-y-6">
-              <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-2 shadow-sm">
-                <label
-                  for="response-timeout-seconds"
-                  class="block text-sm font-bold text-slate-700 dark:text-slate-200"
-                >
-                  Response timeout (seconds)
-                </label>
-                <input
-                  id="response-timeout-seconds"
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={
-                    settings.responseTimeoutSeconds ??
-                    DEFAULT_RESPONSE_TIMEOUT_SECONDS
-                  }
-                  onInput={(event) => {
-                    const responseTimeoutSeconds = Number(
-                      (event.target as HTMLInputElement).value,
-                    );
-                    if (
-                      Number.isFinite(responseTimeoutSeconds) &&
-                      responseTimeoutSeconds >= 1
-                    ) {
-                      setSettings({
-                        ...settings,
-                        responseTimeoutSeconds,
-                      });
+              <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-5 shadow-sm">
+                <div class="flex items-center justify-between gap-4">
+                  <label
+                    for="response-timeout-seconds"
+                    class="text-sm font-bold text-slate-700 dark:text-slate-200"
+                  >
+                    Response timeout (seconds)
+                  </label>
+                  <input
+                    id="response-timeout-seconds"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={
+                      settings.responseTimeoutSeconds ??
+                      DEFAULT_RESPONSE_TIMEOUT_SECONDS
                     }
-                  }}
-                  class="w-32 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm shadow-sm focus:ring-2 focus:ring-indigo-500/20"
-                />
+                    onInput={(event) => {
+                      const responseTimeoutSeconds = Number(
+                        (event.target as HTMLInputElement).value,
+                      );
+                      if (
+                        Number.isFinite(responseTimeoutSeconds) &&
+                        responseTimeoutSeconds >= 1
+                      ) {
+                        setSettings({
+                          ...settings,
+                          responseTimeoutSeconds,
+                        });
+                      }
+                    }}
+                    class="w-32 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm shadow-sm focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
                 <p class="text-xs text-slate-500 dark:text-slate-400">
                   Maximum time to wait for the next streamed response chunk.
                 </p>
+                <div class="flex items-center justify-between gap-4">
+                  <label
+                    for="popup-width"
+                    class="text-sm font-bold text-slate-700 dark:text-slate-200"
+                  >
+                    Popup width (px)
+                  </label>
+                  <input
+                    id="popup-width"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={settings.popupWidth ?? DEFAULT_POPUP_WIDTH}
+                    onInput={(event) => {
+                      const popupWidth = Number(
+                        (event.target as HTMLInputElement).value,
+                      );
+                      if (Number.isFinite(popupWidth) && popupWidth >= 1) {
+                        setSettings({ ...settings, popupWidth });
+                      }
+                    }}
+                    class="w-32 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm shadow-sm focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                  <label
+                    for="popup-height"
+                    class="text-sm font-bold text-slate-700 dark:text-slate-200"
+                  >
+                    Popup height (px)
+                  </label>
+                  <input
+                    id="popup-height"
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="Auto"
+                    value={settings.popupHeight ?? ""}
+                    onInput={(event) => {
+                      const value = (event.target as HTMLInputElement).value;
+                      const popupHeight = Number(value);
+                      if (
+                        value === "" ||
+                        (Number.isFinite(popupHeight) && popupHeight >= 1)
+                      ) {
+                        setSettings({
+                          ...settings,
+                          popupHeight: value === "" ? undefined : popupHeight,
+                        });
+                      }
+                    }}
+                    class="w-32 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm shadow-sm focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
               </div>
             </div>
           )}

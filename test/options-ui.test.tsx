@@ -131,4 +131,30 @@ describe("Options UI", () => {
       expect.objectContaining({ responseTimeoutSeconds: 90 }),
     );
   });
+
+  it("saves popup dimensions from the Advanced tab", () => {
+    render(<Options />);
+
+    fireEvent.click(screen.getByRole("button", { name: /advanced/i }));
+    const width = screen.getByLabelText(/popup width/i);
+    const height = screen.getByLabelText(/popup height/i);
+
+    expect(width).toHaveProperty("value", "640");
+    expect(height).toHaveProperty("value", "");
+
+    fireEvent.input(width, { target: { value: "700" } });
+    expect(setSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({ popupWidth: 700 }),
+    );
+
+    fireEvent.input(height, { target: { value: "500" } });
+    expect(setSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({ popupHeight: 500 }),
+    );
+
+    fireEvent.input(height, { target: { value: "" } });
+    expect(setSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({ popupHeight: undefined }),
+    );
+  });
 });

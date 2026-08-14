@@ -24,6 +24,8 @@ describe("Store", () => {
     expect(defaultSettings.selectedSearchEngineId).toBe("duckduckgo");
     expect(defaultSettings.providers.ollama.enabled).toBe(false);
     expect(defaultSettings.responseTimeoutSeconds).toBe(120);
+    expect(defaultSettings.popupWidth).toBe(640);
+    expect(defaultSettings.popupHeight).toBeUndefined();
   });
 
   it("getTabSessionKey should return correct key", () => {
