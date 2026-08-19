@@ -55,6 +55,7 @@ export interface AppSettings {
   searchEngines: SearchEngine[];
   selectedSearchEngineId: string;
   responseTimeoutSeconds: number;
+  conversationTextScale?: number;
   popupWidth?: number;
   popupHeight?: number;
   lastSelectedPromptId?: string; // Last selected prompt ID for persistence
@@ -86,6 +87,7 @@ export const DEFAULT_SEARCH_ENGINES: SearchEngine[] = [
 
 export const DEFAULT_RESPONSE_TIMEOUT_SECONDS = 120;
 export const DEFAULT_POPUP_WIDTH = 640;
+export const DEFAULT_CONVERSATION_TEXT_SCALE = 1;
 
 export const DEFAULT_PROMPTS: Prompt[] = [
   {
@@ -196,6 +198,7 @@ export const defaultSettings: AppSettings = {
   searchEngines: getSearchEnginesWithDefaults(),
   selectedSearchEngineId: "duckduckgo",
   responseTimeoutSeconds: DEFAULT_RESPONSE_TIMEOUT_SECONDS,
+  conversationTextScale: DEFAULT_CONVERSATION_TEXT_SCALE,
   popupWidth: DEFAULT_POPUP_WIDTH,
 };
 

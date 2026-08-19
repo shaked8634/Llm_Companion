@@ -10,6 +10,7 @@ import {
   getTabSession,
   getProviderSettingsWithDefaults,
   type AppSettings,
+  DEFAULT_CONVERSATION_TEXT_SCALE,
   DEFAULT_POPUP_WIDTH,
   PromptType,
   settingsStorage,
@@ -39,6 +40,10 @@ interface PageContent {
 interface ChatInterfaceProps {
   mode?: "popup" | "sidepanel";
 }
+
+const CONVERSATION_TEXT_SCALE_STEP = 0.1;
+const MIN_CONVERSATION_TEXT_SCALE = 0.1;
+const MAX_CONVERSATION_TEXT_SCALE = 1.5;
 
 export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
   const [currentTabId, setCurrentTabId] = useState<number | null>(null);
@@ -125,8 +130,14 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
     [zoomLevel],
   );
   const transcriptTextStyle = useMemo(
-    () => ({ fontSize: toRem(zoomLevel * 0.8125) }),
-    [zoomLevel],
+    () => ({
+      fontSize: toRem(
+        zoomLevel *
+          0.8125 *
+          (settings?.conversationTextScale ?? DEFAULT_CONVERSATION_TEXT_SCALE),
+      ),
+    }),
+    [settings?.conversationTextScale, zoomLevel],
   );
   const allPrompts = useMemo(
     () => getPromptsWithDefaults(settings?.prompts),
@@ -187,6 +198,27 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
     } finally {
       setIsRefreshing(false);
     }
+  };
+
+  const changeConversationTextScale = (amount: number) => {
+    const current = modelSettingsRef.current;
+    if (!current) return;
+
+    const conversationTextScale = Math.min(
+      MAX_CONVERSATION_TEXT_SCALE,
+      Math.max(
+        MIN_CONVERSATION_TEXT_SCALE,
+        (current.conversationTextScale ?? DEFAULT_CONVERSATION_TEXT_SCALE) +
+          amount,
+      ),
+    );
+    if (conversationTextScale === current.conversationTextScale) return;
+
+    const next = { ...current, conversationTextScale };
+    modelSettingsRef.current = next;
+    modelSettingsWriteRef.current = modelSettingsWriteRef.current.then(() =>
+      setSettings(next),
+    );
   };
 
   const handleExecute = useCallback(
@@ -525,6 +557,36 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
           </span>
         </div>
         <div class="flex items-center gap-1">
+          <button
+            onClick={() =>
+              changeConversationTextScale(-CONVERSATION_TEXT_SCALE_STEP)
+            }
+            title="Decrease conversation text size"
+            disabled={
+              (settings.conversationTextScale ??
+                DEFAULT_CONVERSATION_TEXT_SCALE) <= MIN_CONVERSATION_TEXT_SCALE
+            }
+            class="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-all disabled:opacity-50"
+          >
+            <span aria-hidden="true" class="text-xs font-semibold leading-none">
+              A<sub>⌄</sub>
+            </span>
+          </button>
+          <button
+            onClick={() =>
+              changeConversationTextScale(CONVERSATION_TEXT_SCALE_STEP)
+            }
+            title="Increase conversation text size"
+            disabled={
+              (settings.conversationTextScale ??
+                DEFAULT_CONVERSATION_TEXT_SCALE) >= MAX_CONVERSATION_TEXT_SCALE
+            }
+            class="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-all disabled:opacity-50"
+          >
+            <span aria-hidden="true" class="text-xs font-semibold leading-none">
+              A<sup>⌃</sup>
+            </span>
+          </button>
           <button
             onClick={handleRefreshModels}
             title="Refresh models"

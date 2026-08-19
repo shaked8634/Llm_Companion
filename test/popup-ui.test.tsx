@@ -8,10 +8,14 @@ describe("Popup UI", () => {
   let zoomListener:
     | ((info: { tabId: number; newZoomFactor: number }) => void)
     | undefined;
+  let conversationTextScale: number;
+  const setSettings = vi.fn().mockResolvedValue(undefined);
 
   beforeEach(() => {
     // Mock chrome.tabs.query
     HTMLElement.prototype.scrollIntoView = vi.fn();
+    conversationTextScale = 1;
+    setSettings.mockClear();
     globalThis.chrome = {
       tabs: {
         query: vi.fn((query, callback) => {
@@ -58,6 +62,7 @@ describe("Popup UI", () => {
           return [
             {
               ...defaultSettings,
+              conversationTextScale,
               selectedModelId: "ollama:test-model",
               discoveredModels: [
                 {
@@ -68,7 +73,7 @@ describe("Popup UI", () => {
                 },
               ],
             },
-            vi.fn(),
+            setSettings,
           ] as const;
         } else {
           // Return mock session
@@ -141,6 +146,41 @@ describe("Popup UI", () => {
       expect(promptTextArea.style.fontSize).toBe("0.9rem");
       expect(promptTextArea.style.lineHeight).toBe("1.2rem");
     });
+  });
+
+  it("persists conversation text size and combines it with tab zoom", async () => {
+    conversationTextScale = 1.1;
+    const { container } = render(<App />);
+
+    const messageBubble = container.querySelector(".markdown-content")
+      ?.parentElement as HTMLElement;
+    expect(messageBubble.style.fontSize).toBe("1.34063rem");
+
+    fireEvent.click(
+      container.querySelector(
+        '[title="Decrease conversation text size"]',
+      ) as HTMLButtonElement,
+    );
+    await waitFor(() => {
+      expect(setSettings).toHaveBeenCalledWith(
+        expect.objectContaining({ conversationTextScale: 1 }),
+      );
+    });
+  });
+
+  it("uses caret controls and allows text down to 10%", () => {
+    conversationTextScale = 0.1;
+    const { container } = render(<App />);
+    const increaseButton = container.querySelector(
+      '[title="Increase conversation text size"]',
+    ) as HTMLButtonElement;
+    const decreaseButton = container.querySelector(
+      '[title="Decrease conversation text size"]',
+    ) as HTMLButtonElement;
+
+    expect(increaseButton.textContent).toBe("A⌃");
+    expect(decreaseButton.textContent).toBe("A⌄");
+    expect(decreaseButton.disabled).toBe(true);
   });
 
   it("renders user and assistant messages as safe markdown", () => {
