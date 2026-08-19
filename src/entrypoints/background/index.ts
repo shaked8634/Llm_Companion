@@ -18,18 +18,6 @@ const CONTEXT_ITEM_PREFIX = "llm-companion-selected-text-";
 const MAX_SELECTION_LENGTH = 4000;
 const SIDE_PANEL_PATH = "sidepanel.html";
 
-async function enableSidePanelForTab(tabId: number) {
-  try {
-    await chrome.sidePanel.setOptions({
-      tabId,
-      path: SIDE_PANEL_PATH,
-      enabled: true,
-    });
-  } catch (error) {
-    console.warn("[Background] Failed to enable sidepanel for tab:", error);
-  }
-}
-
 function truncateSelection(text: string): string {
   const trimmed = text.trim();
   if (trimmed.length <= MAX_SELECTION_LENGTH) return trimmed;
@@ -168,24 +156,14 @@ async function handleContextMenuClick(
 export default defineBackground(() => {
   console.debug("[Background] Service worker initialized");
 
-  chrome.tabs
-    .query({})
-    .then((tabs) =>
-      Promise.all(
-        tabs.flatMap((tab) =>
-          tab.id === undefined ? [] : [enableSidePanelForTab(tab.id)],
-        ),
-      ),
-    )
+  chrome.sidePanel
+    .setOptions({ enabled: false })
     .catch((error) =>
       console.warn(
-        "[Background] Failed to list tabs for sidepanel setup:",
+        "[Background] Failed to disable the default sidepanel:",
         error,
       ),
     );
-  chrome.tabs.onCreated.addListener((tab) => {
-    if (tab.id !== undefined) void enableSidePanelForTab(tab.id);
-  });
 
   // Build context menus on startup
   buildContextMenus();
@@ -313,6 +291,11 @@ export default defineBackground(() => {
     if (command === "open-sidepanel") {
       try {
         if (tab?.id) {
+          await chrome.sidePanel.setOptions({
+            tabId: tab.id,
+            path: SIDE_PANEL_PATH,
+            enabled: true,
+          });
           await chrome.sidePanel.open({ tabId: tab.id });
           console.debug("[Background] Sidepanel opened via keyboard shortcut");
         }
