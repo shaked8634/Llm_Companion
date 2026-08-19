@@ -378,6 +378,11 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
         currentWindow: true,
       });
       if (tab?.id) {
+        await chrome.sidePanel.setOptions({
+          tabId: tab.id,
+          path: "sidepanel.html",
+          enabled: true,
+        });
         await chrome.sidePanel.open({ tabId: tab.id });
       }
     } catch (error) {

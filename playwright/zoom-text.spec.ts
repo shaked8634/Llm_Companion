@@ -303,10 +303,10 @@ async function mockChrome(
         tabs: {
           query: (
             _query: unknown,
-            callback: (tabs: Array<{ id: number }>) => void,
+            callback?: (tabs: Array<{ id: number }>) => void,
           ) => {
             const result = [{ id: 1 }];
-            callback(result);
+            callback?.(result);
             return Promise.resolve(result);
           },
           getZoom: (_tabId: number, callback: (zoom: number) => void) => {
@@ -346,7 +346,15 @@ async function mockChrome(
           getURL: (resourcePath: string) => resourcePath,
         },
         sidePanel: {
-          open: async () => undefined,
+          setOptions: async (options: unknown) => {
+            (window as any).__sidePanelCalls.push({
+              method: "setOptions",
+              options,
+            });
+          },
+          open: async (options: unknown) => {
+            (window as any).__sidePanelCalls.push({ method: "open", options });
+          },
         },
         storage: {
           local: storageArea,
@@ -362,6 +370,7 @@ async function mockChrome(
         value: chromeMock,
         configurable: true,
       });
+      (window as any).__sidePanelCalls = [];
     },
     {
       initialSettings,
@@ -478,6 +487,35 @@ test.describe("popup zoom-aware text", () => {
           return hit === element || element.contains(hit);
         }),
       ).toBe(true);
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+
+  test("opens the sidepanel for the active popup tab", async ({ page }) => {
+    execFileSync("pnpm", ["build"], { stdio: "inherit" });
+
+    const { rootDir, popupHtml } = await resolveBuildRoot();
+    const { server, baseUrl } = await startStaticServer(rootDir);
+    const relativePopupPath = path
+      .relative(rootDir, popupHtml)
+      .split(path.sep)
+      .join("/");
+
+    try {
+      await mockChrome(page);
+      await page.goto(`${baseUrl}/${relativePopupPath}`);
+      await page.getByTitle("Open in sidebar").click();
+
+      await expect
+        .poll(() => page.evaluate(() => (window as any).__sidePanelCalls))
+        .toEqual([
+          {
+            method: "setOptions",
+            options: { tabId: 1, path: "sidepanel.html", enabled: true },
+          },
+          { method: "open", options: { tabId: 1 } },
+        ]);
     } finally {
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }

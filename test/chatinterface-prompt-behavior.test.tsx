@@ -13,6 +13,8 @@ import { defaultSettings } from "@/lib/store";
 describe("ChatInterface prompt behavior", () => {
   const sendMessage = vi.fn();
   const sendTabMessage = vi.fn();
+  const setSidePanelOptions = vi.fn();
+  const openSidePanel = vi.fn();
   let messages: Array<{
     role: "user" | "assistant";
     content: string;
@@ -31,6 +33,8 @@ describe("ChatInterface prompt behavior", () => {
     });
     sendMessage.mockReset();
     sendTabMessage.mockReset();
+    setSidePanelOptions.mockReset();
+    openSidePanel.mockReset();
     messages = [];
     sendTabMessage.mockResolvedValue({
       success: true,
@@ -43,7 +47,11 @@ describe("ChatInterface prompt behavior", () => {
 
     globalThis.chrome = {
       tabs: {
-        query: vi.fn((_query, callback) => callback([{ id: 123 }])),
+        query: vi.fn((_query, callback) => {
+          const tabs = [{ id: 123 }];
+          callback?.(tabs);
+          return Promise.resolve(tabs);
+        }),
         sendMessage: sendTabMessage,
         onActivated: { addListener: vi.fn(), removeListener: vi.fn() },
         onUpdated: { addListener: vi.fn(), removeListener: vi.fn() },
@@ -58,7 +66,10 @@ describe("ChatInterface prompt behavior", () => {
           removeListener: vi.fn(),
         },
       },
-      sidePanel: { open: vi.fn() },
+      sidePanel: {
+        open: openSidePanel.mockResolvedValue(undefined),
+        setOptions: setSidePanelOptions.mockResolvedValue(undefined),
+      },
     } as never;
 
     vi.spyOn(useStorageModule, "useStorage").mockImplementation(
@@ -188,6 +199,23 @@ describe("ChatInterface prompt behavior", () => {
 
     await waitFor(() => {
       expect(writeText).toHaveBeenCalledWith("**Original Markdown**");
+    });
+  });
+
+  it("enables the sidepanel for the active tab before opening it", async () => {
+    const { container } = render(<ChatInterface mode="popup" />);
+
+    fireEvent.click(
+      container.querySelector('[title="Open in sidebar"]') as HTMLButtonElement,
+    );
+
+    await waitFor(() => {
+      expect(setSidePanelOptions).toHaveBeenCalledWith({
+        tabId: 123,
+        path: "sidepanel.html",
+        enabled: true,
+      });
+      expect(openSidePanel).toHaveBeenCalledWith({ tabId: 123 });
     });
   });
 });
