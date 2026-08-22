@@ -452,6 +452,56 @@ test.describe("popup zoom-aware text", () => {
     }
   });
 
+  test("keeps only the popup header fixed while scrolling", async ({
+    page,
+  }) => {
+    execFileSync("pnpm", ["build"], { stdio: "inherit" });
+
+    const { rootDir, popupHtml } = await resolveBuildRoot();
+    const { server, baseUrl } = await startStaticServer(rootDir);
+    const relativePopupPath = path
+      .relative(rootDir, popupHtml)
+      .split(path.sep)
+      .join("/");
+    const popupSettings = { ...settings, popupHeight: 240 };
+    const longSession = {
+      messages: Array.from({ length: 20 }, () => ({
+        role: "assistant",
+        content: "Long response ".repeat(30),
+      })),
+      isLoading: false,
+    };
+
+    try {
+      await mockChrome(page, popupSettings, longSession);
+      await page.goto(`${baseUrl}/${relativePopupPath}`);
+
+      const popup = page.locator("#app > div");
+      const header = popup.locator("header");
+      const controls = header.locator("xpath=following-sibling::*[1]");
+      const [headerBefore, controlsBefore] = await Promise.all([
+        header.boundingBox(),
+        controls.boundingBox(),
+      ]);
+
+      await popup.evaluate((element) => {
+        element.scrollTop = 100;
+      });
+
+      const [scrollTop, headerAfter, controlsAfter] = await Promise.all([
+        popup.evaluate((element) => element.scrollTop),
+        header.boundingBox(),
+        controls.boundingBox(),
+      ]);
+
+      expect(scrollTop).toBeGreaterThan(0);
+      expect(headerAfter?.y).toBeCloseTo(headerBefore?.y ?? 0, 1);
+      expect(controlsAfter?.y).toBeLessThan(controlsBefore?.y ?? 0);
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+
   test("keeps every model reachable in the popup picker", async ({ page }) => {
     execFileSync("pnpm", ["build"], { stdio: "inherit" });
 

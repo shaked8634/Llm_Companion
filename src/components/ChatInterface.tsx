@@ -523,7 +523,7 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
   const containerClass =
     mode === "sidepanel"
       ? "flex flex-col w-full h-screen overflow-hidden bg-slate-100 dark:bg-slate-950"
-      : "flex flex-col h-auto min-h-0 overflow-hidden bg-slate-100 dark:bg-slate-950";
+      : "flex flex-col h-auto min-h-0 overflow-y-auto bg-slate-100 dark:bg-slate-950";
   const popupStyle =
     mode === "popup"
       ? {
@@ -535,7 +535,9 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
   return (
     <div class={containerClass} style={popupStyle}>
       {/* Header */}
-      <header class="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0">
+      <header
+        class={`flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 ${mode === "popup" ? "sticky top-0 z-10" : ""}`}
+      >
         <div class="flex items-center gap-2">
           <span class="inline-flex items-center justify-center w-8 h-8">
             <svg
@@ -807,7 +809,13 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
 
       {/* Output Box */}
       {(session.messages.length > 0 || session.isLoading) && (
-        <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 transition-all">
+        <div
+          class={
+            mode === "popup"
+              ? "p-4 space-y-4 transition-all"
+              : "flex-1 min-h-0 overflow-y-auto p-4 space-y-4 transition-all"
+          }
+        >
           {session.messages.map((m, i) => (
             <div
               key={i}

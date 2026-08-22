@@ -114,6 +114,19 @@ describe("Popup UI", () => {
     expect(screen.getByText(/LLM Companion/i)).toBeDefined();
   });
 
+  it("keeps only the header fixed while the popup scrolls", () => {
+    const { container } = render(<App />);
+    const header = container.querySelector("header");
+
+    expect(header?.classList.contains("sticky")).toBe(true);
+    expect(header?.nextElementSibling?.classList.contains("sticky")).toBe(
+      false,
+    );
+    expect(header?.parentElement?.classList.contains("overflow-y-auto")).toBe(
+      true,
+    );
+  });
+
   it("zooms only prompt and generated text", async () => {
     const { container } = render(<App />);
 
