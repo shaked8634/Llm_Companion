@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   getSettings: vi.fn(),
   watchSettings: vi.fn(),
+  handleExecutePrompt: vi.fn(),
 }));
 
 vi.mock("../src/lib/store", async (importOriginal) => ({
@@ -18,7 +19,7 @@ vi.mock("../src/lib/utils/discovery", () => ({
 }));
 
 vi.mock("../src/entrypoints/background/chat-handler", () => ({
-  handleExecutePrompt: vi.fn().mockResolvedValue(undefined),
+  handleExecutePrompt: mocks.handleExecutePrompt,
 }));
 
 import background from "../src/entrypoints/background/index";
@@ -30,6 +31,8 @@ describe("Background", () => {
 
   beforeEach(() => {
     mocks.getSettings.mockResolvedValue({ prompts: [], providers: {} });
+    mocks.handleExecutePrompt.mockReset();
+    mocks.handleExecutePrompt.mockResolvedValue(undefined);
     openSidePanel = vi.fn().mockResolvedValue(undefined);
     setSidePanelOptions = vi.fn().mockResolvedValue(undefined);
 
@@ -54,6 +57,7 @@ describe("Background", () => {
       sidePanel: { open: openSidePanel, setOptions: setSidePanelOptions },
       tabs: {
         query: vi.fn(),
+        sendMessage: vi.fn(),
       },
     } as unknown as typeof chrome;
 
@@ -73,5 +77,38 @@ describe("Background", () => {
       enabled: true,
     });
     expect(openSidePanel).toHaveBeenCalledWith({ tabId: 42 });
+  });
+
+  it("opens the sidepanel before executing its configured prompt", async () => {
+    const tab = { id: 42 } as chrome.tabs.Tab;
+    const settings = {
+      selectedModelId: "ollama:model",
+      prompts: [{ id: "summarize", name: "Summarize", text: "Summarize" }],
+      providers: {},
+    };
+    mocks.getSettings.mockResolvedValue(settings);
+    const tabs = chrome.tabs as unknown as {
+      query: ReturnType<typeof vi.fn>;
+      sendMessage: ReturnType<typeof vi.fn>;
+    };
+    tabs.query.mockResolvedValue([tab]);
+    tabs.sendMessage.mockResolvedValue({ success: true });
+
+    await commandListener("execute-prompt-sidepanel", tab);
+
+    expect(setSidePanelOptions).toHaveBeenCalledWith({
+      tabId: 42,
+      path: "sidepanel.html",
+      enabled: true,
+    });
+    expect(openSidePanel).toHaveBeenCalledWith({ tabId: 42 });
+    expect(mocks.handleExecutePrompt).toHaveBeenCalledWith(
+      42,
+      expect.any(String),
+      "",
+    );
+    expect(openSidePanel.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.handleExecutePrompt.mock.invocationCallOrder[0],
+    );
   });
 });

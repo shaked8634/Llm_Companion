@@ -762,13 +762,7 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
               !settings.selectedModelId ||
               (!session.isLoading && !selectedPrompt)
             }
-            title={
-              session.isLoading
-                ? "Stop"
-                : mode === "sidepanel"
-                  ? "Execute prompt (Ctrl+Shift+S)"
-                  : "Execute prompt"
-            }
+            title={session.isLoading ? "Stop" : "Execute prompt"}
             class={
               session.isLoading
                 ? "p-2 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg transition-all shrink-0"

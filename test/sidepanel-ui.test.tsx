@@ -61,10 +61,8 @@ describe("Sidepanel UI", () => {
     expect(container).toBeTruthy();
   });
 
-  it("shows the execute shortcut hint", () => {
+  it("shows the execute button without a fixed shortcut hint", () => {
     const { container } = render(<App />);
-    expect(
-      container.querySelector('[title="Execute prompt (Ctrl+Shift+S)"]'),
-    ).toBeTruthy();
+    expect(container.querySelector('[title="Execute prompt"]')).toBeTruthy();
   });
 });

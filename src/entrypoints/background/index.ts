@@ -205,19 +205,22 @@ export default defineBackground(() => {
     }
   });
 
-  // Handle keyboard shortcut command - opens popup and executes prompt
+  // Handle keyboard shortcut commands
   chrome.commands.onCommand.addListener(async (command, tab) => {
     console.debug("[Background] Command received:", command);
 
-    if (command === "execute-prompt") {
+    if (
+      command === "execute-prompt" ||
+      command === "execute-prompt-sidepanel"
+    ) {
       try {
-        // Open the popup first (must be done synchronously in response to user action)
-        try {
-          await chrome.action.openPopup();
-          console.debug("[Background] Popup opened via keyboard shortcut");
-        } catch (popupError) {
-          console.warn("[Background] Could not open popup:", popupError);
-          // Continue with execution even if popup fails to open
+        if (command === "execute-prompt") {
+          try {
+            await chrome.action.openPopup();
+            console.debug("[Background] Popup opened via keyboard shortcut");
+          } catch (popupError) {
+            console.warn("[Background] Could not open popup:", popupError);
+          }
         }
 
         // Get the active tab
@@ -228,6 +231,16 @@ export default defineBackground(() => {
         if (!tab?.id) {
           console.warn("[Background] No active tab found");
           return;
+        }
+
+        if (command === "execute-prompt-sidepanel") {
+          await chrome.sidePanel.setOptions({
+            tabId: tab.id,
+            path: SIDE_PANEL_PATH,
+            enabled: true,
+          });
+          await chrome.sidePanel.open({ tabId: tab.id });
+          console.debug("[Background] Sidepanel opened via keyboard shortcut");
         }
 
         console.debug("[Background] Executing prompt for tab:", tab.id);

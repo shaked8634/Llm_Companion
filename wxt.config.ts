@@ -50,7 +50,10 @@ export default defineConfig({
           default: "Ctrl+Shift+S",
           mac: "Command+Shift+S",
         },
-        description: "Execute the current selected prompt",
+        description: "Execute the current selected prompt in popup",
+      },
+      "execute-prompt-sidepanel": {
+        description: "Execute the current selected prompt in side bar",
       },
       "open-sidepanel": {
         description: "Open LLM Companion sidebar",
