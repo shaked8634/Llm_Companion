@@ -1,5 +1,27 @@
 import { describe, expect, it } from "vitest";
 import config from "../wxt.config";
+import packageJson from "../package.json";
+
+describe("extension build configuration", () => {
+  it("uses the package version for the manifest", () => {
+    expect((config.manifest as { version_name: string }).version_name).toBe(
+      packageJson.version,
+    );
+  });
+
+  it("does not emit HTML modulepreload links", () => {
+    expect(
+      config.vite?.({
+        command: "build",
+        mode: "production",
+        browser: "chrome",
+        manifestVersion: 3,
+      }),
+    ).toMatchObject({
+      build: { modulePreload: false },
+    });
+  });
+});
 
 describe("extension commands", () => {
   it("binds popup execution and leaves sidepanel commands configurable", () => {

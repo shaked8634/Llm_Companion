@@ -1,13 +1,18 @@
 import { defineConfig } from "wxt";
 import preact from "@preact/preset-vite";
+import packageJson from "./package.json";
 
-const releaseVersion = globalThis.process?.env?.WXT_RELEASE_VERSION ?? "0.0.0";
+const releaseVersion =
+  globalThis.process?.env?.WXT_RELEASE_VERSION ?? packageJson.version;
 
 export default defineConfig({
   srcDir: "src",
   publicDir: "src/public",
   vite: () => ({
     plugins: [preact()],
+    build: {
+      modulePreload: false,
+    },
   }),
 
   manifestVersion: 3,

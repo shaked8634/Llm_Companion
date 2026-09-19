@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/store", () => ({
-  getProviderSettingsWithDefaults: vi.fn(() => ({ ollama: {} })),
+  getProviderSettingsWithDefaults: vi.fn(() => ({ gemini: {} })),
   getTabSession: mocks.getSession,
   settingsStorage: { getValue: mocks.getSettings },
 }));
@@ -38,7 +38,7 @@ describe("handleExecutePrompt", () => {
     const lastRequestFingerprint = await createRequestFingerprint({
       userPrompt,
       pageContext,
-      selectedModelId: "ollama:model",
+      selectedModelId: "gemini:model",
       systemPrompt: "You are helpful.",
     });
     const session = {
@@ -55,7 +55,7 @@ describe("handleExecutePrompt", () => {
 
     mocks.getSession.mockReturnValue(session);
     mocks.getSettings.mockResolvedValue({
-      selectedModelId: "ollama:model",
+      selectedModelId: "gemini:model",
       systemPrompt: "You are helpful.",
     });
 
@@ -90,9 +90,17 @@ describe("handleExecutePrompt", () => {
 
     mocks.getSession.mockReturnValue(session);
     mocks.getSettings.mockResolvedValue({
-      selectedModelId: "ollama:model",
+      selectedModelId: "provider-local:model",
       systemPrompt: "You are helpful.",
       responseTimeoutSeconds: 120,
+      customProviders: {
+        "provider-local": {
+          name: "Local Gateway",
+          enabled: true,
+          url: "http://localhost:12434/v1",
+          apiKey: "",
+        },
+      },
     });
     mocks.createProvider.mockReturnValue({
       getModels: vi.fn().mockResolvedValue([{ id: "model", name: "Model 1" }]),
@@ -101,6 +109,10 @@ describe("handleExecutePrompt", () => {
 
     await handleExecutePrompt(1, "Summarize this page", "page context");
 
+    expect(mocks.createProvider).toHaveBeenCalledWith(
+      "custom",
+      expect.objectContaining({ name: "Local Gateway" }),
+    );
     expect(stream).toHaveBeenCalledWith(
       "model",
       expect.arrayContaining([

@@ -19,6 +19,11 @@ import {
 import { useStorage } from "@/hooks/useStorage";
 import { renderMarkdown } from "@/lib/utils/markdown";
 import {
+  getModelSearchQuery,
+  MODEL_SEARCH_SESSION_KEY,
+  setModelSearchQuery,
+} from "@/lib/model-search";
+import {
   ChevronDown,
   Copy,
   Cpu,
@@ -74,6 +79,37 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
     document.addEventListener("mousedown", closeModelPicker);
     return () => document.removeEventListener("mousedown", closeModelPicker);
   }, [isModelPickerOpen]);
+
+  useEffect(() => {
+    if (!isModelPickerOpen) return;
+    let active = true;
+
+    void getModelSearchQuery().then((query) => {
+      if (active) setModelSearch(query);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [isModelPickerOpen]);
+
+  useEffect(() => {
+    const storage = globalThis.chrome?.storage;
+    if (!storage?.onChanged) return;
+
+    const syncModelSearch = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      areaName: string,
+    ) => {
+      const change = changes[MODEL_SEARCH_SESSION_KEY];
+      if (areaName === "session" && typeof change?.newValue === "string") {
+        setModelSearch(change.newValue);
+      }
+    };
+
+    storage.onChanged.addListener(syncModelSearch);
+    return () => storage.onChanged.removeListener(syncModelSearch);
+  }, []);
 
   useEffect(() => {
     // Get initial active tab
@@ -431,11 +467,12 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
 
   const providerSettings = getProviderSettingsWithDefaults(settings.providers);
   const hasEnabledProviders =
-    providerSettings.ollama.enabled ||
     providerSettings.gemini.enabled ||
     providerSettings.openai.enabled ||
     providerSettings.openrouter.enabled ||
-    providerSettings.custom.enabled;
+    Object.values(settings.customProviders ?? {}).some(
+      (provider) => provider.enabled,
+    );
   const models = settings.discoveredModels || [];
   const favoriteModelIds = settings.favoriteModelIds ?? [];
   const selectedModel =
@@ -484,12 +521,15 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
       setSettings(next),
     );
     setIsModelPickerOpen(false);
-    setModelSearch("");
   };
 
   const toggleModelPicker = () => {
-    if (isModelPickerOpen) setModelSearch("");
     setIsModelPickerOpen(!isModelPickerOpen);
+  };
+
+  const updateModelSearch = (query: string) => {
+    setModelSearch(query);
+    void setModelSearchQuery(query);
   };
 
   useEffect(() => {
@@ -662,12 +702,14 @@ export default function ChatInterface({ mode = "popup" }: ChatInterfaceProps) {
                     type="search"
                     value={modelSearch}
                     onInput={(event) =>
-                      setModelSearch((event.target as HTMLInputElement).value)
+                      updateModelSearch(
+                        (event.target as HTMLInputElement).value,
+                      )
                     }
                     placeholder="Search models..."
                     aria-label="Search models"
                     autoFocus
-                    class="w-full rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 py-1.5 pl-8 pr-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500"
+                    class="w-full rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 py-1.5 pl-8 pr-8 text-xs text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div class="max-h-64 overflow-y-auto py-1">

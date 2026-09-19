@@ -5,6 +5,7 @@ import {
   screen,
   waitFor,
   within,
+  cleanup,
 } from "@testing-library/preact";
 import ChatInterface from "@/components/ChatInterface";
 import * as useStorageModule from "@/hooks/useStorage";
@@ -12,9 +13,19 @@ import { defaultSettings } from "@/lib/store";
 
 describe("ChatInterface model favorites", () => {
   const setSettings = vi.fn();
+  let sessionValues: Record<string, unknown>;
 
   beforeEach(() => {
+    cleanup();
+    sessionValues = {};
     globalThis.chrome = {
+      storage: {
+        session: {
+          get: vi.fn(async () => ({ ...sessionValues })),
+          set: vi.fn(async (values) => Object.assign(sessionValues, values)),
+        },
+        onChanged: { addListener: vi.fn(), removeListener: vi.fn() },
+      },
       tabs: {
         query: vi.fn((_query, callback) => callback([{ id: 123 }])),
         onActivated: { addListener: vi.fn(), removeListener: vi.fn() },
@@ -101,7 +112,7 @@ describe("ChatInterface model favorites", () => {
           name: "Search models",
         }) as HTMLInputElement
       ).value,
-    ).toBe("");
+    ).toBe("ollama");
 
     fireEvent.click(
       screen.getByRole("button", { name: "Add Zulu Model to favorites" }),
@@ -117,6 +128,29 @@ describe("ChatInterface model favorites", () => {
           favoriteModelIds: ["openai:a-model", "ollama:z-model"],
         }),
       ),
+    );
+  });
+
+  it("persists the model search for the browser session", async () => {
+    const popup = render(<ChatInterface mode="popup" />);
+    fireEvent.click(popup.getByRole("button", { name: "Choose model" }));
+    fireEvent.input(popup.getByRole("searchbox", { name: "Search models" }), {
+      target: { value: "alpha" },
+    });
+
+    await waitFor(() =>
+      expect(chrome.storage.session.set).toHaveBeenCalledWith({
+        "model-search-query": "alpha",
+      }),
+    );
+    popup.unmount();
+
+    const sidepanel = render(<ChatInterface mode="sidepanel" />);
+    fireEvent.click(sidepanel.getByRole("button", { name: "Choose model" }));
+    await waitFor(() =>
+      expect(
+        sidepanel.getByRole("searchbox", { name: "Search models" }),
+      ).toHaveProperty("value", "alpha"),
     );
   });
 

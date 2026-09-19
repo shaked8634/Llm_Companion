@@ -12,7 +12,6 @@ export async function refreshDiscoveredModels() {
   const allModels: DiscoveredModel[] = [];
 
   const providers = [
-    { id: "ollama", name: "Ollama", config: providerSettings.ollama },
     { id: "gemini", name: "Gemini", config: providerSettings.gemini },
     { id: "openai", name: "OpenAI", config: providerSettings.openai },
     {
@@ -20,17 +19,22 @@ export async function refreshDiscoveredModels() {
       name: "OpenRouter",
       config: providerSettings.openrouter,
     },
-    {
-      id: "custom",
-      name: "Custom",
-      config: providerSettings.custom,
-    },
+    ...Object.entries(settings.customProviders ?? {}).map(([id, config]) => ({
+      id,
+      name: config.name,
+      config,
+    })),
   ];
 
   for (const p of providers) {
     if (p.config.enabled) {
       try {
-        const provider = ProviderFactory.create(p.id as any, p.config);
+        const provider = ProviderFactory.create(
+          p.id === "gemini" || p.id === "openai" || p.id === "openrouter"
+            ? p.id
+            : "custom",
+          p.config,
+        );
         const pModels = await provider.getModels();
         allModels.push(
           ...pModels.map((m) => ({
@@ -54,6 +58,7 @@ export async function refreshDiscoveredModels() {
         m.id === n.id &&
         m.providerId === n.providerId &&
         m.name === n.name &&
+        m.providerName === n.providerName &&
         m.supportsPdf === n.supportsPdf
       );
     });

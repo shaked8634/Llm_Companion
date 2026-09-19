@@ -16,7 +16,7 @@ Replace the fixed Ollama and Custom provider rows with user-created OpenAI-compa
 ## UI and validation
 
 - The options table retains fixed Gemini, OpenAI, and OpenRouter rows.
-- A `+ Add OpenAI compatible provider` button is aligned below the table on the right.
+- A `+ Add custom provider endpoint` button is aligned below the table on the right.
 - Added rows include an enable checkbox, editable Provider field, optional API key, URL, and delete button.
 - An enabled added provider requires a valid HTTP(S) URL.
 - Invalid or duplicate provider names are shown inline and are not persisted.

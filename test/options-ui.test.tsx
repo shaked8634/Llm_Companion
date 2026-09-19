@@ -28,29 +28,50 @@ describe("Options UI", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders Providers tab with all supported providers", () => {
+  it("renders fixed providers without Ollama or Custom rows", () => {
     render(<Options />);
-    expect(screen.getAllByText(/Ollama/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Gemini/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/OpenAI/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/OpenRouter/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Custom/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Ollama/i)).toBeNull();
+    expect(screen.queryByText(/^Custom$/i)).toBeNull();
+    expect(
+      screen.getByRole("button", {
+        name: /add custom provider endpoint/i,
+      }),
+    ).toBeDefined();
   });
 
-  it("renders API Key and URL inputs for Custom provider", () => {
+  it("adds an editable OpenAI-compatible provider row", () => {
     render(<Options />);
-    // Use getAllByText and pick one, or use a more specific selector
-    const customSpans = screen.getAllByText("Custom");
-    const customRow = customSpans[0].closest("tr");
-    expect(customRow).toBeDefined();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /add custom provider endpoint/i,
+      }),
+    );
 
-    // Check for API Key and URL inputs within that row
-    const inputs = customRow?.querySelectorAll("input");
-    // Checkbox, API Key (password), URL (text)
-    expect(inputs?.length).toBe(3);
-    expect(inputs?.[1].getAttribute("placeholder")).toBe("API Key");
-    expect(inputs?.[1].getAttribute("type")).toBe("password");
-    expect(inputs?.[2].getAttribute("type")).toBe("text");
+    expect(screen.getByDisplayValue("New Provider")).toBeDefined();
+    const savedSettings = setSettings.mock.lastCall?.[0];
+    expect(Object.values(savedSettings.customProviders)).toEqual([
+      expect.objectContaining({ name: "New Provider", enabled: true }),
+    ]);
+  });
+
+  it("validates provider names and deletes provider data", () => {
+    render(<Options />);
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /add custom provider endpoint/i,
+      }),
+    );
+
+    const providerName = screen.getByDisplayValue("New Provider");
+    fireEvent.input(providerName, { target: { value: "" } });
+    expect(screen.getByText("Provider name is required.")).toBeDefined();
+
+    fireEvent.click(screen.getByRole("button", { name: /delete provider/i }));
+    const savedSettings = setSettings.mock.lastCall?.[0];
+    expect(savedSettings.customProviders).toEqual({});
   });
 
   it("renders the extension version and repository links in the About tab", () => {

@@ -153,4 +153,50 @@ describe("CustomProvider detail", () => {
     );
     expect(chunks).toEqual(["custom-hi"]);
   });
+
+  it("stream should add the OpenAI v1 path to a provider root URL", async () => {
+    provider = new CustomProvider({
+      url: "http://localhost:12434",
+      apiKey: "",
+      enabled: true,
+    });
+    (fetch as any).mockResolvedValue({
+      ok: true,
+      body: {
+        getReader: () => ({
+          read: vi.fn().mockResolvedValueOnce({ done: true }),
+          releaseLock: vi.fn(),
+        }),
+      },
+    });
+
+    const generator = provider.stream("m1", [{ role: "user", content: "h" }]);
+    for await (const _chunk of generator) {
+      // The mock stream ends without content.
+    }
+
+    expect(fetch).toHaveBeenCalledWith(
+      "http://localhost:12434/v1/chat/completions",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("includes the failed endpoint in stream errors", async () => {
+    provider = new CustomProvider({
+      url: "http://localhost:12434",
+      apiKey: "",
+      enabled: true,
+    });
+    (fetch as any).mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      json: () => Promise.resolve({}),
+    });
+
+    const generator = provider.stream("m1", [{ role: "user", content: "h" }]);
+    await expect(generator.next()).rejects.toThrow(
+      "Custom OpenAI error at http://localhost:12434/v1/chat/completions: Internal Server Error",
+    );
+  });
 });

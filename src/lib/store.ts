@@ -1,11 +1,6 @@
 import { storage } from "#imports";
 import type { WxtStorageItem } from "wxt/utils/storage";
-import {
-  ChatMessage,
-  Model,
-  ProviderConfig,
-  ProviderType,
-} from "./providers/types";
+import { ChatMessage, Model, ProviderConfig } from "./providers/types";
 
 export enum PromptType {
   WITH_WEBPAGE = "with-webpage",
@@ -28,7 +23,14 @@ export interface DiscoveredModel extends Model {
   providerName: string;
 }
 
-export type ProviderSettings = Record<ProviderType, ProviderConfig>;
+export type BuiltinProviderType = "gemini" | "openai" | "openrouter";
+export type ProviderSettings = Record<BuiltinProviderType, ProviderConfig>;
+
+export interface CustomProviderSettings extends ProviderConfig {
+  name: string;
+}
+
+export type CustomProviderSettingsMap = Record<string, CustomProviderSettings>;
 
 export interface SearchEngine {
   id: string;
@@ -38,15 +40,10 @@ export interface SearchEngine {
 }
 
 export interface AppSettings {
-  activeProvider: "ollama" | "gemini" | "openai" | "openrouter" | "custom";
+  activeProvider: string;
   providers: ProviderSettings;
-  activeModel: {
-    ollama?: string;
-    gemini?: string;
-    openai?: string;
-    openrouter?: string;
-    custom?: string;
-  };
+  customProviders: CustomProviderSettingsMap;
+  activeModel: Record<string, string>;
   selectedModelId?: string; // Format: "providerId:modelId"
   favoriteModelIds: string[];
   discoveredModels: DiscoveredModel[];
@@ -69,11 +66,9 @@ export interface TabSession {
 }
 
 export const DEFAULT_PROVIDER_SETTINGS: ProviderSettings = {
-  ollama: { enabled: false, url: "http://localhost:11434" },
   gemini: { enabled: false, apiKey: "" },
   openai: { enabled: false, apiKey: "" },
   openrouter: { enabled: false, apiKey: "" },
-  custom: { enabled: false, url: "", apiKey: "" },
 };
 
 export const DEFAULT_SEARCH_ENGINES: SearchEngine[] = [
@@ -133,10 +128,6 @@ export function getProviderSettingsWithDefaults(
   providers?: Partial<ProviderSettings>,
 ): ProviderSettings {
   return {
-    ollama: {
-      ...DEFAULT_PROVIDER_SETTINGS.ollama,
-      ...(providers?.ollama ?? {}),
-    },
     gemini: {
       ...DEFAULT_PROVIDER_SETTINGS.gemini,
       ...(providers?.gemini ?? {}),
@@ -149,11 +140,13 @@ export function getProviderSettingsWithDefaults(
       ...DEFAULT_PROVIDER_SETTINGS.openrouter,
       ...(providers?.openrouter ?? {}),
     },
-    custom: {
-      ...DEFAULT_PROVIDER_SETTINGS.custom,
-      ...(providers?.custom ?? {}),
-    },
   };
+}
+
+export function getCustomProviderSettingsWithDefaults(
+  providers?: CustomProviderSettingsMap,
+): CustomProviderSettingsMap {
+  return { ...(providers ?? {}) };
 }
 
 export function getPromptsWithDefaults(prompts?: Prompt[]): Prompt[] {
@@ -186,8 +179,9 @@ export function getSearchEnginesWithDefaults(
 }
 
 export const defaultSettings: AppSettings = {
-  activeProvider: "ollama",
+  activeProvider: "",
   providers: getProviderSettingsWithDefaults(),
+  customProviders: {},
   activeModel: {},
   selectedModelId: undefined,
   favoriteModelIds: [],

@@ -46,15 +46,29 @@ export async function handleExecutePrompt(
 
   // Split only on the first colon to preserve model tags like "qwen3:4b"
   const colonIndex = settings.selectedModelId.indexOf(":");
-  const providerType = settings.selectedModelId.substring(
-    0,
-    colonIndex,
-  ) as ProviderType;
+  const providerId = settings.selectedModelId.substring(0, colonIndex);
   const modelId = settings.selectedModelId.substring(colonIndex + 1);
-  const providerConfig = getProviderSettingsWithDefaults(settings.providers)[
-    providerType
+  const builtinProviderTypes: ProviderType[] = [
+    "gemini",
+    "openai",
+    "openrouter",
   ];
-  console.debug("[Chat Handler] Provider:", providerType, "Model:", modelId);
+  const providerConfig = builtinProviderTypes.includes(
+    providerId as ProviderType,
+  )
+    ? getProviderSettingsWithDefaults(settings.providers)[
+        providerId as "gemini" | "openai" | "openrouter"
+      ]
+    : settings.customProviders?.[providerId];
+
+  if (!providerConfig) {
+    throw new Error(`Provider not found: ${providerId}`);
+  }
+
+  const providerType = builtinProviderTypes.includes(providerId as ProviderType)
+    ? (providerId as ProviderType)
+    : "custom";
+  console.debug("[Chat Handler] Provider:", providerId, "Model:", modelId);
 
   const provider = ProviderFactory.create(providerType, providerConfig);
 

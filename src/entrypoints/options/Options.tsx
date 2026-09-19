@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { getExtensionVersion, REPOSITORY_LINKS } from "@/lib/constants";
 import {
   AppSettings,
+  BuiltinProviderType,
+  CustomProviderSettings,
   DEFAULT_POPUP_WIDTH,
-  DEFAULT_PROVIDER_SETTINGS,
   DEFAULT_RESPONSE_TIMEOUT_SECONDS,
   getPromptsWithDefaults,
   getProviderSettingsWithDefaults,
@@ -14,6 +15,7 @@ import {
   settingsStorage,
 } from "@/lib/store";
 import { useStorage } from "@/hooks/useStorage";
+import type { ProviderConfig } from "@/lib/providers/types";
 import {
   Bot,
   CheckCircle2,
@@ -39,13 +41,21 @@ export default function Options() {
   const [localProviders, setLocalProviders] = useState<
     AppSettings["providers"] | null
   >(null);
+  const [localCustomProviders, setLocalCustomProviders] = useState<
+    AppSettings["customProviders"]
+  >({});
   const providersInitialized = useRef(false);
+  const customProvidersInitialized = useRef(false);
 
   // Initialize local providers once from settings
   useEffect(() => {
     if (settings?.providers && !providersInitialized.current) {
       setLocalProviders(getProviderSettingsWithDefaults(settings.providers));
       providersInitialized.current = true;
+    }
+    if (settings?.customProviders && !customProvidersInitialized.current) {
+      setLocalCustomProviders({ ...settings.customProviders });
+      customProvidersInitialized.current = true;
     }
   }, [settings?.providers]);
 
@@ -89,37 +99,6 @@ export default function Options() {
     [key: string]: string;
   }>({});
 
-  // Patch settings to ensure all providers exist (one-time migration)
-  useEffect(() => {
-    if (!settings || !localProviders) return;
-    let changed = false;
-    const patchedProviders = { ...localProviders };
-    if (!patchedProviders.ollama) {
-      patchedProviders.ollama = DEFAULT_PROVIDER_SETTINGS.ollama;
-      changed = true;
-    }
-    if (!patchedProviders.gemini) {
-      patchedProviders.gemini = DEFAULT_PROVIDER_SETTINGS.gemini;
-      changed = true;
-    }
-    if (!patchedProviders.openai) {
-      patchedProviders.openai = DEFAULT_PROVIDER_SETTINGS.openai;
-      changed = true;
-    }
-    if (!patchedProviders.openrouter) {
-      patchedProviders.openrouter = DEFAULT_PROVIDER_SETTINGS.openrouter;
-      changed = true;
-    }
-    if (!patchedProviders.custom) {
-      patchedProviders.custom = DEFAULT_PROVIDER_SETTINGS.custom;
-      changed = true;
-    }
-    if (changed) {
-      setLocalProviders(patchedProviders);
-      setSettings({ ...settings, providers: patchedProviders });
-    }
-  }, [localProviders]);
-
   useEffect(() => {
     if (!settings) return;
 
@@ -145,8 +124,10 @@ export default function Options() {
   const getProviderStatus = (
     providerId: string,
   ): "idle" | "success" | "error" => {
-    if (!settings || !localProviders) return "idle";
-    const config = localProviders[providerId as keyof AppSettings["providers"]];
+    if (!settings) return "idle";
+    const config =
+      localProviders?.[providerId as keyof AppSettings["providers"]] ??
+      localCustomProviders[providerId];
     // Return idle if provider is disabled (clears status immediately on uncheck)
     if (!config?.enabled) return "idle";
 
@@ -171,35 +152,28 @@ export default function Options() {
     );
   }
 
-  const providerLabels: Record<string, string> = {
-    ollama: "Ollama",
+  const providerLabels: Record<BuiltinProviderType, string> = {
     gemini: "Gemini",
     openai: "OpenAI",
     openrouter: "OpenRouter",
-    custom: "Custom",
   };
 
-  function validateProvider(id: keyof AppSettings["providers"], config: any) {
+  function validateProvider(
+    id: BuiltinProviderType,
+    config: AppSettings["providers"][BuiltinProviderType],
+  ) {
     let error = "";
-    if (config.enabled) {
-      if (
-        (id === "gemini" || id === "openai" || id === "openrouter") &&
-        !config.apiKey
-      ) {
-        error = "API Key is required.";
-      }
-      if (
-        (id === "ollama" || id === "custom") &&
-        (!config.url || !/^https?:\/\/.+/.test(config.url))
-      ) {
-        error = "Valid URL is required.";
-      }
+    if (config.enabled && !config.apiKey) {
+      error = "API Key is required.";
     }
     setProviderErrors((prev) => ({ ...prev, [id]: error }));
     return true;
   }
 
-  const updateProvider = (id: keyof AppSettings["providers"], updates: any) => {
+  const updateProvider = (
+    id: BuiltinProviderType,
+    updates: Partial<ProviderConfig>,
+  ) => {
     if (!localProviders || !settings) return;
 
     const newProviders = {
@@ -236,6 +210,119 @@ export default function Options() {
       );
     }
     setSettings(newSettings);
+  };
+
+  const validateCustomProvider = (
+    id: string,
+    config: CustomProviderSettings,
+  ) => {
+    let error = "";
+    const name = config.name.trim();
+    const duplicate = Object.entries(localCustomProviders).some(
+      ([otherId, other]) => otherId !== id && other.name.trim() === name,
+    );
+    const conflictsWithBuiltin = Object.values(providerLabels).some(
+      (label) => label === name,
+    );
+    if (!name) {
+      error = "Provider name is required.";
+    } else if (duplicate || conflictsWithBuiltin) {
+      error = "Provider name must be unique.";
+    } else if (
+      config.enabled &&
+      (!config.url || !/^https?:\/\/.+/.test(config.url))
+    ) {
+      error = "Valid URL is required.";
+    }
+    setProviderErrors((prev) => ({ ...prev, [id]: error }));
+    return !error;
+  };
+
+  const updateCustomProvider = (
+    id: string,
+    updates: Partial<CustomProviderSettings>,
+  ) => {
+    if (!settings) return;
+    const current = localCustomProviders[id];
+    if (!current) return;
+    const config = { ...current, ...updates };
+    setLocalCustomProviders((prev) => ({ ...prev, [id]: config }));
+
+    if (!validateCustomProvider(id, config)) return;
+
+    const customProviders = {
+      ...(settings.customProviders ?? {}),
+      [id]: config,
+    };
+    const newSettings = { ...settings, customProviders };
+    if (updates.enabled === false) {
+      newSettings.discoveredModels = (settings.discoveredModels || []).filter(
+        (model) => model.providerId !== id,
+      );
+      newSettings.favoriteModelIds = (settings.favoriteModelIds || []).filter(
+        (modelId) => !modelId.startsWith(`${id}:`),
+      );
+      if (settings.selectedModelId?.startsWith(`${id}:`)) {
+        newSettings.selectedModelId = "";
+      }
+    }
+    setSettings(newSettings);
+  };
+
+  const addCustomProvider = () => {
+    if (!settings) return;
+    const randomId =
+      globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+    const id = `provider-${randomId}`;
+    const existingNames = new Set(
+      Object.values(localCustomProviders).map((provider) => provider.name),
+    );
+    let name = "New Provider";
+    let suffix = 2;
+    while (existingNames.has(name)) {
+      name = `New Provider ${suffix++}`;
+    }
+    const provider: CustomProviderSettings = {
+      name,
+      enabled: true,
+      url: "",
+      apiKey: "",
+    };
+    const customProviders = {
+      ...(settings.customProviders ?? {}),
+      [id]: provider,
+    };
+    setLocalCustomProviders((prev) => ({ ...prev, [id]: provider }));
+    setSettings({ ...settings, customProviders });
+  };
+
+  const deleteCustomProvider = (id: string) => {
+    if (!settings) return;
+    const customProviders = { ...(settings.customProviders ?? {}) };
+    delete customProviders[id];
+    setLocalCustomProviders((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setProviderErrors((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setSettings({
+      ...settings,
+      customProviders,
+      discoveredModels: (settings.discoveredModels || []).filter(
+        (model) => model.providerId !== id,
+      ),
+      favoriteModelIds: (settings.favoriteModelIds || []).filter(
+        (modelId) => !modelId.startsWith(`${id}:`),
+      ),
+      selectedModelId: settings.selectedModelId?.startsWith(`${id}:`)
+        ? ""
+        : settings.selectedModelId,
+    });
   };
 
   const searchEngines = getSearchEnginesWithDefaults(settings.searchEngines);
@@ -318,10 +405,11 @@ export default function Options() {
                 >
                   <colgroup>
                     <col style="width: 80px;" />
-                    <col style="width: 120px;" />
+                    <col style="width: 180px;" />
                     <col style="width: auto;" />
                     <col style="width: auto;" />
                     <col style="width: 80px;" />
+                    <col style="width: 60px;" />
                   </colgroup>
                   <thead>
                     <tr>
@@ -340,21 +428,94 @@ export default function Options() {
                       <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-center">
                         Status
                       </th>
+                      <th class="px-4 py-2 text-[11px] font-bold text-slate-400 tracking-wider text-center">
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {localProviders &&
-                      (
-                        [
-                          "ollama",
-                          "gemini",
-                          "openai",
-                          "openrouter",
-                          "custom",
-                        ] as const
-                      ).map((id) => {
-                        const config = localProviders[id];
-                        if (!config) return null;
+                      (["gemini", "openai", "openrouter"] as const).map(
+                        (id) => {
+                          const config = localProviders[id];
+                          const isDisabled = !config.enabled;
+                          const status = getProviderStatus(id);
+                          return (
+                            <tr key={id}>
+                              <td class="text-center">
+                                <div class="flex items-center justify-center h-10">
+                                  <input
+                                    type="checkbox"
+                                    checked={config.enabled}
+                                    onChange={(e) => {
+                                      const isEnabled = (
+                                        e.target as HTMLInputElement
+                                      ).checked;
+                                      if (!isEnabled) {
+                                        updateProvider(id, {
+                                          enabled: false,
+                                          apiKey: "",
+                                          url: "",
+                                        });
+                                      } else {
+                                        updateProvider(id, { enabled: true });
+                                      }
+                                    }}
+                                    class="w-5 h-5 rounded-lg text-indigo-600 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 transition-all cursor-pointer"
+                                  />
+                                </div>
+                              </td>
+                              <td>
+                                <div class="flex items-center h-10 px-4">
+                                  <span
+                                    class={`font-bold text-base ${isDisabled ? "text-slate-400 dark:text-slate-600" : "text-slate-900 dark:text-slate-100"}`}
+                                  >
+                                    {providerLabels[id]}
+                                  </span>
+                                </div>
+                              </td>
+                              <td>
+                                <input
+                                  type="password"
+                                  value={config.apiKey || ""}
+                                  disabled={isDisabled}
+                                  onInput={(e) =>
+                                    updateProvider(id, {
+                                      apiKey: (e.target as HTMLInputElement)
+                                        .value,
+                                    })
+                                  }
+                                  placeholder="API Key"
+                                  class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? "opacity-40 grayscale" : "shadow-sm focus:ring-2 focus:ring-indigo-500/20"} ${!config.apiKey && !isDisabled ? "border-amber-300" : "border-slate-200 dark:border-slate-800"} ${providerErrors[id] ? "border-red-500" : ""}`}
+                                />
+                                {providerErrors[id] && (
+                                  <div class="text-xs text-red-500 mt-1">
+                                    {providerErrors[id]}
+                                  </div>
+                                )}
+                              </td>
+                              <td>
+                                <div class="w-full h-10" />
+                              </td>
+                              <td class="text-center">
+                                {config.enabled && (
+                                  <div class="flex items-center justify-center h-10">
+                                    {status === "success" && (
+                                      <CheckCircle2 class="w-5 h-5 text-green-500" />
+                                    )}
+                                    {status === "error" && (
+                                      <XCircle class="w-5 h-5 text-red-500" />
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+                              <td />
+                            </tr>
+                          );
+                        },
+                      )}
+                    {Object.entries(localCustomProviders).map(
+                      ([id, config]) => {
                         const isDisabled = !config.enabled;
                         const status = getProviderStatus(id);
                         return (
@@ -364,91 +525,70 @@ export default function Options() {
                                 <input
                                   type="checkbox"
                                   checked={config.enabled}
-                                  onChange={(e) => {
-                                    const isEnabled = (
-                                      e.target as HTMLInputElement
+                                  onChange={(event) => {
+                                    const enabled = (
+                                      event.target as HTMLInputElement
                                     ).checked;
-                                    if (!isEnabled) {
-                                      updateProvider(id, {
-                                        enabled: false,
-                                        apiKey: "",
-                                        url: "",
-                                      });
-                                    } else {
-                                      const enableUpdates: any = {
-                                        enabled: true,
-                                      };
-                                      if (id === "ollama") {
-                                        enableUpdates.url =
-                                          "http://localhost:11434";
-                                      }
-                                      updateProvider(id, enableUpdates);
-                                    }
+                                    updateCustomProvider(id, {
+                                      enabled,
+                                      ...(enabled
+                                        ? {}
+                                        : { apiKey: "", url: "" }),
+                                    });
                                   }}
                                   class="w-5 h-5 rounded-lg text-indigo-600 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 transition-all cursor-pointer"
                                 />
                               </div>
                             </td>
-                            <td>
-                              <div class="flex items-center h-10 px-4">
-                                <span
-                                  class={`font-bold text-base ${isDisabled ? "text-slate-400 dark:text-slate-600" : "text-slate-900 dark:text-slate-100"}`}
-                                >
-                                  {providerLabels[id] || id}
-                                </span>
-                              </div>
+                            <td class="align-top">
+                              <input
+                                type="text"
+                                value={config.name}
+                                aria-label={`Provider name for ${config.name}`}
+                                placeholder="Provider name"
+                                onInput={(event) =>
+                                  updateCustomProvider(id, {
+                                    name: (event.target as HTMLInputElement)
+                                      .value,
+                                  })
+                                }
+                                class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all shadow-sm focus:ring-2 focus:ring-indigo-500/20 ${providerErrors[id] ? "border-red-500" : "border-slate-200 dark:border-slate-800"}`}
+                              />
+                              {providerErrors[id] && (
+                                <div class="text-xs text-red-500 mt-1">
+                                  {providerErrors[id]}
+                                </div>
+                              )}
                             </td>
                             <td>
                               <input
                                 type="password"
                                 value={config.apiKey || ""}
                                 disabled={isDisabled}
-                                onInput={(e) =>
-                                  updateProvider(id, {
-                                    apiKey: (e.target as HTMLInputElement)
+                                onInput={(event) =>
+                                  updateCustomProvider(id, {
+                                    apiKey: (event.target as HTMLInputElement)
                                       .value,
                                   })
                                 }
                                 placeholder="API Key"
-                                class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? "opacity-40 grayscale" : "shadow-sm focus:ring-2 focus:ring-indigo-500/20"} ${id !== "ollama" && id !== "custom" && !config.apiKey && !isDisabled ? "border-amber-300" : "border-slate-200 dark:border-slate-800"} ${providerErrors[id] ? "border-red-500" : ""}`}
+                                class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm transition-all ${isDisabled ? "opacity-40 grayscale" : "shadow-sm focus:ring-2 focus:ring-indigo-500/20"}`}
                               />
-                              {providerErrors[id] &&
-                                id !== "ollama" &&
-                                id !== "custom" && (
-                                  <div class="text-xs text-red-500 mt-1">
-                                    {providerErrors[id]}
-                                  </div>
-                                )}
                             </td>
                             <td>
-                              {id === "ollama" || id === "custom" ? (
-                                <div>
-                                  <input
-                                    type="text"
-                                    value={config.url || ""}
-                                    disabled={isDisabled}
-                                    onInput={(e) =>
-                                      updateProvider(id, {
-                                        url: (e.target as HTMLInputElement)
-                                          .value,
-                                      })
-                                    }
-                                    class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? "opacity-40 grayscale" : "shadow-sm focus:ring-2 focus:ring-indigo-500/20"} border-slate-200 dark:border-slate-800 ${providerErrors[id] ? "border-red-500" : ""}`}
-                                    placeholder={
-                                      id === "ollama"
-                                        ? "http://localhost:11434"
-                                        : "https://api.example.com/v1"
-                                    }
-                                  />
-                                  {providerErrors[id] && (
-                                    <div class="text-xs text-red-500 mt-1">
-                                      {providerErrors[id]}
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <div class="w-full h-10" />
-                              )}
+                              <input
+                                type="text"
+                                value={config.url || ""}
+                                disabled={isDisabled}
+                                onInput={(event) =>
+                                  updateCustomProvider(id, {
+                                    url: (event.target as HTMLInputElement)
+                                      .value,
+                                  })
+                                }
+                                placeholder="https://api.example.com/v1"
+                                class={`w-full px-4 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-sm transition-all ${isDisabled ? "opacity-40 grayscale" : "shadow-sm focus:ring-2 focus:ring-indigo-500/20"} border-slate-200 dark:border-slate-800 ${providerErrors[id] && config.enabled ? "border-red-500" : ""}`}
+                              />
                             </td>
                             <td class="text-center">
                               {config.enabled && (
@@ -462,11 +602,32 @@ export default function Options() {
                                 </div>
                               )}
                             </td>
+                            <td class="text-center align-top">
+                              <div class="flex items-start justify-center pt-1">
+                                <button
+                                  onClick={() => deleteCustomProvider(id)}
+                                  class="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 active:scale-95 cursor-pointer"
+                                  aria-label={`Delete ${config.name || "provider"}`}
+                                >
+                                  <Trash2 class="w-5 h-5" />
+                                </button>
+                              </div>
+                            </td>
                           </tr>
                         );
-                      })}
+                      },
+                    )}
                   </tbody>
                 </table>
+                <div class="flex justify-end mt-4">
+                  <button
+                    onClick={addCustomProvider}
+                    class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 shadow-sm"
+                  >
+                    <Plus class="w-4 h-4" />
+                    <span>Add custom provider endpoint</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}

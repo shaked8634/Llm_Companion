@@ -22,7 +22,8 @@ describe("Store", () => {
       },
     ]);
     expect(defaultSettings.selectedSearchEngineId).toBe("duckduckgo");
-    expect(defaultSettings.providers.ollama.enabled).toBe(false);
+    expect(defaultSettings.customProviders).toEqual({});
+    expect(defaultSettings.providers.gemini.enabled).toBe(false);
     expect(defaultSettings.responseTimeoutSeconds).toBe(120);
     expect(defaultSettings.conversationTextScale).toBe(1);
     expect(defaultSettings.popupWidth).toBe(640);
@@ -43,8 +44,7 @@ describe("Store", () => {
 
     expect(providerSettings.openrouter.enabled).toBe(true);
     expect(providerSettings.openrouter.apiKey).toBe("or-token");
-    expect(providerSettings.ollama.enabled).toBe(false);
-    expect(providerSettings.custom.enabled).toBe(false);
+    expect(providerSettings.gemini.enabled).toBe(false);
   });
 
   it("defaultSettings should include built-in translate and converse prompts", () => {

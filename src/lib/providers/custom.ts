@@ -17,6 +17,11 @@ export class CustomProvider extends BaseProvider {
     return url;
   }
 
+  private getChatCompletionsUrl(): string {
+    const baseUrl = this.getBaseUrl();
+    return `${baseUrl.endsWith("/v1") ? baseUrl : `${baseUrl}/v1`}/chat/completions`;
+  }
+
   async getModels(): Promise<Model[]> {
     const baseUrl = this.getBaseUrl();
     if (!baseUrl) return [];
@@ -60,7 +65,8 @@ export class CustomProvider extends BaseProvider {
     const baseUrl = this.getBaseUrl();
     if (!baseUrl) throw new Error("Custom OpenAI Base URL is missing");
 
-    const url = `${baseUrl}/chat/completions`;
+    const url = this.getChatCompletionsUrl();
+    const legacyUrl = `${baseUrl}/chat/completions`;
     const requestBody = {
       model,
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
@@ -76,16 +82,24 @@ export class CustomProvider extends BaseProvider {
       headers["Authorization"] = `Bearer ${this.config.apiKey}`;
     }
 
-    const response = await fetch(url, {
+    const request = {
       method: "POST",
       headers,
       body: JSON.stringify(requestBody),
-    });
+    };
+    let requestUrl = url;
+    let response = await fetch(requestUrl, request);
+
+    // Keep compatibility with providers that expose the legacy root route.
+    if (!response.ok && response.status === 404 && url !== legacyUrl) {
+      requestUrl = legacyUrl;
+      response = await fetch(requestUrl, request);
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       throw new Error(
-        `Custom OpenAI error: ${error.error?.message || response.statusText}`,
+        `Custom OpenAI error at ${requestUrl}: ${error.error?.message || response.statusText}`,
       );
     }
 

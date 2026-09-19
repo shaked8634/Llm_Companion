@@ -128,4 +128,52 @@ describe("refreshDiscoveredModels", () => {
       ],
     });
   });
+
+  it("discovers models from dynamically added providers using their stable IDs", async () => {
+    const providerId = "provider-local";
+    const settings = {
+      ...defaultSettings,
+      customProviders: {
+        [providerId]: {
+          name: "Local Gateway",
+          enabled: true,
+          url: "http://localhost:12434/v1",
+          apiKey: "",
+        },
+      },
+      discoveredModels: [],
+    };
+    const getModels = vi
+      .fn()
+      .mockResolvedValue([{ id: "local-model", name: "Local Model" }]);
+    const createSpy = vi
+      .spyOn(ProviderFactory, "create")
+      .mockImplementation((type) => {
+        expect(type).toBe("custom");
+        return { getModels } as never;
+      });
+
+    vi.spyOn(settingsStorage, "getValue").mockResolvedValue(settings);
+    const setValueSpy = vi
+      .spyOn(settingsStorage, "setValue")
+      .mockResolvedValue(undefined as never);
+
+    await refreshDiscoveredModels();
+
+    expect(createSpy).toHaveBeenCalledWith(
+      "custom",
+      settings.customProviders[providerId],
+    );
+    expect(setValueSpy).toHaveBeenCalledWith({
+      ...settings,
+      discoveredModels: [
+        {
+          id: "local-model",
+          name: "Local Model",
+          providerId,
+          providerName: "Local Gateway",
+        },
+      ],
+    });
+  });
 });
